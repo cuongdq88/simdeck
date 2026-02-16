@@ -1,5 +1,6 @@
-import 'package:simutil/simutil.dart' as simutil;
+import 'package:nocterm/nocterm.dart';
+import 'package:simutil/simutil.dart';
 
 void main(List<String> arguments) {
-  print('Hello world: ${simutil.calculate()}!');
+  runApp(SimutilApp());
 }
