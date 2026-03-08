@@ -1,22 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 
-import '../models/device.dart';
-import '../models/device_state.dart';
-import '../models/device_type.dart';
-import '../models/launch_options.dart';
+import 'package:simutil/models/device.dart';
+import 'package:simutil/models/device_state.dart';
+import 'package:simutil/models/device_type.dart';
+import 'package:simutil/models/launch_options.dart';
+import 'package:simutil/models/os.dart';
+
 import 'command_exec.dart';
 import 'device_service.dart';
 
-/// Service for interacting with iOS simulators via `xcrun simctl` (macOS only).
-class SimctlService implements DeviceService {
+class IOSDeviceService implements DeviceService {
   final CommandExec _exec;
 
-  SimctlService(this._exec);
+  IOSDeviceService(this._exec);
 
   @override
-  /// Check if `xcrun simctl` is available (only works on macOS).
   Future<bool> isAvailable() async {
     if (!Platform.isMacOS) return false;
     try {
@@ -31,18 +30,14 @@ class SimctlService implements DeviceService {
   }
 
   @override
-  Future<List<Device>> listDevices() => listSimulators();
-
-  /// List all iOS simulators.
-  Future<List<Device>> listSimulators() async {
+  Future<List<Device>> listDevices() async {
     if (!Platform.isMacOS) return [];
-    // Run parsing logic in isolate.
-    return Isolate.run(() => _listSimulatorsInIsolate(_exec));
+    return _listSimulators();
   }
 
-  Future<List<Device>> _listSimulatorsInIsolate(CommandExec exec) async {
+  Future<List<Device>> _listSimulators() async {
     try {
-      final result = await exec.run(
+      final result = await _exec.run(
         'xcrun',
         arguments: ['simctl', 'list', 'devices', '-j'],
       );
@@ -53,8 +48,7 @@ class SimctlService implements DeviceService {
       final devices = <Device>[];
 
       for (final entry in devicesMap.entries) {
-        final runtime =
-            entry.key; // e.g., "com.apple.CoreSimulator.SimRuntime.iOS-17-2"
+        final runtime = entry.key;
         final platformName = _extractPlatformName(runtime);
         final deviceList = entry.value as List<dynamic>;
 
@@ -65,7 +59,8 @@ class SimctlService implements DeviceService {
               Device(
                 id: map['udid'] as String,
                 name: map['name'] as String,
-                type: DeviceType.ios,
+                os: Os.ios,
+                type: DeviceType.simulator,
                 platform: platformName,
                 state: DeviceState.fromString(
                   map['state'] as String? ?? 'Shutdown',
@@ -77,28 +72,21 @@ class SimctlService implements DeviceService {
       }
 
       return devices;
-    } catch (_) {
+    } catch (e, st) {
+      print('IOSDeviceService._listSimulators error: $e\n$st');
       return [];
     }
   }
 
   @override
   Future<void> launchDevice(String deviceId, LaunchOptions options) async {
-    await Future.wait([bootSimulator(deviceId), openSimulatorApp()]);
+    await bootSimulator(deviceId);
+    await openSimulatorApp(deviceId);
   }
 
-  /// Boot an iOS simulator by UDID.
   Future<bool> bootSimulator(String udid) async {
-    // simctl boot can take time, run in isolate.
-    return Isolate.run(() => _bootSimulatorInIsolate(_exec, udid));
-  }
-
-  static Future<bool> _bootSimulatorInIsolate(
-    CommandExec exec,
-    String udid,
-  ) async {
     try {
-      final result = await exec.run(
+      final result = await _exec.run(
         'xcrun',
         arguments: ['simctl', 'boot', udid],
       );
@@ -108,12 +96,13 @@ class SimctlService implements DeviceService {
     }
   }
 
-  /// Open the Simulator.app.
-  Future<void> openSimulatorApp() async {
-    await _exec.run('open', arguments: ['-a', 'Simulator']);
+  Future<void> openSimulatorApp(String uuid) async {
+    await _exec.run(
+      'open',
+      arguments: ['-a', 'Simulator', '--args', '-CurrentDeviceUDID', uuid],
+    );
   }
 
-  /// Shutdown an iOS simulator by UDID.
   Future<bool> shutdownSimulator(String udid) async {
     try {
       final result = await _exec.run(
@@ -126,12 +115,10 @@ class SimctlService implements DeviceService {
     }
   }
 
-  /// Extract a human-readable platform name from a runtime identifier.
-  /// e.g., "com.apple.CoreSimulator.SimRuntime.iOS-17-2" -> "iOS 17.2"
   String _extractPlatformName(String runtime) {
     final parts = runtime.split('.');
     if (parts.isEmpty) return runtime;
-    final last = parts.last; // e.g., "iOS-17-2"
+    final last = parts.last;
     return last
         .replaceAll('-', ' ')
         .replaceFirstMapped(
