@@ -3,8 +3,8 @@ import 'package:simutil/components/simutil_theme.dart';
 import 'package:simutil/models/device.dart';
 
 class DeviceDetailPanel extends StatelessComponent {
-
   const DeviceDetailPanel({super.key, this.device, this.focused = false});
+
   final Device? device;
   final bool focused;
 
@@ -27,15 +27,13 @@ class DeviceDetailPanel extends StatelessComponent {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(' Device Info', style: st.sectionHeader),
+        Text('Device Info', style: st.sectionHeader),
         Divider(),
         _row(st, 'Name', device.name),
         _row(st, 'ID', device.id),
         _row(st, 'Platform', device.platform),
         _row(st, 'Type', device.os.name),
         _row(st, 'State', device.state.label),
-        Divider(),
-        Text(' ⏎ Launch  R Refresh  S Settings', style: st.dimmed),
       ],
     );
   }
@@ -49,7 +47,7 @@ class DeviceDetailPanel extends StatelessComponent {
   Component _row(SimutilTheme st, String label, String value) {
     return Row(
       children: [
-        SizedBox(width: 12, child: Text(' $label', style: st.label)),
+        SizedBox(width: 12, child: Text(label, style: st.label)),
         Text(': $value', style: st.body),
       ],
     );

@@ -37,9 +37,11 @@ class _SimutilAppState extends State<SimutilApp> {
 
   List<Device> _androidDevices = [];
   List<Device> _iosDevices = [];
+
   bool _loadingAndroid = true;
   bool _loadingIos = true;
   bool _isRefreshing = false;
+
   String _statusMessage = 'Loading devices…';
 
   int _androidSelectedIndex = 0;
