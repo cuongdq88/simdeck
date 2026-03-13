@@ -20,6 +20,7 @@ import 'package:simutil/models/app_settings.dart';
 import 'package:simutil/models/device.dart';
 import 'package:simutil/models/os.dart';
 import 'package:simutil/services/service_locator.dart';
+import 'package:simutil/utils/constant.dart';
 
 class SimutilApp extends StatefulComponent {
   const SimutilApp({super.key});
@@ -63,7 +64,7 @@ class _SimutilAppState extends State<SimutilApp> {
   }
 
   void _initRefreshTimer() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+    _refreshTimer = Timer.periodic(kReloadInterval, (_) {
       _refreshDevices(silent: true);
     });
   }
@@ -128,42 +129,6 @@ class _SimutilAppState extends State<SimutilApp> {
     }
   }
 
-  @override
-  Component build(BuildContext context) {
-    return TuiTheme(data: _themeData, child: _buildShell(context));
-  }
-
-  Component _buildShell(BuildContext context) {
-    return Focusable(
-      focused: true,
-      onKeyEvent: _handleGlobalKey,
-      child: Column(
-        children: [
-          AppHeader(themeName: _settings.themeName),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(child: _androidPanel()),
-                      Expanded(child: _iosPanel()),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: DeviceDetailPanel(device: _currentSelectedDevice),
-                ),
-              ],
-            ),
-          ),
-          AppStatusBar(message: _statusMessage),
-        ],
-      ),
-    );
-  }
-
   String _buildIdleStatusMessage() {
     final parts = <String>[
       'Launch: <enter>',
@@ -174,48 +139,6 @@ class _SimutilAppState extends State<SimutilApp> {
       'Quit: q',
     ];
     return parts.join(' | ');
-  }
-
-  Component _androidPanel() {
-    final focused = _focusKey == 'android';
-    final st = context.simutilTheme;
-    return Container(
-      decoration: focused
-          ? st.focusedPanel('Android Emulators')
-          : st.unfocusedPanel('Android Emulators'),
-      child: DeviceListComponent(
-        devices: _androidDevices,
-        focused: focused,
-        isLoading: _loadingAndroid,
-        selectedIndex: _androidSelectedIndex,
-        emptyMessage: 'No Android emulators found',
-        onSelectionChanged: (i) => setState(() => _androidSelectedIndex = i),
-        onDeviceLaunch: _onDeviceDefaultLaunch,
-        onDeviceShowOptions: _onDeviceShowOptions,
-      ),
-    );
-  }
-
-  Component _iosPanel() {
-    final st = context.simutilTheme;
-    final focused = _focusKey == 'ios';
-    return Container(
-      decoration: focused
-          ? st.focusedPanel('iOS Simulators')
-          : st.unfocusedPanel('iOS Simulators'),
-      child: DeviceListComponent(
-        devices: _iosDevices,
-        focused: focused,
-        isLoading: _loadingIos,
-        selectedIndex: _iosSelectedIndex,
-        loadingMessage:
-            'Loading iOS simulators...\nFirst load may take a while',
-        emptyMessage: 'No iOS simulators found',
-        onSelectionChanged: (i) => setState(() => _iosSelectedIndex = i),
-        onDeviceLaunch: _onDeviceDefaultLaunch,
-        onDeviceShowOptions: _onDeviceShowOptions,
-      ),
-    );
   }
 
   Device? get _currentSelectedDevice {
@@ -354,14 +277,14 @@ class _SimutilAppState extends State<SimutilApp> {
     final result = await _di.adbService.connectDevice(host);
 
     if (result.success) {
-      await showSuccessDialog(
+      showSuccessDialog(
         context: context,
         title: 'Connected',
         message: result.message,
       );
       await _refreshDevices();
     } else {
-      await showErrorDialog(
+      showErrorDialog(
         context,
         title: 'Connection Failed',
         message: result.message,
@@ -374,18 +297,18 @@ class _SimutilAppState extends State<SimutilApp> {
     try {
       setState(() => _statusMessage = 'Launching ${device.name}…');
       if (device.os == Os.android) {
-        await _di.adbService.launchWithQuickOption(
-          device.id,
-          AndroidQuickLaunchOption.normal,
+        await _di.adbService.launchDevice(
+          deviceId: device.id,
+          additionalArgs: AndroidQuickLaunchOption.normal.args,
         );
       } else {
-        await _di.simctlService.launchDevice(
-          device.id,
-          _settings.defaultLaunchOptions,
-        );
+        await _di.simctlService.launchDevice(deviceId: device.id);
       }
       setState(() => _statusMessage = '${device.name} launched!');
-      Future.delayed(Duration(seconds: 2), () => _refreshDevices(silent: true));
+      Future.delayed(
+        kReloadAfterActionInterval,
+        () => _refreshDevices(silent: true),
+      );
     } catch (e) {
       setState(() => _statusMessage = 'Failed to launch ${device.name}: $e');
     }
@@ -397,10 +320,13 @@ class _SimutilAppState extends State<SimutilApp> {
         final option = await showLaunchDialog(context: context, device: device);
         if (option != null) {
           setState(() => _statusMessage = 'Launching ${device.name}…');
-          await _di.adbService.launchWithQuickOption(device.id, option);
+          await _di.adbService.launchDevice(
+            deviceId: device.id,
+            additionalArgs: option.args,
+          );
           setState(() => _statusMessage = '${device.name} launched!');
           Future.delayed(
-            Duration(seconds: 2),
+            kReloadAfterActionInterval,
             () => _refreshDevices(silent: true),
           );
         }
@@ -410,5 +336,83 @@ class _SimutilAppState extends State<SimutilApp> {
     } catch (e) {
       setState(() => _statusMessage = 'Failed to launch ${device.name}: $e');
     }
+  }
+
+  @override
+  Component build(BuildContext context) {
+    return TuiTheme(data: _themeData, child: _buildShell(context));
+  }
+
+  Component _buildShell(BuildContext context) {
+    return Focusable(
+      focused: true,
+      onKeyEvent: _handleGlobalKey,
+      child: Column(
+        children: [
+          AppHeader(themeName: _settings.themeName),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(child: _androidPanel()),
+                      Expanded(child: _iosPanel()),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: DeviceDetailPanel(device: _currentSelectedDevice),
+                ),
+              ],
+            ),
+          ),
+          AppStatusBar(message: _statusMessage),
+        ],
+      ),
+    );
+  }
+
+  Component _androidPanel() {
+    final focused = _focusKey == 'android';
+    final st = context.simutilTheme;
+    return Container(
+      decoration: focused
+          ? st.focusedPanel('Android Emulators')
+          : st.unfocusedPanel('Android Emulators'),
+      child: DeviceListComponent(
+        devices: _androidDevices,
+        focused: focused,
+        isLoading: _loadingAndroid,
+        selectedIndex: _androidSelectedIndex,
+        emptyMessage: 'No Android emulators found',
+        onSelectionChanged: (i) => setState(() => _androidSelectedIndex = i),
+        onDeviceLaunch: _onDeviceDefaultLaunch,
+        onDeviceShowOptions: _onDeviceShowOptions,
+      ),
+    );
+  }
+
+  Component _iosPanel() {
+    final st = context.simutilTheme;
+    final focused = _focusKey == 'ios';
+    return Container(
+      decoration: focused
+          ? st.focusedPanel('iOS Simulators')
+          : st.unfocusedPanel('iOS Simulators'),
+      child: DeviceListComponent(
+        devices: _iosDevices,
+        focused: focused,
+        isLoading: _loadingIos,
+        selectedIndex: _iosSelectedIndex,
+        loadingMessage:
+            'Loading iOS simulators...\nFirst load may take a while',
+        emptyMessage: 'No iOS simulators found',
+        onSelectionChanged: (i) => setState(() => _iosSelectedIndex = i),
+        onDeviceLaunch: _onDeviceDefaultLaunch,
+        onDeviceShowOptions: _onDeviceShowOptions,
+      ),
+    );
   }
 }

@@ -3,8 +3,8 @@ import 'package:simutil/components/simutil_icons.dart';
 import 'package:simutil/components/simutil_theme.dart';
 
 class AppHeader extends StatelessComponent {
-
   const AppHeader({super.key, required this.themeName});
+
   final String themeName;
 
   @override
@@ -15,9 +15,7 @@ class AppHeader extends StatelessComponent {
       child: Row(
         children: [
           Text(' ${SimutilIcons.on} SimUtil ', style: st.sectionHeader),
-          Expanded(
-            child: Text('Theme: $themeName ', style: st.muted),
-          ),
+          Expanded(child: Text('Theme: $themeName ', style: st.muted)),
         ],
       ),
     );

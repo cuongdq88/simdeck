@@ -1,6 +1,4 @@
-/// Options for launching a simulator/emulator.
 class LaunchOptions {
-
   const LaunchOptions({
     this.noAudio = false,
     this.wipeData = false,
@@ -16,17 +14,13 @@ class LaunchOptions {
       noSnapshot: json['noSnapshot'] as bool? ?? false,
     );
   }
-  /// Launch without audio (Android: `-no-audio`).
+
   final bool noAudio;
 
-  /// Wipe user data before launch (Android: `-wipe-data`).
   final bool wipeData;
 
-  /// GPU acceleration mode (Android: `-gpu <mode>`).
-  /// Values: 'auto', 'host', 'swiftshader_indirect', 'off'.
   final String gpu;
 
-  /// Don't load snapshot on boot (Android: `-no-snapshot-load`).
   final bool noSnapshot;
 
   LaunchOptions copyWith({
@@ -43,7 +37,6 @@ class LaunchOptions {
     );
   }
 
-  /// Convert launch options to emulator CLI arguments.
   List<String> toAndroidArgs() {
     final args = <String>[];
     if (noAudio) args.add('-no-audio');

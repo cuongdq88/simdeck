@@ -4,14 +4,11 @@ import 'dart:io';
 import 'package:simutil/models/device.dart';
 import 'package:simutil/models/device_state.dart';
 import 'package:simutil/models/device_type.dart';
-import 'package:simutil/models/launch_options.dart';
 import 'package:simutil/models/os.dart';
-
 import 'package:simutil/services/command_exec.dart';
 import 'package:simutil/services/device_service.dart';
 
 class IOSDeviceService implements DeviceService {
-
   IOSDeviceService(this._exec);
   final CommandExec _exec;
 
@@ -79,7 +76,10 @@ class IOSDeviceService implements DeviceService {
   }
 
   @override
-  Future<void> launchDevice(String deviceId, LaunchOptions options) async {
+  Future<void> launchDevice({
+    required String deviceId,
+    List<String> additionalArgs = const [],
+  }) async {
     await bootSimulator(deviceId);
     await openSimulatorApp(deviceId);
   }

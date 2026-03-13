@@ -1,12 +1,8 @@
 import 'dart:io';
 
+import 'package:simutil/models/app_settings.dart';
 import 'package:yaml/yaml.dart';
 
-import 'package:simutil/models/app_settings.dart';
-import 'package:simutil/models/launch_options.dart';
-
-/// Service for loading and saving app settings as YAML.
-///
 /// Settings are stored at `~/.simutil/settings.yaml`.
 class SettingsService {
   static String get _settingsPath {
@@ -49,21 +45,8 @@ class SettingsService {
   }
 
   AppSettings _fromYaml(YamlMap yaml) {
-    var options = const LaunchOptions();
-
-    final launchMap = yaml['default_launch_options'];
-    if (launchMap is YamlMap) {
-      options = LaunchOptions(
-        noAudio: launchMap['no_audio'] as bool? ?? false,
-        wipeData: launchMap['wipe_data'] as bool? ?? false,
-        gpu: launchMap['gpu'] as String? ?? 'auto',
-        noSnapshot: launchMap['no_snapshot'] as bool? ?? false,
-      );
-    }
-
     return AppSettings(
       themeName: yaml['theme'] as String? ?? 'dark',
-      defaultLaunchOptions: options,
       lastSelectedDeviceId: yaml['last_selected_device_id'] as String?,
     );
   }
@@ -75,13 +58,7 @@ class SettingsService {
       ..writeln('theme: ${settings.themeName}')
       ..writeln(
         'last_selected_device_id: ${settings.lastSelectedDeviceId ?? "~"}',
-      )
-      ..writeln()
-      ..writeln('default_launch_options:')
-      ..writeln('  no_audio: ${settings.defaultLaunchOptions.noAudio}')
-      ..writeln('  wipe_data: ${settings.defaultLaunchOptions.wipeData}')
-      ..writeln('  gpu: ${settings.defaultLaunchOptions.gpu}')
-      ..writeln('  no_snapshot: ${settings.defaultLaunchOptions.noSnapshot}');
+      );
     return buf.toString();
   }
 }

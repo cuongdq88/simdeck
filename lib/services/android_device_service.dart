@@ -4,7 +4,6 @@ import 'package:simutil/models/android_quick_launch_option.dart';
 import 'package:simutil/models/device.dart';
 import 'package:simutil/models/device_state.dart';
 import 'package:simutil/models/device_type.dart';
-import 'package:simutil/models/launch_options.dart';
 import 'package:simutil/models/os.dart';
 import 'package:simutil/services/command_exec.dart';
 import 'package:simutil/services/device_service.dart';
@@ -110,17 +109,12 @@ class AndroidDeviceService implements DeviceService {
   }
 
   @override
-  Future<void> launchDevice(String deviceId, LaunchOptions options) async {
-    final args = ['@$deviceId', ...options.toAndroidArgs()];
-    await _exec.run(emulatorPath, arguments: args);
-  }
-
-  Future<void> launchWithQuickOption(
-    String deviceId,
-    AndroidQuickLaunchOption option,
-  ) async {
-    final args = ['@$deviceId', ...option.args];
-    await _exec.run(emulatorPath, arguments: args);
+  Future<void> launchDevice({
+    required String deviceId,
+    List<String> additionalArgs = const [],
+  }) async {
+    final launchArgs = ['@$deviceId', ...additionalArgs];
+    await _exec.run(emulatorPath, arguments: launchArgs);
   }
 
   Future<AdbConnectResult> connectDevice(String host) async {

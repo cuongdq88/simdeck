@@ -10,8 +10,8 @@ enum AndroidQuickLaunchOption {
     args: ['-no-snapshot-load', '-no-audio'],
   );
 
+  const AndroidQuickLaunchOption({required this.label, this.args = const []});
+
   final String label;
   final List<String> args;
-
-  const AndroidQuickLaunchOption({required this.label, this.args = const []});
 }
