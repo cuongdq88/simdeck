@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add conditional UI for iOS (only available on macOS)
+
+### Fixed
+
+- Fix UI layout
+- Fix idle message doesn't change when change panel
+
 ## [0.0.1]
 
 ### Added

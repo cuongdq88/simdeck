@@ -16,10 +16,8 @@ class DeviceDetailPanel extends StatelessComponent {
       decoration: focused
           ? st.focusedPanel('Details')
           : st.unfocusedPanel('Details'),
-      child: Padding(
-        padding: EdgeInsets.all(1),
-        child: device != null ? _buildInfo(st, device!) : _buildEmpty(st),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 1),
+      child: device != null ? _buildInfo(st, device!) : _buildEmpty(st),
     );
   }
 
@@ -27,8 +25,6 @@ class DeviceDetailPanel extends StatelessComponent {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Device Info', style: st.sectionHeader),
-        Divider(),
         _row(st, 'Name', device.name),
         _row(st, 'ID', device.id),
         _row(st, 'Platform', device.platform),

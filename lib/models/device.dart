@@ -2,9 +2,7 @@ import 'package:simutil/models/device_state.dart';
 import 'package:simutil/models/device_type.dart';
 import 'package:simutil/models/os.dart';
 
-/// Represents a simulator or emulator device.
 class Device {
-
   const Device({
     required this.id,
     required this.name,
@@ -24,25 +22,19 @@ class Device {
       type: DeviceType.values.byName(json['type'] as String),
     );
   }
-  /// Unique identifier (AVD name for Android, UDID for iOS).
+
   final String id;
 
-  /// Human-readable display name.
   final String name;
 
-  /// Whether this is an Android or iOS device.
   final Os os;
 
-  /// Platform/OS version info (e.g., "Android 14", "iOS 17.2").
   final String platform;
 
-  /// Device type (physical or simulator).
   final DeviceType type;
 
-  /// Current device state.
   final DeviceState state;
 
-  /// Whether the device is currently running.
   bool get isRunning => state.isRunning;
 
   Device copyWith({
@@ -60,7 +52,6 @@ class Device {
       platform: platform ?? this.platform,
       state: state ?? this.state,
       type: type ?? this.type,
-
     );
   }
 

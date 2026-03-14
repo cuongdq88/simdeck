@@ -127,7 +127,6 @@ class _DeviceRow extends StatelessComponent {
     final st = SimutilTheme.of(context);
     final stateIcon = device.isRunning ? SimutilIcons.on : SimutilIcons.off;
     final stateStyle = device.isRunning ? st.statusRunning : st.statusStopped;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -135,7 +134,7 @@ class _DeviceRow extends StatelessComponent {
         Expanded(
           child: Text(device.name, style: isSelected ? st.selected : st.body),
         ),
-        Text(' ${device.platform} ', style: st.muted),
+        Text('${device.platform} ', style: st.muted),
         Text('${device.state.label} ', style: stateStyle),
       ],
     );

@@ -5,15 +5,6 @@ import 'dart:isolate';
 import 'package:simutil/models/isolate_message.dart';
 import 'package:simutil/services/command_exec.dart';
 
-/// Manages a single long-lived background isolate that executes CLI commands.
-///
-/// Usage:
-/// ```dart
-/// final runner = IsolateRunner();
-/// await runner.init();
-/// final result = await runner.execute('adb', ['devices']);
-/// await runner.dispose();
-/// ```
 class IsolateRunner {
   Isolate? _isolate;
   SendPort? _sendPort;
@@ -21,32 +12,20 @@ class IsolateRunner {
 
   int _nextId = 0;
 
-  /// Pending requests waiting for a response, keyed by request id.
   final _pending = <int, Completer<CommandResult>>{};
 
-  /// Whether the runner has been initialised and is ready to accept work.
   bool get isReady => _sendPort != null;
 
-  // ── Lifecycle ──────────────────────────────────────────────────
-
-  /// Spawn the background isolate and establish communication.
-  ///
-  /// Must be called once before [execute]. Safe to call multiple times;
-  /// subsequent calls are no-ops if the isolate is already running.
   Future<void> init() async {
     if (_isolate != null) return;
 
     _receivePort = ReceivePort();
-    _isolate = await Isolate.spawn(
-      _isolateEntryPoint,
-      _receivePort!.sendPort,
-    );
+    _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort!.sendPort);
 
     final completer = Completer<SendPort>();
 
     _receivePort!.listen((message) {
       if (message is SendPort) {
-        // The background isolate sends its SendPort as the first message.
         completer.complete(message);
       } else if (message is IsolateResponse) {
         _handleResponse(message);
@@ -56,10 +35,6 @@ class IsolateRunner {
     _sendPort = await completer.future;
   }
 
-  /// Execute a CLI command on the background isolate.
-  ///
-  /// Returns a [CommandResult] when the process finishes.
-  /// Throws if the background isolate reported an error.
   Future<CommandResult> execute(
     String executable,
     List<String> arguments, {
@@ -84,7 +59,6 @@ class IsolateRunner {
     return completer.future;
   }
 
-  /// Shut down the background isolate and clean up resources.
   Future<void> dispose() async {
     if (_sendPort != null) {
       _sendPort!.send(
@@ -96,7 +70,6 @@ class IsolateRunner {
       );
     }
 
-    // Complete any pending futures with an error so callers don't hang.
     for (final completer in _pending.values) {
       if (!completer.isCompleted) {
         completer.completeError(
@@ -112,8 +85,6 @@ class IsolateRunner {
     _sendPort = null;
     _receivePort = null;
   }
-
-  // ── Internal ───────────────────────────────────────────────────
 
   void _handleResponse(IsolateResponse response) {
     final completer = _pending.remove(response.id);
@@ -132,13 +103,9 @@ class IsolateRunner {
     }
   }
 
-  // ── Background isolate entry point ─────────────────────────────
-
-  /// Runs inside the background isolate. Listens for [IsolateRequest]s
-  /// and sends back [IsolateResponse]s.
   static void _isolateEntryPoint(SendPort mainSendPort) {
     final receivePort = ReceivePort();
-    // Send our SendPort back to the main isolate.
+
     mainSendPort.send(receivePort.sendPort);
 
     receivePort.listen((message) async {
@@ -165,12 +132,7 @@ class IsolateRunner {
           ),
         );
       } catch (e) {
-        mainSendPort.send(
-          IsolateResponse(
-            id: message.id,
-            error: e.toString(),
-          ),
-        );
+        mainSendPort.send(IsolateResponse(id: message.id, error: e.toString()));
       }
     });
   }

@@ -116,14 +116,12 @@ class _SimutilAppState extends State<SimutilApp> {
         _iosDevices = results[1];
         _loadingAndroid = false;
         _loadingIos = false;
-        _androidSelectedIndex = _androidSelectedIndex.clamp(
-          0,
-          (_androidDevices.length - 1).clamp(0, 999),
-        );
-        _iosSelectedIndex = _iosSelectedIndex.clamp(
-          0,
-          (_iosDevices.length - 1).clamp(0, 999),
-        );
+        _androidSelectedIndex = _androidDevices.isEmpty
+            ? 0
+            : _androidSelectedIndex.clamp(0, _androidDevices.length - 1);
+        _iosSelectedIndex = _iosDevices.isEmpty
+            ? 0
+            : _iosSelectedIndex.clamp(0, _iosDevices.length - 1);
         _statusMessage = _buildIdleStatusMessage();
       });
     } finally {
@@ -132,10 +130,26 @@ class _SimutilAppState extends State<SimutilApp> {
   }
 
   String _buildIdleStatusMessage() {
+    return _focusKey == 'android'
+        ? _buildIdleStatusMessageForAndroid()
+        : _buildIdleStatusMessageForIos();
+  }
+
+  String _buildIdleStatusMessageForIos() {
+    final parts = <String>[
+      'Launch: <enter> or <space>',
+      'Refresh: r',
+      'Switch: <tab>',
+      'Quit: q',
+    ];
+    return parts.join(' | ');
+  }
+
+  String _buildIdleStatusMessageForAndroid() {
     final parts = <String>[
       'Launch: <enter>',
       'Options: <space>',
-      if (_focusKey == 'android') 'ADB Tools: n',
+      'ADB Tools: n',
       'Refresh: r',
       'Switch: <tab>',
       'Quit: q',
@@ -163,6 +177,7 @@ class _SimutilAppState extends State<SimutilApp> {
             'android' => 'ios',
             _ => 'android',
           };
+          _statusMessage = _buildIdleStatusMessage();
         });
         return true;
       case LogicalKey.keyR:
@@ -399,6 +414,21 @@ class _SimutilAppState extends State<SimutilApp> {
   Component _iosPanel() {
     final st = context.simutilTheme;
     final focused = _focusKey == 'ios';
+    final isSupported = Platform.isMacOS;
+    if (!isSupported) {
+      return Container(
+        decoration: focused
+            ? st.focusedPanel('iOS Simulators')
+            : st.unfocusedPanel('iOS Simulators'),
+        child: Center(
+          child: Text(
+            'iOS simulators are only supported on macOS',
+            style: st.dimmed,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
     return Container(
       decoration: focused
           ? st.focusedPanel('iOS Simulators')
