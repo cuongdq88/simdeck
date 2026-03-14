@@ -1,5 +1,4 @@
 import 'package:simutil/models/app_settings.dart';
-import 'package:simutil/models/launch_options.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -40,7 +40,7 @@ class SimutilTheme {
 
   TextStyle get errorStyle => TextStyle(color: error);
 
-  TextStyle get muted => TextStyle(color: outlineVariant);
+  TextStyle get muted => TextStyle(color: outline);
 
   TextStyle get statusRunning => TextStyle(color: success);
 

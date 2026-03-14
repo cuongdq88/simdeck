@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:simutil/models/device.dart';
@@ -70,7 +71,7 @@ class IOSDeviceService implements DeviceService {
 
       return devices;
     } catch (e, st) {
-      print('IOSDeviceService._listSimulators error: $e\n$st');
+      log('IOSDeviceService._listSimulators error: $e\n$st');
       return [];
     }
   }

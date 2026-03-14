@@ -1,6 +1,6 @@
+import 'dart:developer';
 import 'dart:io';
 
-import 'package:simutil/models/android_quick_launch_option.dart';
 import 'package:simutil/models/device.dart';
 import 'package:simutil/models/device_state.dart';
 import 'package:simutil/models/device_type.dart';
@@ -65,7 +65,7 @@ class AndroidDeviceService implements DeviceService {
         );
       }).toList();
     } catch (e, st) {
-      print('AndroidDeviceService._listEmulators error: $e\n$st');
+      log('AndroidDeviceService._listEmulators error: $e\n$st');
       return [];
     }
   }
