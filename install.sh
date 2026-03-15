@@ -14,10 +14,10 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 RESET='\033[0m'
 
-info()    { echo -e "${CYAN}[info]${RESET}  $*"; }
-success() { echo -e "${GREEN}[✔]${RESET}    $*"; }
-warn()    { echo -e "${YELLOW}[warn]${RESET}  $*"; }
-error()   { echo -e "${RED}[✘]${RESET}    $*"; exit 1; }
+info()    { echo -e "${CYAN}[info]${RESET}  $*" >&2; }
+success() { echo -e "${GREEN}[✔]${RESET}    $*" >&2; }
+warn()    { echo -e "${YELLOW}[warn]${RESET}  $*" >&2; }
+error()   { echo -e "${RED}[✘]${RESET}    $*" >&2; exit 1; }
 
 detect_os() {
   local os
@@ -46,8 +46,8 @@ resolve_version() {
   if [ "$version" = "latest" ]; then
     info "Resolving latest release..."
     version=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
-      | grep '"tag_name"' \
-      | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')
+      | grep -m 1 '"tag_name":' \
+      | cut -d '"' -f 4)
 
     if [ -z "$version" ]; then
       error "Could not determine the latest release. Check https://github.com/$REPO/releases"
@@ -62,9 +62,9 @@ install() {
   local arch="$2"
   local version="$3"
 
-  local ext=""
+  local ext=".tar.gz"
   if [ "$os" = "windows" ]; then
-    ext=".exe"
+    ext=".zip"
   fi
 
   local asset_name="${BINARY_NAME}-${os}-${arch}${ext}"
@@ -74,18 +74,51 @@ install() {
   info "Version:  ${BOLD}${version}${RESET}"
   info "Downloading ${BOLD}${asset_name}${RESET}..."
 
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  local tmp_file="${tmp_dir}/${asset_name}"
+
   # Create install directory
   mkdir -p "$INSTALL_DIR"
 
-  local target_path="${INSTALL_DIR}/${BINARY_NAME}${ext}"
-
   # Download
   local http_code
-  http_code=$(curl -fsSL -w "%{http_code}" -o "$target_path" "$download_url" 2>&1) || true
+  http_code=$(curl -fsSL -w "%{http_code}" -o "$tmp_file" "$download_url" 2>&1) || true
 
-  if [ ! -f "$target_path" ] || [ ! -s "$target_path" ]; then
-    rm -f "$target_path"
+  if [ ! -f "$tmp_file" ] || [ ! -s "$tmp_file" ]; then
+    rm -rf "$tmp_dir"
     error "Download failed. URL: $download_url\n       Make sure release $version exists with asset $asset_name."
+  fi
+
+  info "Extracting..."
+  if [ "$os" = "windows" ]; then
+    unzip -q -o "$tmp_file" -d "$INSTALL_DIR" || {
+      rm -rf "$tmp_dir"
+      error "Failed to extract $tmp_file"
+    }
+  else
+    tar -xzf "$tmp_file" -C "$INSTALL_DIR" || {
+      rm -rf "$tmp_dir"
+      error "Failed to extract $tmp_file"
+    }
+  fi
+
+  rm -rf "$tmp_dir"
+
+  local extracted_file="${INSTALL_DIR}/${BINARY_NAME}-${os}-${arch}"
+  local target_path="${INSTALL_DIR}/${BINARY_NAME}"
+
+  if [ "$os" = "windows" ]; then
+    target_path="${target_path}.exe"
+    if [ -f "${extracted_file}.exe" ]; then
+      extracted_file="${extracted_file}.exe"
+    fi
+  fi
+
+  if [ -f "$extracted_file" ]; then
+    mv "$extracted_file" "$target_path"
+  else
+    error "Could not find expected binary '$extracted_file' after extraction."
   fi
 
   # Make executable (skip on Windows)
