@@ -1,8 +1,6 @@
 name: Deploy to pub.dev
 
 on:
-  release:
-    types: [published]
   workflow_call:
   workflow_dispatch:
 
@@ -23,6 +21,9 @@ jobs:
 
       - name: Install dependencies
         run: dart pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Publish to pub.dev
         run: dart pub publish --force
