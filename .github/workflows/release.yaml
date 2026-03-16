@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   build:
@@ -99,3 +100,21 @@ jobs:
             artifacts/checksums.txt
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+  deploy-pub-dev:
+    name: Deploy to pub.dev
+    needs: release
+    uses: ./.github/workflows/deploy-pub-dev.yaml
+    secrets: inherit
+
+  deploy-homebrew:
+    name: Deploy to Homebrew
+    needs: release
+    uses: ./.github/workflows/deploy-homebrew.yaml
+    secrets: inherit
+
+  deploy-winget:
+    name: Deploy to WinGet
+    needs: release
+    uses: ./.github/workflows/deploy-winget.yaml
+    secrets: inherit
