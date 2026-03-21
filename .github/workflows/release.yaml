@@ -83,20 +83,10 @@ jobs:
           sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
-      - name: Extract changelog
-        id: changelog
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          CHANGELOG=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
-          echo "content<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Create Draft GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          body: ${{ steps.changelog.outputs.content }}
-          generate_release_notes: false
+          generate_release_notes: true
           token: ${{ secrets.GH_PAT }}
           files: |
             artifacts/*.tar.gz
