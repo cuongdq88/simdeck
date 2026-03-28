@@ -167,9 +167,17 @@ class IOSDeviceService implements DeviceService {
       final map = d as Map<String, dynamic>;
       final deviceProps =
           map['deviceProperties'] as Map<String, dynamic>? ?? {};
+      final connectionProps =
+          map['connectionProperties'] as Map<String, dynamic>? ?? {};
       final identifier = map['identifier'] as String? ?? '';
       final name = deviceProps['name'] as String? ?? '';
       final osVersion = deviceProps['osVersionNumber'] as String? ?? '';
+      final tunnelState = connectionProps['tunnelState'] as String?;
+      final isConnected = ![
+        'unavailable',
+        'disconnected',
+      ].contains(tunnelState);
+      if (!isConnected) continue;
       devices.add(
         Device.ios(
           id: identifier,
