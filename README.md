@@ -1,3 +1,6 @@
+<p align="center">
+  <img src="art/simutil.png" alt="SimUtil" width="200" />
+</p>
 <h1 align="center">SimUtil</h1>
 
 <p align="center">
