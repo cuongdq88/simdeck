@@ -1,10 +1,13 @@
-<h1 align="center">Simutil</h1>
+<h1 align="center">SimUtil</h1>
 
 <p align="center">
   <strong>A terminal UI for launching Android Emulators / iOS Simulators</strong><br>
   <strong>Launch, connect, manage your devices and more — all from the terminal</strong>
 </p>
 
+<p align="center">
+  <a href="https://www.producthunt.com/products/simutil?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-simutil" target="_blank" rel="noopener noreferrer"><img alt="SimUtil - Terminal UI for iOS Simulators and Android Emulators | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1111003&amp;theme=light&amp;t=1774974338508"></a>
+</p>
 <p align="center">
   <img src="https://img.shields.io/github/stars/dungngminh/simutil" alt="GitHub Repo stars" />
   <a href="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml"><img src="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml/badge.svg" alt="Build" /></a>
