@@ -72,7 +72,7 @@ simutil
 
 - [x] macOS
 - [x] Linux
-- [ ] Windows
+- [x] Windows
 
 
 ## Contributing
