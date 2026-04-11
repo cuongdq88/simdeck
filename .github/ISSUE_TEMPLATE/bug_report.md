@@ -8,6 +8,12 @@ labels: bug
 **Description**
 A clear and concise description of what the bug is.
 
+**Environment**
+
+- Shell: [e.g. zsh, bash, fish]
+- OS: [e.g. macOS, Linux, Windows]
+- Version: [e.g. 0.4.1]
+
 **Steps To Reproduce**
 
 1. Go to '...'
