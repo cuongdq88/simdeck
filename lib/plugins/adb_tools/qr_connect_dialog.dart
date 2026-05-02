@@ -22,7 +22,7 @@ class _QrConnectDialogState extends State<QrConnectDialog> {
       child: Container(
         width: 100,
         margin: EdgeInsets.all(4),
-        decoration: st.dialogPanel('QR Code Pairing'),
+        decoration: st.dialogPanel('Pairing with QR Code'),
         child: Padding(
           padding: EdgeInsets.all(1),
           child: Focusable(

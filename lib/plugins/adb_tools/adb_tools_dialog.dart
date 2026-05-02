@@ -10,13 +10,13 @@ enum AdbToolOption {
     label: 'Connect via IP',
     description: 'Connect to already-paired device (e.g., 192.168.1.100:5555)',
   ),
-  connectViaPairCode(
-    label: 'Connect via Pair Code',
-    description: 'Pair with 6-digit code (Android 11+)',
+  pairWithPairingCode(
+    label: 'Pair using Pairing Code',
+    description: 'Pair using pairing code for wireless debugging (Android 11+)',
   ),
-  connectViaQr(
-    label: 'Connect via QR Code',
-    description: 'Scan QR code for wireless debugging (Android 11+)',
+  pairWithQrCode(
+    label: 'Pair using QR Code',
+    description: 'Pair using QR code for wireless debugging (Android 11+)',
   );
 
   const AdbToolOption({required this.label, required this.description});
