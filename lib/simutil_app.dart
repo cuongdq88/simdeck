@@ -16,10 +16,13 @@ import 'package:simutil/models/android_quick_launch_option.dart';
 import 'package:simutil/models/app_settings.dart';
 import 'package:simutil/models/device.dart';
 import 'package:simutil/models/device_os.dart';
+import 'package:simutil/models/plugin_config.dart';
 import 'package:simutil/plugins/adb_tools/adb_tools_dialog.dart';
 import 'package:simutil/plugins/adb_tools/qr_connect_dialog.dart';
 import 'package:simutil/plugins/adb_tools/wireless_pairing/wireless_pairing_dialog.dart';
 import 'package:simutil/plugins/logcat/logcat_dialog.dart';
+import 'package:simutil/plugins/registry/command_menu_dialog.dart';
+import 'package:simutil/plugins/registry/plugin_menu_dialog.dart';
 import 'package:simutil/services/service_locator.dart';
 import 'package:simutil/utils/constant.dart';
 
@@ -77,6 +80,7 @@ class _SimutilAppState extends State<SimutilApp> {
   Future<void> _initApp() async {
     await _di.init();
     _loadSettings();
+    await _di.pluginRegistry.load();
     await _refreshDevices();
     _initRefreshTimer();
   }
@@ -243,12 +247,14 @@ class _SimutilAppState extends State<SimutilApp> {
 
   String _buildIdleStatusMessageForIosSimulators() {
     if (_iosSimulators.isEmpty) {
-      return 'ADB Tools: n | Refresh: r | Switch: <tab> | Quit: q';
+      return 'Edit config: e | ADB Tools: n | Refresh: r | Switch: <tab> | Quit: q';
     }
     final device = _iosSimulators[_iosSimulatorSelectedIndex];
     final parts = <String>[
       'Launch: <space> or <enter>',
       if (device.isRunning) 'Shutdown: t',
+      'Plugins: p',
+      'Edit config: e',
       'ADB Tools: n',
       'Refresh: r',
       'Switch: <tab>',
@@ -259,6 +265,8 @@ class _SimutilAppState extends State<SimutilApp> {
 
   String _buildIdleStatusMessageForIos() {
     final parts = <String>[
+      'Plugins: p',
+      'Edit config: e',
       'ADB Tools: n',
       'Refresh: r',
       'Switch: <tab>',
@@ -269,7 +277,7 @@ class _SimutilAppState extends State<SimutilApp> {
 
   String _buildIdleStatusMessageForAndroidEmulators() {
     if (_androidEmulators.isEmpty) {
-      return 'ADB Tools: n | Refresh: r | Switch: <tab> | Quit: q';
+      return 'Edit config: e | ADB Tools: n | Refresh: r | Switch: <tab> | Quit: q';
     }
     final device = _androidEmulators[_androidEmulatorSelectedIndex];
     final parts = <String>[
@@ -277,6 +285,8 @@ class _SimutilAppState extends State<SimutilApp> {
       'Launch with option: <enter>',
       if (device.isRunning) 'Shutdown: t',
       if (device.isRunning) 'Logcat: l',
+      'Plugins: p',
+      'Edit config: e',
       'ADB Tools: n',
       'Refresh: r',
       'Switch: <tab>',
@@ -287,7 +297,9 @@ class _SimutilAppState extends State<SimutilApp> {
 
   String _buildIdleStatusMessageForAndroidDevices() {
     final parts = <String>[
+      'Plugins: p',
       'Logcat: l',
+      'Edit config: e',
       'ADB Tools: n',
       'Refresh: r',
       'Switch: <tab>',
@@ -338,12 +350,22 @@ class _SimutilAppState extends State<SimutilApp> {
       case LogicalKey.keyN:
         _showAdbTools();
         return true;
-      case LogicalKey.keyS:
+      case LogicalKey.keyP:
+        _showPluginMenu();
+        return true;
+      case LogicalKey.keyE:
+        _openSettingsFile();
         return true;
       case LogicalKey.keyQ:
         shutdownApp();
         return true;
       default:
+        final character = event.character;
+        if (character != null &&
+            character.length == 1 &&
+            !event.modifiers.hasAnyModifier) {
+          return _handlePluginShortcut(character);
+        }
         return false;
     }
   }
@@ -505,6 +527,89 @@ class _SimutilAppState extends State<SimutilApp> {
       device: device,
       adbPath: _di.adbService.adbPath,
     );
+  }
+
+  bool _handlePluginShortcut(String key) {
+    final device = _currentSelectedDevice;
+    final commandRef = _di.pluginRegistry.commandByShortcut(key, device);
+    if (commandRef != null) {
+      _runPluginCommand(commandRef.plugin, commandRef.command, device);
+      return true;
+    }
+    final plugin = _di.pluginRegistry.pluginByShortcut(key, device);
+    if (plugin != null) {
+      _openCommandMenuForPlugin(plugin, device);
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _openSettingsFile() async {
+    await _di.settingsService.openInEditor();
+    if (!mounted) return;
+    setState(
+      () => _statusMessage =
+          'Opened ${_di.settingsService.configFilePath} (changes apply on restart)',
+    );
+  }
+
+  Future<void> _showPluginMenu() async {
+    final device = _currentSelectedDevice;
+    final plugins = _di.pluginRegistry.pluginsForDevice(device);
+    if (plugins.isEmpty) {
+      setState(() => _statusMessage = 'No plugins available for this device');
+      return;
+    }
+
+    final plugin = await showPluginMenuDialog(
+      context: context,
+      plugins: plugins,
+    );
+    if (plugin == null) return;
+
+    await _openCommandMenuForPlugin(plugin, device);
+  }
+
+  Future<void> _openCommandMenuForPlugin(
+    PluginConfig plugin,
+    Device? device,
+  ) async {
+    final commands = plugin.commandsFor(device);
+    if (commands.isEmpty) {
+      setState(
+        () => _statusMessage = 'No commands available for ${plugin.label}',
+      );
+      return;
+    }
+
+    final command = await showCommandMenuDialog(
+      context: context,
+      title: plugin.label,
+      commands: commands,
+    );
+    if (command == null) return;
+
+    await _runPluginCommand(plugin, command, device);
+  }
+
+  Future<void> _runPluginCommand(
+    PluginConfig plugin,
+    PluginCommandConfig command,
+    Device? device,
+  ) async {
+    setState(() => _statusMessage = 'Checking ${command.label}…');
+    final available = await _di.pluginRunner.isAvailable(plugin, command);
+    if (!available) {
+      setState(
+        () => _statusMessage =
+            '${command.command} not found. Please install it first.',
+      );
+      return;
+    }
+
+    setState(() => _statusMessage = 'Launching ${command.label}…');
+    final result = await _di.pluginRunner.run(command, device);
+    setState(() => _statusMessage = result.message);
   }
 
   @override

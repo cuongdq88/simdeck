@@ -7,9 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-26
+
+### Added
+
+- Add custom plugin support via the `plugins:` section of `~/.simutil/settings.yaml`: register external shell-command tools (each with one or more commands) and run them from the app with `p` (plugin → command → execute) or a direct command shortcut, without changing code.
+- Add `e` key to open `~/.simutil/settings.yaml` in the OS default editor (macOS, Linux, Windows).
+
+### Changed
+
+- Route plugin availability probes through `CommandExec` instead of calling `Process.run` directly.
+- Merge plugin configuration into `~/.simutil/settings.yaml` (settings scalars + `plugins:` section in one file).
+- Migrate the built-in scrcpy integration to the YAML plugin registry (a default config with scrcpy is generated on first launch).
+
 ### Fixed
 
 - Prevent device refresh from hanging forever when a simulator or device lookup stalls.
+- Fix `Device.fromJson` reading the `os` field from the wrong key, which made deserialization always throw.
 
 ## [0.5.0] - 2026-05-02
 
