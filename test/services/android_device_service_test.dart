@@ -39,6 +39,64 @@ void main() {
       expect(svc.adbPath, adbPath);
       expect(svc.emulatorPath, emulatorPath);
     });
+
+    test('prefers ANDROID_HOME when set', () {
+      final svc = AndroidDeviceService(
+        FakeCommandExec((_, _) => null),
+        environment: {'ANDROID_HOME': '/opt/android-sdk', 'HOME': '/home/test'},
+        fileExists: (path) => path == '/opt/android-sdk/platform-tools/adb',
+      );
+
+      expect(svc.getAndroidHome(), '/opt/android-sdk');
+      expect(svc.adbPath, '/opt/android-sdk/platform-tools/adb');
+    });
+
+    test('lets androidHomeOverride win over injected environment values', () {
+      final overrideDir = Directory.systemTemp.createTempSync(
+        'simutil_override_',
+      );
+      addTearDown(() => overrideDir.deleteSync(recursive: true));
+
+      final overrideAdb = '${overrideDir.path}/platform-tools/adb';
+      File(overrideAdb)
+        ..createSync(recursive: true)
+        ..writeAsStringSync('#!/bin/sh\n');
+
+      final svc = AndroidDeviceService(
+        FakeCommandExec((_, _) => null),
+        androidHomeOverride: overrideDir.path,
+        environment: {
+          'ANDROID_HOME': '/opt/android-sdk',
+          'ANDROID_SDK_ROOT': '/opt/android-sdk-root',
+          'HOME': '/home/test',
+        },
+      );
+
+      expect(svc.getAndroidHome(), overrideDir.path);
+      expect(svc.adbPath, overrideAdb);
+    });
+
+    test('falls back to Linux SDK path when adb exists there', () {
+      final svc = AndroidDeviceService(
+        FakeCommandExec((_, _) => null),
+        environment: {'HOME': '/home/test'},
+        fileExists: (path) =>
+            path == '/home/test/Android/Sdk/platform-tools/adb',
+      );
+
+      expect(svc.getAndroidHome(), '/home/test/Android/Sdk');
+      expect(svc.adbPath, '/home/test/Android/Sdk/platform-tools/adb');
+    });
+
+    test('falls back to adb on PATH when SDK adb is missing', () {
+      final svc = AndroidDeviceService(
+        FakeCommandExec((_, _) => null),
+        environment: {'HOME': '/home/test'},
+        fileExists: (_) => false,
+      );
+
+      expect(svc.adbPath, 'adb');
+    });
   });
 
   group('getSimulators', () {
@@ -52,7 +110,9 @@ void main() {
             'List of devices attached\nemulator-5554\tdevice\n',
           );
         }
-        if (command == adbPath && args.contains('avd') && args.contains('name')) {
+        if (command == adbPath &&
+            args.contains('avd') &&
+            args.contains('name')) {
           return FakeCommandExec.ok('Pixel_7\nOK\n');
         }
         return null;
@@ -98,6 +158,51 @@ void main() {
       expect(devices.single.name, 'Pixel 6a');
       expect(devices.single.type, DeviceType.physical);
       expect(devices.single.state, DeviceState.booted);
+    });
+
+    test('maps non-ready adb states to booting', () async {
+      final exec = FakeCommandExec((command, args) {
+        if (command == adbPath && args.join(' ') == 'devices -l') {
+          return FakeCommandExec.ok(
+            'List of devices attached\n'
+            'ABC123 device product:foo model:Pixel_8 device:husky\n'
+            'DEF456 unauthorized\n'
+            'GHI789 offline\n'
+            'JKL012 recovery\n'
+            'MNO345 sideload\n',
+          );
+        }
+        return null;
+      });
+
+      final devices = await service(exec).getPhysicalDevices();
+
+      expect(devices, hasLength(5));
+      expect(devices[0].name, 'Pixel 8');
+      expect(devices[0].state, DeviceState.booted);
+      expect(devices[1].state, DeviceState.booting);
+      expect(devices[2].state, DeviceState.booting);
+      expect(devices[3].state, DeviceState.booting);
+      expect(devices[4].state, DeviceState.booting);
+    });
+
+    test('skips adb no permissions rows', () async {
+      final exec = FakeCommandExec((command, args) {
+        if (command == adbPath && args.join(' ') == 'devices -l') {
+          return FakeCommandExec.ok(
+            'List of devices attached\n'
+            'ABC123                 device product:bluejay model:Pixel_6a device:bluejay\n'
+            'usb:1-4.4 no permissions (user in plugdev group; are your udev rules wrong?)\n',
+          );
+        }
+        return null;
+      });
+
+      final devices = await service(exec).getPhysicalDevices();
+
+      expect(devices, hasLength(1));
+      expect(devices.single.id, 'ABC123');
+      expect(devices.single.name, 'Pixel 6a');
     });
   });
 
@@ -249,10 +354,9 @@ void main() {
     test('prefixes the avd id with @ and appends extra args', () async {
       final exec = FakeCommandExec((_, _) => FakeCommandExec.ok());
 
-      await service(exec).launchDevice(
-        deviceId: 'Pixel_7',
-        additionalArgs: ['-no-audio'],
-      );
+      await service(
+        exec,
+      ).launchDevice(deviceId: 'Pixel_7', additionalArgs: ['-no-audio']);
 
       expect(exec.calls.single.command, emulatorPath);
       expect(exec.calls.single.arguments, ['@Pixel_7', '-no-audio']);
@@ -263,9 +367,9 @@ void main() {
     test('issues emu kill and mirrors success', () async {
       final exec = FakeCommandExec((_, _) => FakeCommandExec.ok());
 
-      final result = await service(exec).shutdownSimulator(
-        deviceId: 'emulator-5554',
-      );
+      final result = await service(
+        exec,
+      ).shutdownSimulator(deviceId: 'emulator-5554');
 
       expect(result, isTrue);
       expect(exec.calls.single.arguments, [
