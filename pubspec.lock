@@ -373,10 +373,10 @@ packages:
     dependency: "direct main"
     description:
       name: nocterm
-      sha256: "7569e6368b41a84c9c594c292d1b51c996dad95d55207083618b2c7af24112d0"
+      sha256: "240efc18c483f1d727bb7cdf8712f703e1fc8f8ae59fe9547b5b63b08ec0c0dc"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.0"
+    version: "0.8.0"
   node_preamble:
     dependency: transitive
     description:
