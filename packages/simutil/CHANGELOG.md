@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** device services, `CommandExec`, and plugin registry now live under `package:simutil_*` imports instead of `package:simutil/services/...`.
-- TUI still uses `IsolateCommandExec`; CLI uses `CommandExecImpl`.
+- The TUI runs shell commands through `CommandExec.isolate(...)` (background isolate); the CLI uses `CommandExec()`.
 
 ## [0.9.0] - 2026-09-25
 

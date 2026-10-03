@@ -20,7 +20,7 @@ const List<ChangelogEntry> changelogEntries = [
       'Split headless APIs into workspace packages: `simutil_core`, `simutil_adb`, `simutil_apple`, and `simutil_plugins` (all `1.0.0`).',
       'CLI subcommands: `list`/`ls`, `launch`/`start`, `shutdown`/`stop`, and `plugin list` / `plugin run` with short flags (`-a`, `-i`, `-e`, `-p`, `-r`, `-c`, `--no-audio`, `-d`).',
       '**Breaking:** device services, `CommandExec`, and plugin registry now live under `package:simutil_*` imports instead of `package:simutil/services/...`.',
-      'TUI still uses `IsolateCommandExec`; CLI uses `CommandExecImpl`.',
+      'The TUI runs shell commands through `CommandExec.isolate(...)` (background isolate); the CLI uses `CommandExec()`.',
     ],
   ),
   ChangelogEntry(
