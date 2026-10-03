@@ -42,6 +42,15 @@ void main() {
       expect(result.success, isFalse);
     });
 
+    test('closes stdin so commands reading it see EOF', () async {
+      final result = await CommandExec().run(
+        'cat',
+        timeout: const Duration(seconds: 5),
+      );
+
+      expect(result.success, isTrue);
+    }, testOn: '!windows');
+
     test('kills the process and throws on timeout', () async {
       final exec = CommandExec();
 

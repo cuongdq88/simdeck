@@ -64,6 +64,8 @@ class _ProcessCommandExec implements CommandExec {
       arguments,
       workingDirectory: workingDirectory,
     );
+    // Match Process.run: the child sees EOF on stdin instead of hanging.
+    unawaited(process.stdin.close());
     final stdout = process.stdout.transform(systemEncoding.decoder).join();
     final stderr = process.stderr.transform(systemEncoding.decoder).join();
     final exitCode = timeout == null

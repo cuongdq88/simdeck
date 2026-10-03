@@ -129,6 +129,8 @@ class IsolateRunner {
           message.arguments,
           workingDirectory: message.workingDirectory,
         );
+        // Match Process.run: the child sees EOF on stdin instead of hanging.
+        unawaited(process.stdin.close());
         final stdoutFuture = process.stdout
             .transform(SystemEncoding().decoder)
             .join();

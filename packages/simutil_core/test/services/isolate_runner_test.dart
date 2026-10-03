@@ -15,6 +15,20 @@ void main() {
     expect(runner.isReady, isFalse);
   });
 
+  test('execute closes stdin so commands reading it see EOF', () async {
+    final runner = IsolateRunner();
+    await runner.init();
+
+    final result = await runner.execute(
+      'cat',
+      const [],
+      timeout: const Duration(seconds: 5),
+    );
+
+    expect(result.success, isTrue);
+    await runner.dispose();
+  }, testOn: '!windows');
+
   test(
     'execute runs a command in the isolate and returns its result',
     () async {
