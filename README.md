@@ -118,7 +118,7 @@ dart pub global activate simutil
 git clone https://github.com/dungngminh/simutil.git
 cd simutil
 dart pub get
-dart pub global activate --source path .
+dart pub global activate --source path packages/simutil
 ```
 
 Then run:
@@ -139,15 +139,53 @@ SimUtil itself runs on macOS, Linux, and Windows. Feature support depends on the
 
 iOS support depends on Apple’s tools (`xcrun simctl` for simulators, `xcrun devicectl` for physical devices), which are only available on macOS. On Xcode 27+, launching a simulator opens DeviceHub.app; earlier Xcode versions still open Simulator.app. On Linux and Windows, the iOS panels indicate they are not supported; Android launch, ADB tools, Logcat, and plugins still work.
 
+## CLI
+
+With arguments, `simutil` runs headless commands (no TUI). The TUI starts when you run `simutil` with no arguments.
+
+```bash
+simutil -V                         # print version
+simutil android emulator list      # AVD names (one per line, like the screenshot)
+simutil android device list -r     # running adb devices only
+simutil list -v                    # grouped tables (all platforms)
+simutil list --json                # agent/script friendly
+simutil launch <device-id>         # boot (alias: start)
+simutil launch <id> -c --no-audio  # cold boot, no audio (Android)
+simutil shutdown <device-id>       # shut down (alias: stop)
+simutil plugin list                # YAML plugins
+simutil plugin run scrcpy mirror -d emulator-5554
+simutil schema                     # full CLI JSON schema for agents
+simutil schema list --human        # readable help for one command
+simutil list --help                # flags for a command (built-in)
+```
+
+Short flags: `-a`/`--android`, `-i`/`--ios`, `-e`/`--emulator`, `-p`/`--physical`, `-r`/`--running`, `-v`/`--verbose`, `-j`/`--json`, `-c`/`--cold`, `-d`/`--device`.
+
+## Packages
+
+Monorepo (pub workspace); every package is versioned and published separately:
+
+| Package | Contents |
+| ------- | -------- |
+| [`simutil`](packages/simutil) | The app: `simutil` executable, TUI and CLI |
+| [`simutil_shared`](packages/simutil_shared) | App layer shared by TUI and GUI: settings, app state, changelog, service wiring |
+| [`simutil_core`](packages/simutil_core) | Models, `CommandExec`, `DeviceService` |
+| [`simutil_adb`](packages/simutil_adb) | `AndroidDeviceService`, wireless ADB, Logcat parsing |
+| [`simutil_apple`](packages/simutil_apple) | `IOSDeviceService`, `XcodeCacheService` |
+| [`simutil_plugins`](packages/simutil_plugins) | YAML plugin catalog and runner |
+
+The repository root only holds the workspace `pubspec.yaml` (Melos scripts), docs, and CI.
+
 ## Contributing
 
 ```bash
 git clone https://github.com/dungngminh/simutil.git
 cd simutil
 dart pub get
-dart run bin/simutil.dart   # Run locally
+dart run melos run cli   # CLI locally
 
-dart --enable-vm-service bin/simutil.dart # Run with hot reload
+dart run melos run check          # analyze + test (CI parity)
+dart run melos run cli_hot_reload # CLI with hot reload
 ```
 
 1. Fork this repository

@@ -13,7 +13,7 @@ analyzer:
 
 linter:
   rules:
-    public_member_api_docs: false
+    public_member_api_docs: true
     avoid_print: true
     require_trailing_commas: true
     prefer_single_quotes: true

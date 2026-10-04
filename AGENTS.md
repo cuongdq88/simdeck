@@ -2,30 +2,33 @@
 
 ## What this is
 
-`simutil` is a cross-platform Dart TUI for launching Android emulators and iOS
-simulators, with built-in ADB tools (IP / pair-code / QR connect) and Logcat
-viewer. Entry point: [bin/simutil.dart](bin/simutil.dart). Main app component:
-[lib/simutil_app.dart](lib/simutil_app.dart). User-facing docs: [README.md](README.md).
+`simutil` is a cross-platform Dart TUI + CLI for launching Android emulators
+and iOS simulators, with built-in ADB tools (IP / pair-code / QR connect) and
+Logcat viewer. A Flutter desktop GUI (`apps/simutil_app`) is planned. Entry
+point: [packages/simutil/bin/simutil.dart](packages/simutil/bin/simutil.dart) — no args → `runSimutilTui()`,
+otherwise `runSimutilCli(args)`. Main TUI component:
+[packages/simutil/lib/src/tui/app/simutil_tui_app.dart](packages/simutil/lib/src/tui/app/simutil_tui_app.dart).
+User-facing docs: [README.md](README.md).
 
 ## Stack (only the non-obvious bits)
 
 - Dart `^3.11.0`. UI framework is `[nocterm](https://nocterm.dev/)` — a Flutter-like
   component model for terminals (`StatefulComponent`, `BuildContext`, `Focusable`,
   `setState`). Treat widgets as Flutter widgets.
-- CLI uses `args` `CommandRunner` — see [lib/cli/simutil_command_runner.dart](lib/cli/simutil_command_runner.dart).
-  `bin/simutil.dart` runs the TUI when called with no arguments and the runner otherwise.
+- CLI uses `args` `CommandRunner` — see [packages/simutil/lib/src/cli](packages/simutil/lib/src/cli/).
+  `packages/simutil/bin/simutil.dart` delegates to `SimutilCommandRunner` when args are present.
 - All external shell commands in **services** go through `CommandExec` →
-  `IsolateRunner` (see [lib/services/command_exec.dart](lib/services/command_exec.dart)
-  and [lib/services/service_locator.dart](lib/services/service_locator.dart)).
-  Do not call `Process.run` or `Process.start` directly inside `lib/services/`.
-  See **CommandExec** below for when exceptions apply.
+  `IsolateRunner` (see [packages/simutil_core](packages/simutil_core/)
+  and [packages/simutil_shared/lib/src/service_locator.dart](packages/simutil_shared/lib/src/service_locator.dart)).
+  Do not call `Process.run` or `Process.start` directly inside workspace
+  services. See **CommandExec** below for when exceptions apply.
 
 ## CommandExec
 
 Shell work must not block the Nocterm UI isolate. `ServiceLocator` wires
-`IsolateCommandExec(isolateRunner)` and passes it into services that spawn
+`CommandExec.isolate(isolateRunner)` and passes it into services that spawn
 subprocesses (e.g. `AndroidDeviceService`, `IOSDeviceService`, `SettingsService`,
-`PluginRunnerService` for availability probes).
+`PluginRunner` for availability probes).
 
 **Use `CommandExec.run`** when the service needs a one-shot command and may wait
 for exit + stdout/stderr (adb, emulator, xcrun, `open` / `xdg-open`, `--version`
@@ -50,12 +53,12 @@ stdio with the user:
 
 - Plugin **launch** (GUI / long-running): `Process.start` with
   `ProcessStartMode.detached` or `inheritStdio` in
-  [lib/services/plugin_runner_service.dart](lib/services/plugin_runner_service.dart).
-- Logcat streaming: `Process.start` in plugin code under `lib/plugins/`.
+  [packages/simutil_plugins/lib/src/plugin_runner.dart](packages/simutil_plugins/lib/src/plugin_runner.dart).
+- Logcat streaming: `Process.start` in plugin code under `packages/simutil/lib/src/tui/dialogs/`.
 
-**Testing:** use [test/services/fake_command_exec.dart](test/services/fake_command_exec.dart)
-(`FakeCommandExec`) instead of spawning real processes. Never call `Process.run`
-inside service unit tests when the production path goes through `CommandExec`.
+**Testing:** import `package:simutil_core/testing.dart` (`FakeCommandExec`, `FakeDeviceService`, device fixtures) or `package:simutil_plugins/testing.dart` (`FakePluginRunner`) instead
+of spawning real processes. Never call `Process.run` inside service unit tests
+when the production path goes through `CommandExec`.
 
 **Docs:** full data-flow diagram and invariants in
 [docs/ai/architecture.md](docs/ai/architecture.md); plugin launch exception in
@@ -63,41 +66,67 @@ inside service unit tests when the production path goes through `CommandExec`.
 
 ## Layout
 
-`lib/cli/` (CLI runner + subcommands), `lib/components/` (TUI widgets, dialogs,
-theme), `lib/models/`, `lib/plugins/{adb_tools,logcat,scrcpy}/` (feature plugins),
-`lib/services/` (device services, DI, isolate runner), `lib/utils/`. Tests in `test/`.
-For a full subtree map and data flow, see [docs/ai/architecture.md](docs/ai/architecture.md).
+Monorepo; the root `pubspec.yaml` (`name: _`, `publish_to: none`) only lists the
+workspace and Melos scripts. All Dart code lives in `packages/`.
+See [docs/ai/architecture.md](docs/ai/architecture.md).
+
+| Package | Contents |
+| --- | --- |
+| `packages/simutil_core` | models, `DeviceService`, `CommandExec`, `IsolateRunner` |
+| `packages/simutil_adb` / `simutil_apple` | device services (adb, simctl/devicectl), `LogcatHelper` |
+| `packages/simutil_plugins` | `PluginCatalog`, `PluginRunner` |
+| `packages/simutil_shared` | UI-agnostic app layer: settings, app state, changelog entries, `ServiceLocator` |
+| `packages/simutil` | the app (published as `simutil`): `bin/simutil.dart`, `lib/src/cli/` (`runSimutilCli`, `SimutilCommandRunner`), `lib/src/tui/` (nocterm: `app`, `components`, `dialogs`, `terminal`), `tool/` codegen, app `CHANGELOG.md` |
+
+Dependency rules: `simutil_shared` never imports `nocterm` or Flutter; no
+library imports `package:simutil/` (the app). Tests live in each `packages/*/test/`;
+`packages/simutil/test/tool/` covers the codegen tools.
 
 ## Build / run / verify
 
+Monorepo uses [Melos](https://melos.invertase.dev/) on top of Dart pub
+workspaces. After `dart pub get`, use `dart run melos …` (Melos is a root
+dev dependency).
+
 ```bash
 dart pub get
-dart run bin/simutil.dart                  # run locally
-dart --enable-vm-service bin/simutil.dart  # run with hot reload
-dart run build_runner build                # regenerate lib/utils/version.dart
-dart analyze --fatal-infos                 # lint (CI parity)
-dart test                                  # tests
-dart compile exe bin/simutil.dart -o simutil
+dart run melos bootstrap          # pub get for the workspace (alias: dart pub get)
+dart run melos run cli             # TUI locally (CLI args after --)
+dart run melos run analyze        # analyze all packages
+dart run melos run test           # test all packages
+dart run melos run check          # analyze + test (CI parity)
+dart run melos run codegen        # regenerate changelog_entries.dart + version.dart
+dart run melos run compile        # compile ./simutil binary
+dart --enable-vm-service packages/simutil/bin/simutil.dart  # hot reload (direct)
+dart run packages/simutil/bin/simutil.dart         # run without melos
 ```
 
-[lib/utils/version.dart](lib/utils/version.dart) is generated by `build_version`
-per [build.yaml](build.yaml) — do not hand-edit. CI definition lives in
+[version.dart](packages/simutil/lib/src/version.dart) and
+[changelog_entries.dart](packages/simutil_shared/lib/src/changelog_entries.dart)
+are generated by `packages/simutil/tool/generate_version.dart` (`packages/simutil/pubspec.yaml` version) and
+`packages/simutil/tool/generate_changelog.dart` (`CHANGELOG.md`) — do not hand-edit. CI definition lives in
 [.github/workflows/ci.yaml](.github/workflows/ci.yaml).
 
 ## Gotchas
 
 - iOS code paths must be guarded by `Platform.isMacOS` — see
-  [lib/services/ios_device_service.dart](lib/services/ios_device_service.dart)
-  and the `_iosSimulatorsPanel` guard in [lib/simutil_app.dart](lib/simutil_app.dart).
-- Resolve services from `ServiceLocator.instance`; do not instantiate them ad-hoc.
+  [packages/simutil_apple/lib/src/ios_device_service.dart](packages/simutil_apple/lib/src/ios_device_service.dart)
+  and the `_iosSimulatorsPanel` guard in [packages/simutil/lib/src/tui/app/simutil_tui_app.dart](packages/simutil/lib/src/tui/app/simutil_tui_app.dart).
+- TUI code resolves services from `ServiceLocator.instance`; do not instantiate
+  them ad-hoc. The CLI (`lib/src/cli/`) builds its own via `CliDeviceServices`
+  with `CommandExec()` (no isolate) and takes fakes through constructors.
+- Services with I/O are `abstract interface class Foo` with
+  `factory Foo(...) = _ImplName;` and a private implementation (like `dart:io`
+  `File`). No public `FooImpl` classes; parsed data is an immutable value
+  (e.g. `PluginCatalog`), not a stateful service.
 - Android tooling resolves via `ANDROID_HOME` / `ANDROID_SDK_ROOT`, falling back
-  to `~/Library/Android/sdk` — see [lib/services/android_device_service.dart](lib/services/android_device_service.dart).
+  to `~/Library/Android/sdk` — see [packages/simutil_adb/lib/src/android_device_service.dart](packages/simutil_adb/lib/src/android_device_service.dart).
 - Code style is enforced by [analysis_options.yaml](analysis_options.yaml). Rely on
   `dart analyze` / `dart format` rather than restating rules here.
 
 ## When changing code
 
-- Bump mainly user-visible changes [CHANGELOG.md](CHANGELOG.md) under `[Unreleased]` using Keep-a-Changelog
+- Bump mainly user-visible changes [CHANGELOG.md](packages/simutil/CHANGELOG.md) under `[Unreleased]` using Keep-a-Changelog
   sections (`Added` / `Changed` / `Fixed`).
 - Follow [.github/PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) — fill
   the description and tick the Type-of-Change checkboxes.
@@ -105,6 +134,5 @@ per [build.yaml](build.yaml) — do not hand-edit. CI definition lives in
   (prefer reusable `StatelessComponent`/`StatefulComponent` units over monolithic build methods).
 - Before finishing: `dart analyze --fatal-infos` must pass.
 - More: [docs/ai/contributing.md](docs/ai/contributing.md),
-  [docs/ai/running_tests.md](docs/ai/running_tests.md),
   [docs/ai/deployment.md](docs/ai/deployment.md) (release pipeline),
   [docs/ai/plugins.md](docs/ai/plugins.md) (YAML plugin system internals).
