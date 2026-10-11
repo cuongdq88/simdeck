@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 1.1.0
 
 - **Breaking:** removed `ServiceLocator`. Each app now wires its own services
   (the TUI keeps a locator in `simutil`, the desktop app uses `get_it`).
