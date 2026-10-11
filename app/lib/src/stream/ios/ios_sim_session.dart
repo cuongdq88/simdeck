@@ -177,6 +177,53 @@ class IosSimSession implements DeviceSession {
     _channel.invokeMethod<void>('press', {'udid': udid, 'button': button.name});
   }
 
+  /// Types [text] as hardware-keyboard key presses (US layout, ASCII).
+  Future<void> typeText(String text) =>
+      _channel.invokeMethod<void>('type', {'udid': udid, 'text': text});
+
+  /// The frontmost app's accessibility elements, frames normalized 0..1.
+  Future<List<UiElement>> accessibilityElements() async {
+    final raw =
+        await _channel.invokeListMethod<Map<Object?, Object?>>(
+          'accessibility',
+          {'udid': udid},
+        ) ??
+        const [];
+    return [
+      for (final e in raw)
+        // Skips an element the plugin sent without a usable frame.
+        if (e case {
+          'left': final num left,
+          'top': final num top,
+          'right': final num right,
+          'bottom': final num bottom,
+        })
+          UiElement(
+            label: e['label'] as String? ?? '',
+            id: e['id'] as String? ?? '',
+            value: e['value'] as String? ?? '',
+            role: e['role'] as String? ?? '',
+            left: left.toDouble(),
+            top: top.toDouble(),
+            right: right.toDouble(),
+            bottom: bottom.toDouble(),
+            handle: e['handle'] as int?,
+          ),
+    ];
+  }
+
+  /// Presses [element] through accessibility (AXPress), the way VoiceOver
+  /// activates it; false when it came from an older tree or will not press.
+  Future<bool> pressElement(UiElement element) async {
+    final handle = element.handle;
+    if (handle is! int) return false;
+    return await _channel.invokeMethod<bool>('press_element', {
+          'udid': udid,
+          'handle': handle,
+        }) ??
+        false;
+  }
+
   @override
   bool get isRecording => _recorder.isRecording;
 

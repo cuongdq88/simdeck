@@ -21,6 +21,11 @@
   tests.
 - `mergeStreams` merges change streams; `reconnecting` keeps a long-lived
   watcher alive with exponential backoff.
+- `DeviceAutomation` interface (launch an app fresh, optionally with
+  `clearState`; type text; read the accessibility tree) with `UiElement` (label, id, value, role, normalized
+  frame, opaque `handle`), `DeviceAutomation.tapElement` for native taps,
+  and `findElement` (exact match first, then contains; `index`
+  picks among several).
 
 ## 1.0.0
 

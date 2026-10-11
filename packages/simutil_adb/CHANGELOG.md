@@ -33,6 +33,13 @@
   `requestKeyFrame()` asks for a fresh key frame (at most once a second;
   requests in between are deferred, not dropped). Session setup commands
   run at `CommandPriority.interactive`.
+- `AndroidAutomation.tapElement` taps a node at its own pixel center with
+  `input tap` (works on permission prompts too).
+- `AndroidAutomation`: relaunches apps (`am force-stop`, or `pm clear`
+  with `clearState`, then `monkey`), types with `input text`
+  (ASCII) and reads elements from `uiautomator dump`
+  (`parseUiautomatorDump`, normalized to the `wm size` screen so dialogs
+  and permission prompts map right).
 
 ## 1.0.1
 
