@@ -24,6 +24,10 @@ SimUtil runs on macOS, Linux, and Windows. **iOS Simulator support requires macO
 
 Simutil is written with [Nocterm](https://nocterm.dev/), a terminal UI framework for Dart with similar syntax to Flutter.
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2ffebae8-f22d-4b66-8fbe-e2e2e39c202f" alt="Simutil Desktop Image" />
+</p>
+
 https://github.com/user-attachments/assets/b0463741-6d31-496d-99a8-264a5e69457a
 
 <p align="center">
@@ -32,10 +36,6 @@ https://github.com/user-attachments/assets/b0463741-6d31-496d-99a8-264a5e69457a
 
 <p align="center">
   <img src="art/showcase.png" alt="Simutil Showcase Image" />
-</p>
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/2ffebae8-f22d-4b66-8fbe-e2e2e39c202f" alt="Simutil Desktop Image" />
 </p>
 
 ## Features
