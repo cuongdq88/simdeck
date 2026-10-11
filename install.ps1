@@ -43,16 +43,20 @@ function Resolve-Version {
     Write-Info "Resolving latest release..."
 
     try {
-        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers @{
+        # Desktop app releases (app-vX.Y.Z) share this repo, so "latest
+        # release" may be the app; take the newest CLI vX.Y.Z tag instead.
+        $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=100" -Headers @{
             "Accept" = "application/vnd.github+json"
             "X-GitHub-Api-Version" = "2022-11-28"
         }
     }
     catch {
-        Fail "Could not query latest release from GitHub. $_"
+        Fail "Could not query releases from GitHub. $_"
     }
 
-    if (-not $release.tag_name) {
+    $release = $releases | Where-Object { $_.tag_name -match '^v\d' } | Select-Object -First 1
+
+    if (-not $release) {
         Fail "Could not determine latest release tag."
     }
 

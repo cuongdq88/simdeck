@@ -45,8 +45,11 @@ resolve_version() {
 
   if [ "$version" = "latest" ]; then
     info "Resolving latest release..."
-    version=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" \
-      | grep -m 1 '"tag_name":' \
+    # Desktop app releases (app-vX.Y.Z) share this repo, so "latest release"
+    # may be the app; take the newest CLI vX.Y.Z tag instead.
+    version=$(curl -fsSL "https://api.github.com/repos/$REPO/releases?per_page=100" \
+      | grep -o '"tag_name": *"v[0-9][^"]*"' \
+      | head -n 1 \
       | cut -d '"' -f 4)
 
     if [ -z "$version" ]; then

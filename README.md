@@ -14,7 +14,8 @@
 <p align="center">
   <img src="https://img.shields.io/github/stars/dungngminh/simutil" alt="GitHub Repo stars" />
   <a href="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml"><img src="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml/badge.svg" alt="Build" /></a>
-  <a href="https://github.com/dungngminh/simutil/releases/latest"><img src="https://img.shields.io/github/v/release/dungngminh/simutil" alt="GitHub release" /></a>
+  <a href="https://github.com/dungngminh/simutil/releases"><img src="https://img.shields.io/github/v/release/dungngminh/simutil?filter=v*&label=CLI" alt="CLI release" /></a>
+  <a href="https://github.com/dungngminh/simutil/releases?q=app-v"><img src="https://img.shields.io/github/v/release/dungngminh/simutil?filter=app-v*&label=Desktop" alt="Desktop release" /></a>
 </p>
 
 Browse your available emulators and simulators side-by-side, launch with custom options and connect to physical devices wirelessly.
@@ -45,74 +46,64 @@ Simutil is written with [Nocterm](https://nocterm.dev/), a terminal UI framework
 - **Edit Config** — Press `e` to open `~/.simutil/settings.yaml` in your default editor (macOS, Linux, Windows).
 - **Xcode Tools** — Press `x` (macOS) to clear Xcode Derived Data after a size preview and confirmation.
 
-## Custom Plugins
-
-SimUtil can run external shell-command tools (scrcpy, Maestro, custom scripts, …)
-defined in the `plugins:` section of `~/.simutil/settings.yaml` — no code changes
-needed. A default file (with `theme`, `last_selected_device_id`, and `scrcpy`) is
-created automatically on first launch.
-
-Each plugin groups one or more **commands**. In the app, press `p` on a selected
-device to choose a plugin, then a command. Press `e` to edit the config file.
-A command can also define a single-key `shortcut` to run it directly. Commands are
-filtered to the selected device, and `args` support template variables like
-`{device.id}` and `{device.name}`.
-
-```yaml
-# ~/.simutil/settings.yaml
-theme: dark
-last_selected_device_id: ~
-
-plugins:
-  - id: scrcpy
-    label: scrcpy
-    description: Screen mirroring and control for Android
-    availability:
-      command: scrcpy
-      args: [--version]
-    commands:
-      - id: mirror
-        label: Screen Mirror
-        command: scrcpy
-        args: [-s, "{device.id}"]
-        platforms: [android]   # android | ios; empty = any
-        requires_running: true # only show when the device is running
-        mode: detached         # detached (default) | inherit
-        shortcut: s            # optional single key to run directly
-```
-
-See the full reference — all fields, template variables, run modes, availability
-probes, shortcuts, examples, and troubleshooting — in
-**[docs/plugins.md](docs/plugins.md)**.
-
 ## Installation
 
-### Binary Install
+### Desktop app
+
+SimUtil Desktop (preview) streams and controls many Android emulators / devices
+and iOS simulators side by side. Installers are on the
+[releases page](https://github.com/dungngminh/simutil/releases?q=app-v) (`app-v*` tags).
+
+**macOS** (Monterey or later; pulls in `adb` and `ffmpeg`). Update Homebrew
+first so it sees the latest cask, then tap and install:
+
+```bash
+brew update
+brew tap dungngminh/simutil
+brew install --cask simutil-desktop
+```
+
+Or download `SimUtil-macos.dmg` and drag SimUtil into Applications.
+
+**Windows**: download `SimUtil-windows-x64-setup.exe` from the
+[latest desktop release](https://github.com/dungngminh/simutil/releases?q=app-v)
+and run it. The installer also offers to install Android platform-tools and
+FFmpeg.
+
+**Linux** (x86_64 AppImage; installs `adb`, `ffmpeg` and FUSE with your package manager, re-run to update):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/app/packaging/linux/install.sh | bash
+```
+
+### CLI / TUI
+
+#### Binary Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/install.sh | bash
 ```
 
-### Binary Install (Windows PowerShell)
+#### Binary Install (Windows PowerShell)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/dungngminh/simutil/main/install.ps1 | iex"
 ```
 
-### Using Homebrew (macOS/Linux)
+#### Using Homebrew (macOS/Linux)
 
 ```bash
 brew tap dungngminh/simutil
 brew install simutil
 ```
 
-### From pub.dev
+#### From pub.dev
 
 ```bash
 dart pub global activate simutil
 ```
 
-### From source
+#### From source
 
 ```bash
 git clone https://github.com/dungngminh/simutil.git
@@ -127,7 +118,7 @@ Then run:
 simutil
 ```
 
-### Updating
+#### Updating
 
 simutil checks for a new release at most once a day and shows
 `Version X available! Run: simutil upgrade`. Set `SIMUTIL_NO_UPDATE_CHECK=1`
@@ -172,6 +163,46 @@ simutil list --help                # flags for a command (built-in)
 ```
 
 Short flags: `-a`/`--android`, `-i`/`--ios`, `-e`/`--emulator`, `-p`/`--physical`, `-r`/`--running`, `-v`/`--verbose`, `-j`/`--json`, `-c`/`--cold`, `-d`/`--device`.
+
+## Custom Plugins
+
+SimUtil can run external shell-command tools (scrcpy, Maestro, custom scripts, …)
+defined in the `plugins:` section of `~/.simutil/settings.yaml` — no code changes
+needed. A default file (with `theme`, `last_selected_device_id`, and `scrcpy`) is
+created automatically on first launch.
+
+Each plugin groups one or more **commands**. In the app, press `p` on a selected
+device to choose a plugin, then a command. Press `e` to edit the config file.
+A command can also define a single-key `shortcut` to run it directly. Commands are
+filtered to the selected device, and `args` support template variables like
+`{device.id}` and `{device.name}`.
+
+```yaml
+# ~/.simutil/settings.yaml
+theme: dark
+last_selected_device_id: ~
+
+plugins:
+  - id: scrcpy
+    label: scrcpy
+    description: Screen mirroring and control for Android
+    availability:
+      command: scrcpy
+      args: [--version]
+    commands:
+      - id: mirror
+        label: Screen Mirror
+        command: scrcpy
+        args: [-s, "{device.id}"]
+        platforms: [android]   # android | ios; empty = any
+        requires_running: true # only show when the device is running
+        mode: detached         # detached (default) | inherit
+        shortcut: s            # optional single key to run directly
+```
+
+See the full reference — all fields, template variables, run modes, availability
+probes, shortcuts, examples, and troubleshooting — in
+**[docs/plugins.md](docs/plugins.md)**.
 
 ## Packages
 
