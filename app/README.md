@@ -67,24 +67,28 @@ common start and `steps_ms`.
 
 ## Install
 
-One command installs the app and the tools it drives: `adb` (Android
+On macOS and Linux one command installs the app and the tools it drives: `adb` (Android
 platform-tools) and `ffmpeg` (recordings). The scrcpy server ships inside the
 app, so scrcpy itself is optional.
 
-```bash
-brew install --cask dungngminh/simutil/simutil-desktop   # macOS
-```
+macOS: update Homebrew first so it sees the latest cask, then tap and
+install:
 
 ```bash
-winget install me.dungngminh.simutil                     # Windows
+brew update
+brew tap dungngminh/simutil
+brew install --cask simutil-desktop
 ```
+
+Linux:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/app/packaging/linux/install.sh | bash   # Linux
+curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/app/packaging/linux/install.sh | bash
 ```
 
-Installers are also attached to the `app-v*` releases on
-[GitHub Releases](https://github.com/dungngminh/simutil/releases):
+Windows: run the setup `.exe` below. Installers are attached to the `app-v*`
+releases on
+[GitHub Releases](https://github.com/dungngminh/simutil/releases?q=app-v):
 
 - macOS: `SimUtil-macos.dmg` (Apple Silicon + Intel), drag SimUtil onto
   Applications. Unsigned builds: run `xattr -dr com.apple.quarantine

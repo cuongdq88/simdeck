@@ -34,6 +34,19 @@ Simutil is written with [Nocterm](https://nocterm.dev/), a terminal UI framework
 
 ## Features
 
+### Desktop app (preview)
+
+- **Multi-device streaming** — Stream and control many Android emulators / devices and iOS simulators side by side, in a grid or spotlight layout, with touch, swipe and navigation buttons on every stream.
+- **Headless devices** — Start devices without the emulator window or Simulator app; launch Android emulators with Cold Boot / No Audio from the context menu.
+- **Slim mode** — iOS simulators with background services off use about 1 GB of memory instead of 4 GB.
+- **Wireless ADB** — Connect Android devices over Wi-Fi with a QR code, a pairing code or an IP.
+- **Recording** — Record one device or the whole grid (native, 60 fps on macOS).
+- **Scenario studio** — Write YAML scenarios (tap by label, swipe, type, assertions) and run them on many devices at once, watching each step's status live.
+- **MCP server for agents** — Let Claude Code, Codex, Cursor and others list, start, stream, tap, swipe, screenshot and record devices. See [app/README.md](app/README.md#mcp-server).
+- **No scrcpy install needed** — The app ships its own scrcpy server.
+
+### CLI / TUI
+
 - **One-Key Launch** — Start any device with `Enter`, no need to open Android Studio or Xcode
 - **Android Launch Options** — Provide launch option for Android Emulators: Normal, Cold Boot, No Audio, or Cold Boot + No Audio,...
 - **Shutdown device** — Shutdown simulators/emulators.
