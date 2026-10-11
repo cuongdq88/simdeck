@@ -4,8 +4,8 @@
 <h1 align="center">SimUtil</h1>
 
 <p align="center">
-  <strong>A terminal UI for launching Android Emulators / iOS Simulators</strong><br>
-  <strong>Launch, connect, manage your devices and more — all from the terminal</strong>
+  <strong>Launch, stream and control Android Emulators / iOS Simulators</strong><br>
+  <strong>A terminal UI + CLI, and a desktop app for many devices at once</strong>
 </p>
 
 <p align="center">
@@ -20,9 +20,12 @@
 
 Browse your available emulators and simulators side-by-side, launch with custom options and connect to physical devices wirelessly.
 
-SimUtil runs on macOS, Linux, and Windows. **iOS Simulator support requires macOS** (Xcode / `simctl`); on Linux and Windows the TUI focuses on Android emulators and devices.
+SimUtil comes in two forms:
 
-Simutil is written with [Nocterm](https://nocterm.dev/), a terminal UI framework for Dart with similar syntax to Flutter.
+- **CLI / TUI** — `simutil` in your terminal: launch and shut down devices, ADB wireless tools, Logcat and custom plugins. Built with [Nocterm](https://nocterm.dev/), a terminal UI framework for Dart with similar syntax to Flutter.
+- **Desktop app (preview)** — a Flutter app that streams and controls many Android emulators / devices and iOS simulators side by side, records them, runs scenarios across devices, and exposes an MCP server for AI agents. See [app/README.md](app/README.md).
+
+Both run on macOS, Linux, and Windows. **iOS Simulator support requires macOS** (Xcode / `simctl`); on Linux and Windows they focus on Android emulators and devices.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/2ffebae8-f22d-4b66-8fbe-e2e2e39c202f" alt="Simutil Desktop Image" />
@@ -235,7 +238,7 @@ Monorepo (pub workspace); every package is versioned and published separately:
 | [`simutil_adb`](packages/simutil_adb) | `AndroidDeviceService`, wireless ADB, Logcat parsing |
 | [`simutil_apple`](packages/simutil_apple) | `IOSDeviceService`, `XcodeCacheService` |
 | [`simutil_plugins`](packages/simutil_plugins) | YAML plugin catalog and runner |
-| [`simutil_h264`](packages/simutil_h264) | Native H.264 decoding into Flutter textures (desktop app, not published) |
+| [`simutil_h264`](packages/simutil_h264) | Native H.264 decoding into Flutter textures (desktop app) |
 | [`app`](app) | SimUtil desktop (preview): multi-device streaming, MCP server for agents |
 
 The repository root only holds the workspace `pubspec.yaml` (Melos scripts), docs, and CI.
