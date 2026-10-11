@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc_signals/bloc_signals.dart';
+import 'package:flutter/services.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_core/simutil_core.dart';
 
@@ -225,15 +226,11 @@ DeviceSessionFactory defaultSessionFactory({
   required String Function() adbPath,
   required DeviceSettings Function(Device device) settings,
 }) {
-  Future<ScrcpyInstall?>? scrcpy;
+  Future<ScrcpyInstall>? scrcpy;
   return (device) async {
     switch (device.os) {
       case DeviceOs.android:
-        final install = await (scrcpy ??= ScrcpyInstall.locate(exec));
-        if (install == null) {
-          scrcpy = null;
-          throw ScrcpyInstall.installHint;
-        }
+        final install = await (scrcpy ??= _locateScrcpy(exec));
         final options = settings(device);
         return ScrcpySession(
           serial: device.id,
@@ -251,4 +248,23 @@ DeviceSessionFactory defaultSessionFactory({
         return IosSimSession(device.id, exec: exec);
     }
   };
+}
+
+/// Version of `assets/scrcpy-server` (Genymobile/scrcpy release, Apache-2.0).
+const _bundledScrcpyVersion = '4.0';
+
+/// An installed scrcpy (or `SCRCPY_SERVER_PATH`) wins; otherwise the server
+/// shipped in the app, so streaming works without installing scrcpy.
+Future<ScrcpyInstall> _locateScrcpy(CommandExec exec) async {
+  final installed = await ScrcpyInstall.locate(exec);
+  if (installed != null) return installed;
+
+  // adb pushes from a file path. Each process copies the asset into its own
+  // fresh temp dir (owner-only on macOS / Linux), so it never trusts or
+  // races a file left by another process or user.
+  final dir = await Directory.systemTemp.createTemp('simutil-scrcpy-');
+  final file = File('${dir.path}/scrcpy-server');
+  final data = await rootBundle.load('assets/scrcpy-server');
+  await file.writeAsBytes(data.buffer.asUint8List(), flush: true);
+  return ScrcpyInstall(serverPath: file.path, version: _bundledScrcpyVersion);
 }

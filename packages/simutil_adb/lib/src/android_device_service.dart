@@ -62,11 +62,20 @@ class AndroidDeviceService implements DeviceService {
     return '$home/Library/Android/sdk';
   }
 
-  /// Path to `adb` (SDK `platform-tools` or `PATH`).
+  /// Path to `adb`: SDK `platform-tools`, then Homebrew / winget installs,
+  /// then `PATH`. GUI apps on macOS do not inherit the shell PATH, and a
+  /// fresh winget install is missing from an already running PATH.
   String get adbPath {
-    final sdkAdbPath = '${getAndroidHome()}/platform-tools/adb$_exe';
-    if (_pathExists(sdkAdbPath)) return sdkAdbPath;
-
+    final localAppData = _env['LOCALAPPDATA'] ?? '';
+    final candidates = [
+      '${getAndroidHome()}/platform-tools/adb$_exe',
+      if (!_isWindows) ...['/opt/homebrew/bin/adb', '/usr/local/bin/adb'],
+      if (_isWindows && localAppData.isNotEmpty)
+        '$localAppData/Microsoft/WinGet/Links/adb.exe',
+    ];
+    for (final path in candidates) {
+      if (_pathExists(path)) return path;
+    }
     return 'adb';
   }
 
