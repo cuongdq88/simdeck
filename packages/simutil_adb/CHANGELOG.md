@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0
+
+- `ScrcpySession.typeText(text)` / `pressKey(keycode, metaState:)` inject
+  text and Android key codes over the control socket
+  (`ScrcpyProtocol.text`, `ScrcpyProtocol.keycode(..., metaState:)`).
+- `ScrcpySession` options `showTouches`, `stayAwake`, `turnScreenOff`
+  (`ScrcpyProtocol.displayPower`) and `powerOffOnClose`.
+- `AndroidDeviceService.wipeData` deletes an AVD's user data, cache and
+  snapshots. Requires `simutil_core` 1.2.0.
+- `ScrcpySession` adds the server's own output to the
+  `scrcpy server did not start` error (e.g. a version mismatch), and waits
+  up to ~10 s (was ~5 s) for a cold emulator to start the server.
+
 ## 1.1.0
 
 - `AndroidDeviceService.adbPath` falls back to Homebrew (`/opt/homebrew/bin`,

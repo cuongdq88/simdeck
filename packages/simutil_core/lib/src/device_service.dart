@@ -34,4 +34,8 @@ abstract class DeviceService {
   /// Permanently deletes a shut-down simulator/emulator. Returns whether it
   /// was deleted.
   Future<bool> deleteSimulator({required String deviceId});
+
+  /// Erases a shut-down simulator/emulator's user data (apps, settings,
+  /// snapshots), like a factory reset. Returns whether it was wiped.
+  Future<bool> wipeData({required String deviceId});
 }

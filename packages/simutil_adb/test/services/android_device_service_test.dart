@@ -461,6 +461,34 @@ void main() {
     });
   });
 
+  group('wipeData', () {
+    test('removes user data and snapshots, keeps the config', () async {
+      final avdHome = Directory('${sdkDir.path}/avd')..createSync();
+      final avd = Directory('${avdHome.path}/Pixel_7.avd')..createSync();
+      for (final f in ['config.ini', 'userdata-qemu.img', 'cache.img']) {
+        File('${avd.path}/$f').writeAsStringSync('x');
+      }
+      Directory(
+        '${avd.path}/snapshots/default_boot',
+      ).createSync(recursive: true);
+      File(
+        '${avdHome.path}/Pixel_7.ini',
+      ).writeAsStringSync('path=${avd.path}\n');
+      final service = AndroidDeviceService(
+        FakeCommandExec((_, _) => null),
+        androidHomeOverride: sdkDir.path,
+        environment: {'ANDROID_AVD_HOME': avdHome.path},
+        isWindows: false,
+      );
+
+      expect(await service.wipeData(deviceId: 'Pixel_7'), isTrue);
+      expect(avd.listSync().map((e) => e.uri.pathSegments.last), [
+        'config.ini',
+      ]);
+      expect(await service.wipeData(deviceId: 'Nope'), isFalse);
+    });
+  });
+
   group('shutdownSimulator', () {
     test('issues emu kill and mirrors success', () async {
       final exec = FakeCommandExec((_, _) => FakeCommandExec.ok());

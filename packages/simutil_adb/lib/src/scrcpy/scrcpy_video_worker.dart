@@ -18,7 +18,8 @@ typedef _Decode = int Function(int, Pointer<Uint8>, int);
 class ScrcpyVideoWorker {
   ScrcpyVideoWorker._(this._commands, this._exit);
 
-  static const _connectAttempts = 50;
+  /// ~10 s: a cold emulator can take several seconds to start the server.
+  static const _connectAttempts = 100;
 
   final SendPort _commands;
   final Future<void> _exit;

@@ -496,13 +496,7 @@ class AndroidDeviceService implements DeviceService {
     final ini = File('$avdHome/$deviceId.ini');
     if (!ini.existsSync()) return false;
     try {
-      final pathLine = (await ini.readAsLines())
-          .map((l) => l.trim())
-          .where((l) => l.startsWith('path='))
-          .firstOrNull;
-      final avdDir = Directory(
-        pathLine?.substring('path='.length) ?? '$avdHome/$deviceId.avd',
-      );
+      final avdDir = await _avdDir(ini, deviceId);
       if (avdDir.existsSync()) await avdDir.delete(recursive: true);
       await ini.delete();
       return true;
@@ -510,6 +504,50 @@ class AndroidDeviceService implements DeviceService {
       log('AndroidDeviceService.deleteSimulator error: $e');
       return false;
     }
+  }
+
+  /// What Android Studio's Wipe Data removes: the emulator recreates
+  /// userdata from the system image on the next boot.
+  static const _wipedFiles = [
+    'userdata-qemu.img',
+    'userdata-qemu.img.qcow2',
+    'cache.img',
+    'cache.img.qcow2',
+    'snapshots',
+  ];
+
+  @override
+  Future<bool> wipeData({required String deviceId}) async {
+    final ini = File('$avdHome/$deviceId.ini');
+    if (!ini.existsSync()) return false;
+    try {
+      final avdDir = await _avdDir(ini, deviceId);
+      for (final name in _wipedFiles) {
+        final path = '${avdDir.path}/$name';
+        switch (FileSystemEntity.typeSync(path)) {
+          case FileSystemEntityType.directory:
+            await Directory(path).delete(recursive: true);
+          case FileSystemEntityType.file:
+            await File(path).delete();
+          default:
+        }
+      }
+      return true;
+    } catch (e) {
+      log('AndroidDeviceService.wipeData error: $e');
+      return false;
+    }
+  }
+
+  /// The AVD directory from `path=` in its [ini], else the default.
+  Future<Directory> _avdDir(File ini, String deviceId) async {
+    final pathLine = (await ini.readAsLines())
+        .map((l) => l.trim())
+        .where((l) => l.startsWith('path='))
+        .firstOrNull;
+    return Directory(
+      pathLine?.substring('path='.length) ?? '$avdHome/$deviceId.avd',
+    );
   }
 
   @override

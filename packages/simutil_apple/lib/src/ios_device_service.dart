@@ -225,6 +225,20 @@ class IOSDeviceService implements DeviceService {
     }
   }
 
+  @override
+  Future<bool> wipeData({required String deviceId}) async {
+    try {
+      final result = await _exec.run(
+        'xcrun',
+        arguments: ['simctl', 'erase', deviceId],
+        priority: CommandPriority.interactive,
+      );
+      return result.success;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Derives a human-readable platform name from a simctl runtime key, e.g.
   /// `com.apple.CoreSimulator.SimRuntime.iOS-17-2` -> `iOS 17.2`.
   static String extractPlatformName(String runtime) {

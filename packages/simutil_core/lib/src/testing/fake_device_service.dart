@@ -32,6 +32,9 @@ class FakeDeviceService implements DeviceService {
   /// Device ids passed to [deleteSimulator], in order.
   final List<String> deleted = [];
 
+  /// Device ids passed to [wipeData], in order.
+  final List<String> wiped = [];
+
   final _changes = StreamController<void>.broadcast();
 
   /// Simulates the platform reporting a device change on [watchDevices].
@@ -69,6 +72,12 @@ class FakeDeviceService implements DeviceService {
   @override
   Future<bool> deleteSimulator({required String deviceId}) async {
     deleted.add(deviceId);
+    return true;
+  }
+
+  @override
+  Future<bool> wipeData({required String deviceId}) async {
+    wiped.add(deviceId);
     return true;
   }
 }

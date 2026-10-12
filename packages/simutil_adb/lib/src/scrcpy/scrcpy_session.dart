@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -23,6 +24,10 @@ abstract interface class ScrcpySession implements DeviceSession {
     int maxSize,
     int videoBitRate,
     int maxFps,
+    bool showTouches,
+    bool stayAwake,
+    bool turnScreenOff,
+    bool powerOffOnClose,
   }) = _ScrcpySession;
 
   /// H.264 Annex-B access units, key frames prefixed with SPS/PPS. Each
@@ -38,6 +43,13 @@ abstract interface class ScrcpySession implements DeviceSession {
   /// Stops feeding decoder [id].
   void detachDecoder(int id);
 
+  /// Types [text] on the device (scrcpy `INJECT_TEXT`); characters the
+  /// device keyboard map cannot produce are dropped by the server.
+  void typeText(String text);
+
+  /// Presses and releases Android [keycode] (`AKEYCODE_*`) with [metaState].
+  void pressKey(int keycode, {int metaState = 0});
+
   /// Asks the device for a fresh key frame (e.g. after a decoder dropped
   /// frames); at most once a second, since it restarts the encoder.
   void requestKeyFrame();
@@ -52,6 +64,10 @@ class _ScrcpySession implements ScrcpySession {
     this.maxSize = 1280,
     this.videoBitRate = 8000000,
     this.maxFps = 60,
+    this.showTouches = false,
+    this.stayAwake = true,
+    this.turnScreenOff = false,
+    this.powerOffOnClose = false,
   }) : _exec = exec;
 
   final String serial;
@@ -60,6 +76,19 @@ class _ScrcpySession implements ScrcpySession {
   final int maxSize;
   final int videoBitRate;
   final int maxFps;
+
+  /// Device setting "Show taps" while streaming.
+  final bool showTouches;
+
+  /// Keeps the device awake while plugged in and streaming.
+  final bool stayAwake;
+
+  /// Turns the device's own display off once connected; the stream keeps
+  /// going.
+  final bool turnScreenOff;
+
+  /// Turns the device off (screen off) when the stream closes.
+  final bool powerOffOnClose;
   final CommandExec _exec;
 
   static const _remoteJar = '/data/local/tmp/scrcpy-server.jar';
@@ -78,6 +107,9 @@ class _ScrcpySession implements ScrcpySession {
   int? _height;
   String? _recordingPath;
   bool _stopped = false;
+
+  /// The server's output, quoted when it never starts listening.
+  final _serverLog = StringBuffer();
 
   @override
   String get deviceId => serial;
@@ -201,30 +233,28 @@ class _ScrcpySession implements ScrcpySession {
       // A key frame every second (scrcpy's default is 10 s), so a decoder
       // that dropped frames or a late view recovers without a reset.
       'video_codec_options=i-frame-interval:int=1',
-      'stay_awake=true',
+      'stay_awake=$stayAwake',
+      'show_touches=$showTouches',
+      'power_off_on_close=$powerOffOnClose',
     ]);
-    unawaited(_server!.stdout.drain<void>());
-    unawaited(_server!.stderr.drain<void>());
+    // ponytail: unbounded, but log_level=warn keeps it to a few lines.
+    for (final out in [_server!.stdout, _server!.stderr]) {
+      out.transform(utf8.decoder).listen(_serverLog.write, onError: (_) {});
+    }
   }
 
   /// Video first (the server accepts it first), then control; the session
   /// is live once both are up and the first session header arrived.
   Future<void> _connect() async {
-    final video = await ScrcpyVideoWorker.connect(
-      _forwardPort!,
-      onSize: (width, height) {
-        _width = width;
-        _height = height;
-        _emitLive();
-      },
-      onFrame: (frame, keyFrame) {
-        if (!_frames.isClosed) _frames.add((frame, keyFrame));
-      },
-      onKeyFrameNeeded: requestKeyFrame,
-      onEnded: () {
-        if (!_stopped) _emit(const SessionFailed('Stream ended'));
-      },
-    );
+    final ScrcpyVideoWorker video;
+    try {
+      video = await _connectVideo();
+    } on StateError catch (e) {
+      // The server crashed or refused to start (e.g. a version mismatch):
+      // its own message says why.
+      final log = _serverLog.toString().trim();
+      throw StateError(log.isEmpty ? e.message : '${e.message}: $log');
+    }
     if (_stopped) return video.stop();
     _video = video;
     if (_frames.hasListener) video.forward(true);
@@ -232,8 +262,25 @@ class _ScrcpySession implements ScrcpySession {
         await Socket.connect(InternetAddress.loopbackIPv4, _forwardPort!)
           ..setOption(SocketOption.tcpNoDelay, true);
     unawaited(_controlSocket!.drain<void>());
+    if (turnScreenOff) _controlSocket!.add(ScrcpyProtocol.displayPower(false));
     _emitLive();
   }
+
+  Future<ScrcpyVideoWorker> _connectVideo() => ScrcpyVideoWorker.connect(
+    _forwardPort!,
+    onSize: (width, height) {
+      _width = width;
+      _height = height;
+      _emitLive();
+    },
+    onFrame: (frame, keyFrame) {
+      if (!_frames.isClosed) _frames.add((frame, keyFrame));
+    },
+    onKeyFrameNeeded: requestKeyFrame,
+    onEnded: () {
+      if (!_stopped) _emit(const SessionFailed('Stream ended'));
+    },
+  );
 
   /// Live only with a control socket, so a view's key-frame request on
   /// subscribing is not lost.
@@ -276,6 +323,14 @@ class _ScrcpySession implements ScrcpySession {
       ?..add(ScrcpyProtocol.keycode(0, keycode))
       ..add(ScrcpyProtocol.keycode(1, keycode));
   }
+
+  @override
+  void typeText(String text) => _controlSocket?.add(ScrcpyProtocol.text(text));
+
+  @override
+  void pressKey(int keycode, {int metaState = 0}) => _controlSocket
+    ?..add(ScrcpyProtocol.keycode(0, keycode, metaState: metaState))
+    ..add(ScrcpyProtocol.keycode(1, keycode, metaState: metaState));
 
   @override
   Future<void> repairInput() async {}

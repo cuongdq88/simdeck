@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 /// Byte layouts of the scrcpy 4.x server protocol (see scrcpy
@@ -12,7 +13,9 @@ abstract final class ScrcpyProtocol {
   static const _ptsMask = (1 << 61) - 1;
 
   static const _msgInjectKeycode = 0;
+  static const _msgInjectText = 1;
   static const _msgInjectTouch = 2;
+  static const _msgSetDisplayPower = 10;
   static const _msgResetVideo = 17;
 
   /// `AKEYCODE_HOME`.
@@ -47,15 +50,39 @@ abstract final class ScrcpyProtocol {
   /// and key frame follow right away.
   static Uint8List resetVideo() => Uint8List.fromList([_msgResetVideo]);
 
+  /// Encodes `SET_DISPLAY_POWER`: turns the device's own screen [on] or
+  /// off without stopping the capture.
+  static Uint8List displayPower(bool on) =>
+      Uint8List.fromList([_msgSetDisplayPower, on ? 1 : 0]);
+
   /// Encodes `INJECT_KEYCODE` (14 bytes); [action] 0 = down, 1 = up.
-  static Uint8List keycode(int action, int keycode) {
+  /// [metaState] is Android's `KeyEvent` meta state (e.g. shift `0x1`).
+  static Uint8List keycode(int action, int keycode, {int metaState = 0}) {
     final b = ByteData(14)
       ..setUint8(0, _msgInjectKeycode)
       ..setUint8(1, action)
       ..setInt32(2, keycode)
       ..setInt32(6, 0) // repeat
-      ..setInt32(10, 0); // metastate
+      ..setInt32(10, metaState);
     return b.buffer.asUint8List();
+  }
+
+  /// Longest text the server accepts in one `INJECT_TEXT`, in UTF-8 bytes.
+  static const maxTextLength = 300;
+
+  /// Encodes `INJECT_TEXT`: type, u32 length, then UTF-8 [text] (at most
+  /// [maxTextLength] bytes; longer text is cut).
+  static Uint8List text(String text) {
+    var bytes = utf8.encode(text);
+    if (bytes.length > maxTextLength) {
+      bytes = bytes.sublist(0, maxTextLength);
+    }
+    final b = ByteData(5)
+      ..setUint8(0, _msgInjectText)
+      ..setUint32(1, bytes.length);
+    return Uint8List(5 + bytes.length)
+      ..setAll(0, b.buffer.asUint8List())
+      ..setAll(5, bytes);
   }
 
   /// Encodes `INJECT_TOUCH_EVENT` (32 bytes). [action]: 0 down, 1 up,

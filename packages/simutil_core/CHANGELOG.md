@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- `DeviceService.wipeData({deviceId})`: erase a shut-down simulator /
+  emulator's data. `FakeDeviceService.wiped` records the calls.
+
 ## 1.1.0
 
 - `DeviceSession` interface for live device screens: `SessionStatus`

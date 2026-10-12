@@ -50,6 +50,22 @@ void main() {
     ]);
   });
 
+  test('keycode carries the meta state', () {
+    expect(ScrcpyProtocol.keycode(0, 29, metaState: 0x1000).sublist(10), [
+      0,
+      0,
+      0x10,
+      0,
+    ]);
+  });
+
+  test('text is type, u32 length, UTF-8; cut at the server limit', () {
+    expect(ScrcpyProtocol.text('hé'), [1, 0, 0, 0, 3, 0x68, 0xc3, 0xa9]);
+    final long = ScrcpyProtocol.text('a' * 400);
+    expect(long.length, 5 + ScrcpyProtocol.maxTextLength);
+    expect(long.sublist(1, 5), [0, 0, 1, 0x2c]);
+  });
+
   test('parser splits codec, session and packets across chunks', () {
     final b = BytesBuilder()
       ..add(_u32(ScrcpyProtocol.codecH264))

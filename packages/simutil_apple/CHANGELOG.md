@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0
+
+- `IOSDeviceService.wipeData` erases a simulator (`simctl erase`).
+  Requires `simutil_core` 1.2.0.
+
 ## 1.1.0
 
 - `launchDevice(headless: true)` boots without opening the Simulator app.
