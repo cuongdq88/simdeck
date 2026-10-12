@@ -54,7 +54,7 @@ class McpServer {
   static const supportedVersions = [latestVersion, ...legacyVersions];
 
   static const _meta = 'io.modelcontextprotocol/';
-  static const _serverInfo = {'name': 'simutil', 'version': '0.1.0'};
+  static const _serverInfo = {'name': 'simutil', 'version': '0.2.0'};
   static const _capabilities = {'tools': <String, Object?>{}};
 
   /// Error codes reserved by the 2026-07-28 spec.
