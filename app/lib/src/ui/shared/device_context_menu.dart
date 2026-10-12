@@ -118,7 +118,8 @@ List<native.MenuItem> _launchItems(
   ];
 }
 
-/// Device frame and Android stream quality.
+/// Device frame, and the scrcpy options of an Android stream; they apply
+/// the next time the stream opens.
 List<native.MenuItem> _streamItems(
   BuildContext context,
   Device device,
@@ -126,57 +127,75 @@ List<native.MenuItem> _streamItems(
 ) {
   final streams = context.read<StreamsCubit>();
   final settings = context.read<DeviceSettingsCubit>().of(device);
-  final android = device.os == DeviceOs.android;
   return [
     menuCheck(
       'Show device frame',
       settings.showFrame,
       () => set((s) => s.copyWith(showFrame: !s.showFrame)),
     ),
-    if (android) ...[
-      menuSubmenu('Stream resolution', [
-        for (final size in const [720, 1080, 1280, 1920, 0])
-          menuCheck(
-            size == 0 ? 'Native' : '$size px',
-            settings.maxSize == size,
-            () => set((s) => s.copyWith(maxSize: size)),
-          ),
+    if (device.os == DeviceOs.android)
+      menuSubmenu('scrcpy options', [
+        menuSubmenu('Resolution', [
+          for (final size in const [720, 1080, 1280, 1920, 0])
+            menuCheck(
+              size == 0 ? 'Native' : '$size px',
+              settings.maxSize == size,
+              () => set((s) => s.copyWith(maxSize: size)),
+            ),
+        ]),
+        menuSubmenu('Frame rate', [
+          for (final fps in const [30, 60, 120])
+            menuCheck(
+              '$fps fps',
+              settings.maxFps == fps,
+              () => set((s) => s.copyWith(maxFps: fps)),
+            ),
+        ]),
+        menuSubmenu('Bit rate', [
+          for (final mbps in const [4, 8, 16, 24])
+            menuCheck(
+              '$mbps Mbps',
+              settings.bitRateMbps == mbps,
+              () => set((s) => s.copyWith(bitRateMbps: mbps)),
+            ),
+        ]),
+        menuCheck(
+          'Show touches',
+          settings.showTouches,
+          () => set((s) => s.copyWith(showTouches: !s.showTouches)),
+        ),
+        menuCheck(
+          'Stay awake',
+          settings.stayAwake,
+          () => set((s) => s.copyWith(stayAwake: !s.stayAwake)),
+        ),
+        menuCheck(
+          'Turn device screen off',
+          settings.turnScreenOff,
+          () => set((s) => s.copyWith(turnScreenOff: !s.turnScreenOff)),
+        ),
+        menuCheck(
+          'Screen off when stream closes',
+          settings.powerOffOnClose,
+          () => set((s) => s.copyWith(powerOffOnClose: !s.powerOffOnClose)),
+        ),
+        if (streams.sessionFor(device.id) != null)
+          menuItem('Restart stream with new options', () async {
+            await streams.closeStream(device.id);
+            await streams.open(device);
+          }),
       ]),
-      menuSubmenu('Stream frame rate', [
-        for (final fps in const [30, 60, 120])
-          menuCheck(
-            '$fps fps',
-            settings.maxFps == fps,
-            () => set((s) => s.copyWith(maxFps: fps)),
-          ),
-      ]),
-      menuSubmenu('Stream bit rate', [
-        for (final mbps in const [4, 8, 16, 24])
-          menuCheck(
-            '$mbps Mbps',
-            settings.bitRateMbps == mbps,
-            () => set((s) => s.copyWith(bitRateMbps: mbps)),
-          ),
-      ]),
-      if (streams.sessionFor(device.id) != null)
-        menuItem('Restart stream with new settings', () async {
-          await streams.closeStream(device.id);
-          await streams.open(device);
-        }),
-    ],
   ];
 }
 
-/// Delete behind a submenu, so one stray click cannot delete; only when
-/// shut down.
+/// Wipe data and Delete; only when shut down.
 List<native.MenuItem> _deleteItems(BuildContext context, Device device) {
   if (device.state != DeviceState.shutdown) {
-    return [menuItem('Delete (shut down first)', null)];
+    return [menuItem('Wipe data / Delete (shut down first)', null)];
   }
   final devices = context.read<DevicesCubit>();
   return [
-    menuSubmenu('Delete…', [
-      menuItem('Delete “${device.name}”', () => devices.delete(device)),
-    ]),
+    menuItem('Wipe data', () => devices.wipeData(device)),
+    menuItem('Delete “${device.name}”', () => devices.delete(device)),
   ];
 }

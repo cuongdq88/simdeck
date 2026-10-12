@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:simutil_app/src/di.dart';
+import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_app/src/ui/connect/connect_dialog.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/devices/devices_state.dart';
@@ -103,30 +105,59 @@ class _SearchRow extends StatelessWidget {
   }
 }
 
-class _Brand extends StatelessWidget {
+/// Logo and name; tapping the logo five times in a row toggles the debug
+/// panel.
+class _Brand extends StatefulWidget {
   const _Brand();
+
+  @override
+  State<_Brand> createState() => _BrandState();
+}
+
+class _BrandState extends State<_Brand> {
+  static const _taps = 5;
+  static const _window = Duration(seconds: 2);
+  final _tapTimes = <DateTime>[];
+
+  void _onLogoTap() {
+    final now = DateTime.now();
+    _tapTimes
+      ..removeWhere((t) => now.difference(t) > _window)
+      ..add(now);
+    if (_tapTimes.length < _taps) return;
+    _tapTimes.clear();
+    getIt<DebugLog>().toggle();
+  }
 
   @override
   Widget build(BuildContext context) {
     final t = SimuTokens.of(context);
-    return DragToMoveArea(
-      child: Padding(
-        // macOS draws the traffic lights over the top of the sidebar.
-        padding: EdgeInsets.fromLTRB(14, Platform.isMacOS ? 40 : 14, 14, 10),
-        child: Row(
-          children: [
-            Image.asset(
-              'assets/logo.png',
-              width: 24,
-              height: 24,
-              filterQuality: FilterQuality.medium,
-              semanticLabel: 'SimUtil',
-            ),
-            const SizedBox(width: 10),
-            Text('SimUtil', style: t.title),
-          ],
+    // The drag area sits behind the logo: its double-tap (maximize) would
+    // otherwise swallow the logo taps.
+    return Stack(
+      children: [
+        const Positioned.fill(child: DragToMoveArea(child: SizedBox.expand())),
+        Padding(
+          // macOS draws the traffic lights over the top of the sidebar.
+          padding: EdgeInsets.fromLTRB(14, Platform.isMacOS ? 40 : 14, 14, 10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: _onLogoTap,
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: 24,
+                  height: 24,
+                  filterQuality: FilterQuality.medium,
+                  semanticLabel: 'SimUtil',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('SimUtil', style: t.title),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

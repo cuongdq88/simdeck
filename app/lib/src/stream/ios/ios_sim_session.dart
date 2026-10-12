@@ -177,9 +177,18 @@ class IosSimSession implements DeviceSession {
     _channel.invokeMethod<void>('press', {'udid': udid, 'button': button.name});
   }
 
-  /// Types [text] as hardware-keyboard key presses (US layout, ASCII).
-  Future<void> typeText(String text) =>
-      _channel.invokeMethod<void>('type', {'udid': udid, 'text': text});
+  /// Types [text] as hardware-keyboard key presses (US layout, ASCII, plus
+  /// the AppKit function-key characters for arrows, home / end, page up /
+  /// down and forward delete); backspace is `\b`, escape `\x1b`.
+  /// Calls type in order: the plugin runs each on a concurrent queue.
+  Future<void> typeText(String text) => _typing = _typing
+      .catchError((_) {})
+      .then(
+        (_) =>
+            _channel.invokeMethod<void>('type', {'udid': udid, 'text': text}),
+      );
+
+  Future<void> _typing = Future.value();
 
   /// The frontmost app's accessibility elements, frames normalized 0..1.
   Future<List<UiElement>> accessibilityElements() async {

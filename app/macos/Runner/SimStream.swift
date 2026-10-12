@@ -381,8 +381,20 @@ private final class SimHID {
     }
   }
 
+  /// AppKit function-key characters (NSUpArrowFunctionKey…) and control
+  /// characters for keys without a printable form.
+  private static let special: [UInt32: UInt32] = [
+    0x08: 42, 0x7f: 42, 0x1b: 41,  // backspace, backspace, escape
+    0xF700: 82, 0xF701: 81, 0xF702: 80, 0xF703: 79,  // up, down, left, right
+    0xF728: 76, 0xF729: 74, 0xF72B: 77,  // forward delete, home, end
+    0xF72C: 75, 0xF72D: 78,  // page up, page down
+  ]
+
   /// HID keyboard usage (page 7) of [ch] and whether it needs shift.
   private static func usage(for ch: Character) -> (UInt32, Bool)? {
+    if let scalar = ch.unicodeScalars.first, let u = special[scalar.value] {
+      return (u, false)
+    }
     guard let a = ch.asciiValue else { return nil }
     switch a {
     case 97...122: return (UInt32(a - 97) + 4, false)  // a-z

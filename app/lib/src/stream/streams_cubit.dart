@@ -102,9 +102,17 @@ class StreamsCubit extends CubitSignal<StreamsState> {
     }
     _queued.remove(device.id);
     _sessions[device.id] = session;
-    _subscriptions[device.id] = session.statusChanges.listen(
-      (status) => _update(device.id, (e) => e.copyWith(status: status)),
-    );
+    _subscriptions[device.id] = session.statusChanges.listen((status) {
+      final wasLive = stateValue.entries.any(
+        (e) => e.device.id == device.id && e.status is SessionLive,
+      );
+      _update(device.id, (e) => e.copyWith(status: status));
+      // A stream that was live and dropped closes its tile; one that never
+      // came up keeps showing why.
+      if (wasLive && status is SessionFailed) {
+        unawaited(_closeDisconnected(device.id));
+      }
+    });
     try {
       await session.start();
     } catch (e) {
@@ -153,6 +161,19 @@ class StreamsCubit extends CubitSignal<StreamsState> {
     }
   }
 
+  /// Saves a running recording (it gets announced like any other), then
+  /// closes the tile.
+  Future<void> _closeDisconnected(String deviceId) async {
+    if (_sessions[deviceId]?.isRecording ?? false) {
+      try {
+        await toggleRecording(deviceId, '');
+      } catch (_) {
+        // Closing still releases the session and the recording lock.
+      }
+    }
+    await closeStream(deviceId);
+  }
+
   /// Closes [deviceId]'s tile and stops its session (or drops its queued start).
   Future<void> closeStream(String deviceId) async {
     _queued.remove(deviceId);
@@ -193,6 +214,16 @@ class StreamsCubit extends CubitSignal<StreamsState> {
     final since = DateTime.now();
     _update(deviceId, (e) => e.copyWith(recordingSince: () => since));
     return null;
+  }
+
+  /// Moves stream [deviceId] to position [to]; the streams in between
+  /// shift by one.
+  void moveStream(String deviceId, int to) {
+    final entries = [...stateValue.entries];
+    final from = entries.indexWhere((e) => e.device.id == deviceId);
+    if (from < 0 || to < 0 || to >= entries.length || from == to) return;
+    entries.insert(to, entries.removeAt(from));
+    _setEntries(entries);
   }
 
   void _update(String deviceId, StreamEntry Function(StreamEntry) change) {
@@ -240,6 +271,10 @@ DeviceSessionFactory defaultSessionFactory({
           maxSize: options.maxSize,
           maxFps: options.maxFps,
           videoBitRate: options.bitRateMbps * 1000000,
+          showTouches: options.showTouches,
+          stayAwake: options.stayAwake,
+          turnScreenOff: options.turnScreenOff,
+          powerOffOnClose: options.powerOffOnClose,
         );
       case DeviceOs.ios:
         if (!Platform.isMacOS || device.type.isPhysical) {

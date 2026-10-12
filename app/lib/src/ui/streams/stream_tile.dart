@@ -3,7 +3,13 @@ import 'dart:math';
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:simutil_adb/simutil_adb.dart';
+import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/recording/grid_recorder.dart';
+import 'package:simutil_app/src/recording/saved_recordings.dart';
+import 'package:simutil_app/src/recording/screenshot.dart';
+import 'package:simutil_app/src/stream/device_keyboard.dart';
+import 'package:simutil_app/src/ui/recording_toast.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/settings/device_settings_cubit.dart';
 import 'package:simutil_app/src/settings/recordings_dir.dart';
@@ -29,18 +35,64 @@ enum StreamTileMode {
 }
 
 /// One device: header with status and controls, then the live screen
-/// filling the rest of the tile.
-class StreamTile extends StatelessWidget {
-  const StreamTile({super.key, required this.entry, required this.mode});
+/// filling the rest of the tile. The keyboard button sends typed keys to
+/// the device; using another device turns that off. Long-pressing the
+/// header starts [drag] (the grid moves the tile, like a reorderable list).
+class StreamTile extends StatefulWidget {
+  const StreamTile({
+    super.key,
+    required this.entry,
+    required this.mode,
+    this.drag,
+    this.lifted = false,
+  });
 
   final StreamEntry entry;
   final StreamTileMode mode;
 
+  /// Null where tiles cannot be reordered.
+  final TileDrag? drag;
+
+  /// Being dragged: drawn raised.
+  final bool lifted;
+
   @override
-  Widget build(BuildContext context) {
+  State<StreamTile> createState() => _StreamTileState();
+}
+
+class _StreamTileState extends State<StreamTile> {
+  final _keyboard = FocusNode(debugLabel: 'device keyboard');
+
+  @override
+  void dispose() {
+    _keyboard.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    focusNode: _keyboard,
+    onKeyEvent: (_, event) {
+      final session = context.read<StreamsCubit>().sessionFor(
+        widget.entry.device.id,
+      );
+      return session != null &&
+              widget.entry.status is SessionLive &&
+              sendKeyToDevice(session, event)
+          ? KeyEventResult.handled
+          : KeyEventResult.ignored;
+    },
+    child: ListenableBuilder(
+      listenable: _keyboard,
+      builder: (context, _) => _tile(context, typing: _keyboard.hasFocus),
+    ),
+  );
+
+  Widget _tile(BuildContext context, {required bool typing}) {
+    final entry = widget.entry;
+    final mode = widget.mode;
     final t = SimuTokens.of(context);
     final session = context.read<StreamsCubit>().sessionFor(entry.device.id);
-    final view = context.read<ViewSettingsCubit>();
     final showFrame = context.select<DeviceSettingsCubit, bool>(
       (c) => c.of(entry.device).showFrame,
     );
@@ -56,55 +108,99 @@ class StreamTile extends StatelessWidget {
     final thumbnail = mode == StreamTileMode.thumbnail;
     // The tree keeps the same shape in every mode and size so the video (and
     // its decoder) survives layout switches.
-    return SimuHoverable(
-      onTap: thumbnail ? () => view.spotlight(entry.device.id) : null,
-      builder: (context, hovered) => AnimatedContainer(
-        duration: SimuTokens.motion,
-        padding: const EdgeInsets.all(1.5),
-        decoration: BoxDecoration(
-          color: thumbnail && hovered ? t.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(SimuTokens.radiusLarge + 1.5),
-        ),
-        child: SimuPanel(
-          child: _MinSize(
-            minWidth: 80,
-            minHeight: 72,
-            child: Column(
-              children: [
-                GestureDetector(
-                  onSecondaryTap: () =>
-                      showDeviceContextMenu(context, entry.device),
-                  child: thumbnail
-                      ? _ThumbnailHeader(entry: entry)
-                      : StreamTileHeader(
-                          entry: entry,
-                          session: session,
-                          showResolution: mode == StreamTileMode.spotlight,
-                          actions: _tileActions(
-                            context,
-                            entry,
-                            session,
-                            mode,
-                            showFrame,
-                            canRecord: !otherRecording,
+    // Any click on another device turns this one's keyboard off.
+    return Listener(
+      onPointerDown: (_) => _releaseOtherKeyboard(),
+      child: SimuHoverable(
+        onTap: thumbnail
+            ? () => context.read<ViewSettingsCubit>().spotlight(entry.device.id)
+            : null,
+        builder: (context, hovered) => AnimatedContainer(
+          duration: SimuTokens.motion,
+          padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(
+            color: typing || widget.lifted || thumbnail && hovered
+                ? t.accent
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(SimuTokens.radiusLarge + 1.5),
+            boxShadow: widget.lifted
+                ? const [BoxShadow(blurRadius: 28, color: Color(0x59000000))]
+                : null,
+          ),
+          child: SimuPanel(
+            child: _MinSize(
+              minWidth: 80,
+              minHeight: 72,
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onLongPressStart: widget.drag == null
+                        ? null
+                        : (d) => widget.drag!.start(d.globalPosition),
+                    onLongPressMoveUpdate: widget.drag == null
+                        ? null
+                        : (d) => widget.drag!.update(d.globalPosition),
+                    onLongPressEnd: widget.drag == null
+                        ? null
+                        : (_) => widget.drag!.end(),
+                    onLongPressCancel: widget.drag?.end,
+                    onSecondaryTap: () =>
+                        showDeviceContextMenu(context, entry.device),
+                    child: thumbnail
+                        ? _ThumbnailHeader(entry: entry)
+                        : StreamTileHeader(
+                            entry: entry,
+                            session: session,
+                            showResolution: mode == StreamTileMode.spotlight,
+                            actions: _tileActions(
+                              context,
+                              entry,
+                              session,
+                              mode,
+                              showFrame,
+                              canRecord: !otherRecording,
+                              typing: typing,
+                              onKeyboard: () => typing
+                                  ? _keyboard.unfocus()
+                                  : _keyboard.requestFocus(),
+                            ),
                           ),
-                        ),
-                ),
-                Expanded(
-                  child: _TileBody(
-                    entry: entry,
-                    session: session,
-                    showFrame: showFrame,
-                    compact: thumbnail,
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: _TileBody(
+                      entry: entry,
+                      session: session,
+                      showFrame: showFrame,
+                      compact: thumbnail,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+
+  /// Using this device stops another one (or a text field) taking the
+  /// keyboard; this device keeps it if it had it.
+  void _releaseOtherKeyboard() {
+    if (!_keyboard.hasFocus) FocusManager.instance.primaryFocus?.unfocus();
+  }
+}
+
+/// A header long-press drag, in global coordinates.
+class TileDrag {
+  const TileDrag({
+    required this.start,
+    required this.update,
+    required this.end,
+  });
+
+  final void Function(Offset global) start;
+  final void Function(Offset global) update;
+  final VoidCallback end;
 }
 
 /// Lays [child] out at least [minWidth] x [minHeight] and scales it down to
@@ -200,6 +296,8 @@ List<TileAction> _tileActions(
   StreamTileMode mode,
   bool showFrame, {
   required bool canRecord,
+  required bool typing,
+  required VoidCallback onKeyboard,
 }) {
   final t = SimuTokens.of(context);
   final device = entry.device;
@@ -215,6 +313,21 @@ List<TileAction> _tileActions(
         nav: true,
         onPressed: live ? () => session!.press(button) : null,
       ),
+    TileAction(
+      icon: typing ? LucideIcons.keyboard : LucideIcons.keyboardOff,
+      label: typing
+          ? 'Keyboard goes to this device (click to stop)'
+          : 'Send keyboard to this device',
+      priority: 4,
+      active: typing,
+      onPressed: live ? onKeyboard : null,
+    ),
+    TileAction(
+      icon: LucideIcons.camera,
+      label: 'Screenshot',
+      priority: 4,
+      onPressed: live ? () => _screenshot(context, device) : null,
+    ),
     TileAction(
       icon: showFrame ? LucideIcons.smartphone : LucideIcons.squareDashed,
       label: showFrame ? 'Hide device frame' : 'Show device frame',
@@ -267,6 +380,25 @@ List<TileAction> _tileActions(
       onPressed: () => streams.closeStream(device.id),
     ),
   ];
+}
+
+Future<void> _screenshot(BuildContext context, Device device) async {
+  try {
+    final png = await deviceScreenshot(
+      device,
+      getIt<AndroidDeviceService>().adbPath,
+    );
+    final path = await saveScreenshot(recordingsDirectory(), device.id, png);
+    getIt<SavedRecordings>().add(path);
+  } catch (e) {
+    if (!context.mounted) return;
+    showNotice(
+      context,
+      'Screenshot failed',
+      subtitle: '$e',
+      tone: NoticeTone.error,
+    );
+  }
 }
 
 String _buttonLabel(DeviceButton button) => switch (button) {

@@ -24,8 +24,13 @@ class _FakeSession implements DeviceSession {
     return gate.future;
   }
 
+  final statuses = StreamController<SessionStatus>.broadcast(sync: true);
+
   @override
-  Stream<SessionStatus> get statusChanges => const Stream.empty();
+  Stream<SessionStatus> get statusChanges => statuses.stream;
+
+  @override
+  bool get isRecording => false;
 
   @override
   SessionStatus get status => const SessionConnecting();
@@ -71,6 +76,26 @@ void main() {
     },
   );
 
+  test(
+    'a live stream that drops closes; one that never started stays',
+    () async {
+      final session = _FakeSession('UDID')..gate.complete();
+      final cubit = StreamsCubit((_) async => session);
+      await cubit.open(sim(DeviceState.booted));
+
+      session.statuses.add(const SessionFailed('scrcpy server did not start'));
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.stateValue.isOpen('UDID'), isTrue);
+
+      session.statuses
+        ..add(const SessionLive(width: 1, height: 2))
+        ..add(const SessionFailed('Stream ended'));
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.stateValue.isOpen('UDID'), isFalse);
+      expect(session.stopped, isTrue);
+    },
+  );
+
   group('open queue', () {
     Device android(String id) => Device.android(
       id: id,
@@ -90,6 +115,19 @@ void main() {
         created.add(device.id);
         return sessions[device.id] = _FakeSession(device.id);
       });
+    });
+
+    test('moveStream puts a stream at a position; the rest shift', () async {
+      for (final id in ['a', 'b', 'c']) {
+        unawaited(cubit.open(android(id)));
+      }
+      cubit.moveStream('a', 2);
+      expect(
+        [for (final e in cubit.stateValue.entries) e.device.id],
+        ['b', 'c', 'a'],
+      );
+      cubit.moveStream('a', 9); // out of range: ignored
+      expect(cubit.stateValue.entries.last.device.id, 'a');
     });
 
     test('starts one session at a time in FIFO order', () async {

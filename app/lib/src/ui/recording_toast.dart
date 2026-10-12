@@ -343,13 +343,14 @@ class _ToastFeedsState extends State<_ToastFeeds> {
     if (!mounted) return;
     final t = SimuTokens.of(context);
     final recordings = getIt<SavedRecordings>();
+    final image = path.endsWith('.png');
     _show(
       100,
       (close) => SimuToast(
         height: 100,
-        icon: LucideIcons.film,
-        tone: t.danger,
-        title: 'Recording saved',
+        icon: image ? LucideIcons.image : LucideIcons.film,
+        tone: image ? t.accent : t.danger,
+        title: image ? 'Screenshot saved' : 'Recording saved',
         subtitle: path.split(RegExp(r'[/\\]')).last,
         onTap: () => recordings.open(path),
         onClose: close,

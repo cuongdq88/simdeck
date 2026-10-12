@@ -10,6 +10,10 @@ final class DeviceSettings extends Equatable {
     this.maxFps = 60,
     this.bitRateMbps = 8,
     this.showFrame = true,
+    this.showTouches = false,
+    this.stayAwake = true,
+    this.turnScreenOff = false,
+    this.powerOffOnClose = false,
   });
 
   /// Overrides the global headless toggle when set.
@@ -27,18 +31,38 @@ final class DeviceSettings extends Equatable {
   /// Draw the device bezel around this device's stream.
   final bool showFrame;
 
+  /// scrcpy: show taps on the device while streaming.
+  final bool showTouches;
+
+  /// scrcpy: keep the device awake while streaming.
+  final bool stayAwake;
+
+  /// scrcpy: turn the device's own screen off while streaming.
+  final bool turnScreenOff;
+
+  /// scrcpy: turn the screen off when the stream closes.
+  final bool powerOffOnClose;
+
   DeviceSettings copyWith({
     bool? Function()? headless,
     int? maxSize,
     int? maxFps,
     int? bitRateMbps,
     bool? showFrame,
+    bool? showTouches,
+    bool? stayAwake,
+    bool? turnScreenOff,
+    bool? powerOffOnClose,
   }) => DeviceSettings(
     headless: headless != null ? headless() : this.headless,
     maxSize: maxSize ?? this.maxSize,
     maxFps: maxFps ?? this.maxFps,
     bitRateMbps: bitRateMbps ?? this.bitRateMbps,
     showFrame: showFrame ?? this.showFrame,
+    showTouches: showTouches ?? this.showTouches,
+    stayAwake: stayAwake ?? this.stayAwake,
+    turnScreenOff: turnScreenOff ?? this.turnScreenOff,
+    powerOffOnClose: powerOffOnClose ?? this.powerOffOnClose,
   );
 
   @override
@@ -48,6 +72,10 @@ final class DeviceSettings extends Equatable {
     maxFps,
     bitRateMbps,
     showFrame,
+    showTouches,
+    stayAwake,
+    turnScreenOff,
+    powerOffOnClose,
   ];
 }
 

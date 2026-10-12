@@ -13,6 +13,7 @@ import 'package:simutil_app/src/app.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/logging/bloc_log.dart';
+import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_app/src/mcp/mcp_server.dart';
 import 'package:simutil_app/src/mcp/simutil_tools.dart';
 import 'package:simutil_app/src/mcp/tools/tool_context.dart';
@@ -25,10 +26,16 @@ import 'package:simutil_app/src/stream/touch_marks.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
-  if (kDebugMode) {
-    BlocSignalObserver.addObserver(BlocLogObserver());
-  }
   await configureDependencies();
+  final debugLog = getIt<DebugLog>();
+  BlocSignalObserver.addObserver(
+    BlocLogObserver(
+      print: (line) {
+        if (kDebugMode) debugPrint(line);
+        debugLog.add(DebugSource.state, line);
+      },
+    ),
+  );
 
   final devices = getIt<DevicesCubit>()..start();
   final streams = getIt<StreamsCubit>();
@@ -70,6 +77,8 @@ Future<void> main() async {
       port:
           int.tryParse(Platform.environment['SIMUTIL_MCP_PORT'] ?? '') ?? 8765,
       tools: simutilTools(tools),
+      log: (line, {error = false}) =>
+          debugLog.add(DebugSource.mcp, line, error: error),
     ),
   );
   try {

@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:simutil_app/src/mcp/mcp_server.dart';
 import 'package:simutil_app/src/mcp/tools/tool_context.dart';
 import 'package:simutil_app/src/recording/grid_record_quality.dart';
+import 'package:simutil_app/src/recording/screenshot.dart';
 import 'package:simutil_app/src/settings/recordings_dir.dart';
-import 'package:simutil_core/simutil_core.dart';
 
 /// Screenshots and device / grid recordings.
 List<McpTool> captureTools(ToolContext c) => [
@@ -15,7 +13,7 @@ List<McpTool> captureTools(ToolContext c) => [
     properties: deviceArg,
     required: ['device'],
     handler: (args) async {
-      final png = await _screenshot(c.find(args), c.adbPath());
+      final png = await deviceScreenshot(c.find(args), c.adbPath());
       return [
         {'type': 'image', 'data': base64Encode(png), 'mimeType': 'image/png'},
       ];
@@ -66,33 +64,3 @@ List<McpTool> captureTools(ToolContext c) => [
     },
   ),
 ];
-
-/// Screenshots need binary stdout, which CommandExec does not keep.
-Future<List<int>> _screenshot(Device device, String adbPath) async {
-  if (device.os == DeviceOs.android) {
-    final result = await Process.run(adbPath, [
-      '-s',
-      device.id,
-      'exec-out',
-      'screencap',
-      '-p',
-    ], stdoutEncoding: null);
-    if (result.exitCode != 0) throw StateError('${result.stderr}');
-    return result.stdout as List<int>;
-  }
-  final file = File(
-    '${Directory.systemTemp.path}/simutil-shot-${device.id}.png',
-  );
-  final result = await Process.run('xcrun', [
-    'simctl',
-    'io',
-    device.id,
-    'screenshot',
-    '--type=png',
-    file.path,
-  ]);
-  if (result.exitCode != 0) throw StateError('${result.stderr}');
-  final bytes = await file.readAsBytes();
-  await file.delete();
-  return bytes;
-}

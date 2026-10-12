@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
 import 'package:simutil_app/src/recording/recording_lock.dart';
@@ -21,9 +22,11 @@ final getIt = GetIt.instance;
 Future<void> configureDependencies() async {
   final isolateRunner = IsolateRunner();
   await isolateRunner.init();
-  final exec = CommandExec.isolate(isolateRunner);
+  final debugLog = DebugLog();
+  final exec = LoggingCommandExec(CommandExec.isolate(isolateRunner), debugLog);
 
   getIt
+    ..registerSingleton<DebugLog>(debugLog)
     ..registerSingleton<IsolateRunner>(
       isolateRunner,
       dispose: (runner) => runner.dispose(),

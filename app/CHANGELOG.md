@@ -5,7 +5,34 @@ All notable changes to the SimUtil desktop app will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - Unreleased
+## [Unreleased]
+
+### Added
+
+- Screenshot button on each stream and for the whole grid; images are saved
+  next to recordings.
+- Type on a device from your keyboard: turn on the keyboard button of a
+  stream and keys, including arrows, Enter and Backspace, go to it; using
+  another device turns it off.
+- Reorder the grid by dragging: long-press a stream's title bar and it
+  follows the pointer while the other streams slide out of the way.
+- More scrcpy options in an Android device's context menu (under "scrcpy
+  options"): show touches, stay awake, turn the device screen off while
+  streaming, screen off when the stream closes.
+- Console Log panel: tap the logo five times to see MCP calls, running shell
+  commands and app state changes as they happen.
+- A stream that disconnects closes its tile (a running recording is saved
+  first); a stream that fails to start still shows why.
+- Wipe data for a shut-down emulator or simulator, right in its context
+  menu next to Delete (no submenu any more).
+
+### Fixed
+
+- Top bar buttons respond right away instead of after a short delay.
+- "scrcpy server did not start" now says why the server failed, and a slow
+  emulator gets more time to start it.
+
+## [0.1.0] - 2026-10-12
 
 First version of the desktop app (macOS, Windows, Linux).
 

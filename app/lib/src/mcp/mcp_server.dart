@@ -41,10 +41,13 @@ class McpTool {
 /// `resultType`); clients that open with `initialize` get the legacy
 /// session-less subset of [legacyVersions].
 class McpServer {
-  McpServer({required this.tools, this.port = 8765});
+  McpServer({required this.tools, this.port = 8765, this.log});
 
   final List<McpTool> tools;
   final int port;
+
+  /// Gets one line per tool call and per result (the debug panel).
+  final void Function(String line, {bool error})? log;
 
   static const latestVersion = '2026-07-28';
   static const legacyVersions = ['2025-11-25', '2025-06-18', '2025-03-26'];
@@ -283,9 +286,14 @@ class McpServer {
     final tool = tools.where((t) => t.name == name).firstOrNull;
     if (tool == null) return _error(id, -32602, 'Unknown tool $name');
     final args = (params['arguments'] as Map?)?.cast<String, Object?>() ?? {};
+    final clock = Stopwatch()..start();
+    log?.call('→ $name ${jsonEncode(args)}');
     try {
-      return _result(id, {'content': await tool.handler(args)});
+      final content = await tool.handler(args);
+      log?.call('← $name ok (${clock.elapsedMilliseconds}ms)');
+      return _result(id, {'content': content});
     } catch (e) {
+      log?.call('← $name ${clock.elapsedMilliseconds}ms: $e', error: true);
       return _result(id, {
         'content': [
           {'type': 'text', 'text': '$e'},

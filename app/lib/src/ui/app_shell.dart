@@ -1,5 +1,8 @@
 import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:simutil_app/src/di.dart';
+import 'package:simutil_app/src/logging/debug_log.dart';
+import 'package:simutil_app/src/ui/debug/debug_panel.dart';
 import 'package:simutil_app/src/scenarios/scenario_runs_cubit.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
 import 'package:simutil_app/src/ui/devices/device_sidebar.dart';
@@ -54,50 +57,56 @@ class _HomeState extends State<_Home> {
     );
     final scenariosOpen = _scenariosOpen ?? hasRuns;
     return Scaffold(
-      body: Row(
+      body: Stack(
         children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: open ? _sidebarWidth : 0,
-            child: ClipRect(
-              child: OverflowBox(
-                alignment: Alignment.centerRight,
-                minWidth: _sidebarWidth,
-                maxWidth: _sidebarWidth,
-                child: const DeviceSidebar(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                TopBar(
-                  sidebarOpen: open,
-                  onToggleSidebar: () => setState(() => _sidebarOpen = !open),
-                  scenariosOpen: scenariosOpen,
-                  onToggleScenarios: () =>
-                      setState(() => _scenariosOpen = !scenariosOpen),
-                ),
-                const Expanded(child: StreamGrid()),
-              ],
-            ),
-          ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: scenariosOpen ? _scenariosWidth : 0,
-            child: ClipRect(
-              child: OverflowBox(
-                alignment: Alignment.centerLeft,
-                minWidth: _scenariosWidth,
-                maxWidth: _scenariosWidth,
-                child: ScenariosPanel(
-                  onClose: () => setState(() => _scenariosOpen = false),
+          Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: open ? _sidebarWidth : 0,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.centerRight,
+                    minWidth: _sidebarWidth,
+                    maxWidth: _sidebarWidth,
+                    child: const DeviceSidebar(),
+                  ),
                 ),
               ),
-            ),
+              Expanded(
+                child: Column(
+                  children: [
+                    TopBar(
+                      sidebarOpen: open,
+                      onToggleSidebar: () =>
+                          setState(() => _sidebarOpen = !open),
+                      scenariosOpen: scenariosOpen,
+                      onToggleScenarios: () =>
+                          setState(() => _scenariosOpen = !scenariosOpen),
+                    ),
+                    const Expanded(child: StreamGrid()),
+                  ],
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: scenariosOpen ? _scenariosWidth : 0,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: Alignment.centerLeft,
+                    minWidth: _scenariosWidth,
+                    maxWidth: _scenariosWidth,
+                    child: ScenariosPanel(
+                      onClose: () => setState(() => _scenariosOpen = false),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
+          DebugOverlay(log: getIt<DebugLog>()),
         ],
       ),
     );

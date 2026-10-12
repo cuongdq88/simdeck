@@ -8,6 +8,8 @@ import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/mcp/mcp_server.dart';
 import 'package:simutil_app/src/recording/grid_record_quality.dart';
 import 'package:simutil_app/src/recording/grid_recorder.dart';
+import 'package:simutil_app/src/recording/saved_recordings.dart';
+import 'package:simutil_app/src/recording/screenshot.dart';
 import 'package:simutil_app/src/settings/recordings_dir.dart';
 import 'package:simutil_app/src/settings/view_settings_cubit.dart';
 import 'package:simutil_app/src/stream/streams_cubit.dart';
@@ -38,43 +40,51 @@ class TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final streams = context.value<StreamsCubit, StreamsState>().entries;
-    return DragToMoveArea(
-      child: Container(
-        height: 52,
-        // Leave room for the macOS traffic lights when the sidebar is hidden.
-        padding: EdgeInsets.only(
-          left: !sidebarOpen && Platform.isMacOS ? 78 : 10,
-          right: 16,
+    // The drag area sits behind the buttons, not around them: its
+    // double-tap (maximize) recognizer would hold every button tap ~300 ms
+    // waiting for a second click.
+    return Stack(
+      children: [
+        const Positioned.fill(child: DragToMoveArea(child: SizedBox.expand())),
+        Container(
+          height: 52,
+          // Leave room for the macOS traffic lights when the sidebar is hidden.
+          padding: EdgeInsets.only(
+            left: !sidebarOpen && Platform.isMacOS ? 78 : 10,
+            right: 16,
+          ),
+          child: Row(
+            children: [
+              SimuIconButton(
+                icon: sidebarOpen
+                    ? LucideIcons.panelLeftClose
+                    : LucideIcons.panelLeft,
+                tooltip: sidebarOpen ? 'Hide devices' : 'Show devices',
+                onPressed: onToggleSidebar,
+              ),
+              const Spacer(),
+              SimuToolbar(
+                children: [
+                  _ViewActions(
+                    hasStreams: streams.isNotEmpty,
+                    deviceRecording: streams.any((e) => e.recording),
+                  ),
+                  const SimuToolbarDivider(),
+                  const _CornerActions(),
+                  SimuIconButton(
+                    icon: LucideIcons.listChecks,
+                    tooltip: scenariosOpen
+                        ? 'Hide scenarios'
+                        : 'Show scenarios',
+                    active: scenariosOpen,
+                    onPressed: onToggleScenarios,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        child: Row(
-          children: [
-            SimuIconButton(
-              icon: sidebarOpen
-                  ? LucideIcons.panelLeftClose
-                  : LucideIcons.panelLeft,
-              tooltip: sidebarOpen ? 'Hide devices' : 'Show devices',
-              onPressed: onToggleSidebar,
-            ),
-            const Spacer(),
-            SimuToolbar(
-              children: [
-                _ViewActions(
-                  hasStreams: streams.isNotEmpty,
-                  deviceRecording: streams.any((e) => e.recording),
-                ),
-                const SimuToolbarDivider(),
-                const _CornerActions(),
-                SimuIconButton(
-                  icon: LucideIcons.listChecks,
-                  tooltip: scenariosOpen ? 'Hide scenarios' : 'Show scenarios',
-                  active: scenariosOpen,
-                  onPressed: onToggleScenarios,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
@@ -192,6 +202,17 @@ class _ViewActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        SimuIconButton(
+          icon: LucideIcons.camera,
+          tooltip: 'Screenshot grid',
+          onPressed: hasStreams
+              ? () => _gridScreenshot(context)
+              : () => showNotice(
+                  context,
+                  'Nothing to capture yet',
+                  subtitle: 'Stream a device first.',
+                ),
+        ),
         if (recordingGrid || !deviceRecording) ...[
           SimuIconButton(
             icon: recordingGrid ? LucideIcons.circleStop : LucideIcons.video,
@@ -228,6 +249,24 @@ class _ViewActions extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _gridScreenshot(BuildContext context) async {
+    try {
+      final png = await boundaryScreenshot(
+        context.read<GridRecorderCubit>().boundaryKey,
+      );
+      final path = await saveScreenshot(recordingsDirectory(), 'grid', png);
+      getIt<SavedRecordings>().add(path);
+    } catch (e) {
+      if (!context.mounted) return;
+      showNotice(
+        context,
+        'Screenshot failed',
+        subtitle: '$e',
+        tone: NoticeTone.error,
+      );
+    }
   }
 
   Future<void> _toggleGridRecording(BuildContext context) async {

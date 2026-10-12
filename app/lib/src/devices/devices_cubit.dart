@@ -209,6 +209,15 @@ class DevicesCubit extends CubitSignal<DevicesState> {
     await _settle(device.id);
   }
 
+  /// Erases a shut-down simulator / emulator's data (factory reset).
+  Future<void> wipeData(Device device) async {
+    if (device.type.isPhysical || device.state != DeviceState.shutdown) return;
+    _setBusy(device.id, true, 'Wiping ${device.name}…');
+    final ok = await _serviceFor(device).wipeData(deviceId: device.id);
+    _setMessage(ok ? 'Wiped ${device.name}' : 'Failed to wipe ${device.name}');
+    await _settle(device.id);
+  }
+
   DeviceService _serviceFor(Device device) =>
       device.os == DeviceOs.android ? _android : _ios;
 
