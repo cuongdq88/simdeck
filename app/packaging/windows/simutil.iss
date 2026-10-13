@@ -1,6 +1,6 @@
 ; Inno Setup script for the SimUtil desktop app.
 ; Build: flutter build windows --release, then from the repository root:
-;   iscc /DAppVersion=0.2.0 app\packaging\windows\simutil.iss
+;   iscc /DAppVersion=0.3.0 app\packaging\windows\simutil.iss
 ; Output: app\build\installer\SimUtil-windows-x64-setup.exe
 
 #define AppName "SimUtil"

@@ -14,6 +14,16 @@ class ChangelogEntry {
 
 const List<ChangelogEntry> changelogEntries = [
   ChangelogEntry(
+    version: '1.1.0',
+    date: '2026-10-14',
+    items: [
+      '**Reactive device state**: The device list updates as soon as a device boots, shuts down, is plugged in or',
+      'Android emulators and devices show their Android version (e.g.',
+      '`simutil launch --headless` starts an emulator or simulator without its window.',
+      'ADB tools: pairing with a QR code now works, and pairing with a code connects',
+    ],
+  ),
+  ChangelogEntry(
     version: '1.0.1',
     date: '2026-10-10',
     items: ['Android emulators and devices now show up on Windows.'],
