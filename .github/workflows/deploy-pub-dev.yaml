@@ -19,6 +19,17 @@ jobs:
 
       - uses: ./.github/actions/setup-dart
 
+      # subosito/flutter-action does not set up pub.dev OIDC like
+      # dart-lang/setup-dart does; without it `dart pub publish` waits for OAuth.
+      - name: Authenticate with pub.dev (OIDC)
+        shell: bash
+        run: |
+          token="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=https://pub.dev" | jq -r .value)"
+          echo "::add-mask::$token"
+          echo "PUB_TOKEN=$token" >> "$GITHUB_ENV"
+          dart pub token add https://pub.dev --env-var PUB_TOKEN
+
       - name: Publish package for this tag
         shell: bash
         run: |
