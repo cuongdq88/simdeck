@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-14
+
+### Changed
+
+- Pump `simutil_apple` to 1.3.1 for supporting iOS real devices discovery in later macOS 27 and older than macOS 27
+
 ## [0.3.0] - 2026-10-14
 
 ### Added
