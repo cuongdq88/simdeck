@@ -15,6 +15,21 @@ bash scripts/release.sh 0.1.0        # writes build/SimDeck-0.1.0.dmg and prints
 `--dart-define=SIMDECK_NO_UPDATE=true`, copies the helper into the bundle,
 signs inside-out, and packs the dmg.
 
+## What the user needs
+
+The cask installs the app, `adb` and `ffmpeg` — not the Android SDK. Without
+Android Studio, the SDK comes from Homebrew:
+
+```bash
+brew install --cask android-commandlinetools
+sdkmanager "platform-tools" "emulator" "platforms;android-36"
+```
+
+The helper resolves the SDK from `ANDROID_HOME`, then `ANDROID_SDK_ROOT`,
+then `~/Library/Android/sdk`, then `/opt/homebrew/share/android-commandlinetools`.
+System images are installed from the app (toolbar › System images); the
+`emulator` binary itself still comes from `sdkmanager`.
+
 ## Publish
 
 1. Bump `app/pubspec.yaml` and `macos/Runner/Configs/AppInfo.xcconfig`.
