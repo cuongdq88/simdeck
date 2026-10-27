@@ -2,10 +2,10 @@ cask "simdeck" do
   version "0.2.13"
   sha256 "c0e146539559cb821b0c125297096d23dcd5335a2f90431118022cbc0307fd9f"
 
-  url "https://github.com/cuong/simdeck/releases/download/v#{version}/SimDeck-#{version}.dmg"
+  url "https://github.com/cuongdq88/simdeck/releases/download/v#{version}/SimDeck-#{version}.dmg"
   name "SimDeck"
   desc "Virtual device manager for Android emulators and iOS simulators"
-  homepage "https://github.com/cuong/simdeck"
+  homepage "https://github.com/cuongdq88/simdeck"
 
   depends_on macos: ">= :monterey"
   depends_on formula: "ffmpeg"                 # only needed for recording

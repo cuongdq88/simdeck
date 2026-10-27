@@ -11,7 +11,7 @@
 > **Where this comes from.** SimDeck is a **public fork** of two MIT projects, and it says so on purpose:
 >
 > - [**dungngminh/simutil**](https://github.com/dungngminh/simutil) — the Flutter app shell, streams, input, recording, TUI/CLI and MCP server. Forked at tag `app-v0.5.0`.
-> - [**wasabeef/emu**](https://github.com/wasabeef/emu) — the Rust device manager (AVD create/edit, system images, iOS simulators), embedded as the `emu` JSON helper in `SimDeck.app/Contents/Resources/emu`. Forked at tag `v1.3.0`.
+> - [**wasabeef/emu**](https://github.com/wasabeef/emu) — the Rust device manager (AVD create/edit, system images, iOS simulators), embedded as the `emu` JSON helper in `SimDeck.app/Contents/Resources/emu`. Our patches live in the fork [**cuongdq88/emu**](https://github.com/cuongdq88/emu/tree/simdeck-json-cli), based on tag `v1.3.0`.
 >
 > The changes on top are the Create/Edit device sheet, the JSON helper CLI, the deletion guard, the SDK Manager and first-run setup, packaging, and performance work. Both upstreams stay MIT-licensed: see [LICENSE](LICENSE) and [third_party/](third_party/).
 
@@ -211,7 +211,7 @@ SimDeck would not exist without these two projects:
 | Project | What we use | Licence | Upstream |
 | --- | --- | --- | --- |
 | SimUtil | App shell (Flutter), streaming, tap/type, recording, CLI/TUI, MCP server | MIT, © 2026 dungngminh | <https://github.com/dungngminh/simutil> |
-| emu | AVD/system-image/iOS-simulator logic, embedded as the `emu` helper | MIT, © 2025 Daichi Furiya | <https://github.com/wasabeef/emu> |
+| emu | AVD/system-image/iOS-simulator logic, embedded as the `emu` helper | MIT, © 2025 Daichi Furiya | <https://github.com/wasabeef/emu> (our fork: [cuongdq88/emu](https://github.com/cuongdq88/emu/tree/simdeck-json-cli)) |
 
 Their licence texts are kept verbatim in [third_party/SIMUTIL-LICENSE](third_party/SIMUTIL-LICENSE)
 and [third_party/EMU-LICENSE](third_party/EMU-LICENSE); the root [LICENSE](LICENSE)
@@ -219,3 +219,10 @@ is SimUtil's MIT text, unchanged.
 
 The Android emulator, `adb`, `avdmanager`, `sdkmanager` and `xcrun simctl` are Google/Apple
 tools; SimDeck only drives them.
+
+### Building the helper
+
+```bash
+git clone https://github.com/cuongdq88/emu -b simdeck-json-cli ~/emu
+bash scripts/build-helper.sh ~/emu     # build/emu-universal, ad-hoc signed
+```

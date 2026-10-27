@@ -36,13 +36,13 @@ System images are installed from the app (toolbar › System images); the
 2. Build the dmg.
 3. Put the new `sha256` into `packaging/Casks/simdeck.rb`.
 4. Push the dmg to a GitHub release tagged `v<version>`.
-5. Copy `Casks/simdeck.rb` into the `cuong/homebrew-simdeck` tap and commit
+5. Copy `Casks/simdeck.rb` into the `cuongdq88/homebrew-simdeck` tap and commit
    `simdeck <version>`.
 
 Users install with:
 
 ```bash
-brew install --cask cuong/simdeck/simdeck
+brew install --cask cuongdq88/simdeck/simdeck
 ```
 
 ## Gatekeeper
