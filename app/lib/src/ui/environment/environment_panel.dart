@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:simutil_app/src/bridge/emu_bridge.dart';
+import 'package:simutil_app/src/bridge/emu_exception.dart';
 import 'package:simutil_app/src/bridge/emu_models.dart';
+import 'package:simutil_app/src/setup/toolchain_setup_controller.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
+import 'package:simutil_app/src/ui/runtimes/runtime_manager_controller.dart';
 
 /// Opens the Environment panel: SDK path, tool versions, Xcode, licenses
 /// and free space, copyable for a bug report (spec §9.5).
@@ -23,7 +28,75 @@ class EnvironmentPanel extends StatefulWidget {
 }
 
 class _EnvironmentPanelState extends State<EnvironmentPanel> {
-  late final Future<EnvironmentReport> _report = widget.bridge.envCheck();
+  late Future<EnvironmentReport> _report = widget.bridge.envCheck();
+  ToolchainSetupController? _setup;
+
+  void _startSetup(EnvironmentReport report) {
+    final controller = ToolchainSetupController(
+      report: report,
+      check: widget.bridge.envCheck,
+      api: EmuRuntimeApi(widget.bridge),
+      runner: const IoSetupCommandRunner(),
+    )..addListener(_rebuild);
+    setState(() => _setup = controller);
+    unawaited(
+      controller.run().then((ready) {
+        if (!mounted) return;
+        if (ready) setState(() => _report = widget.bridge.envCheck());
+      }),
+    );
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _setup?.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  Widget _missingBanner(SimuTokens t, EnvironmentReport report) {
+    final setup = _setup;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(LucideIcons.triangleAlert, size: 14, color: t.warning),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Missing: ${report.missing.join(', ')}',
+                style: t.body.copyWith(color: t.warning),
+              ),
+            ),
+            SimuButton(
+              label: setup?.running == true
+                  ? 'Installing…'
+                  : 'Set up toolchain',
+              primary: true,
+              onPressed: setup?.running == true
+                  ? null
+                  : () => _startSetup(report),
+            ),
+          ],
+        ),
+        if (setup != null) ...[
+          const SizedBox(height: 8),
+          LinearProgressIndicator(value: setup.progress / 100),
+          const SizedBox(height: 4),
+          Text(setup.currentStep ?? 'Preparing…', style: t.caption),
+        ],
+        if (setup?.error case final error?) ...[
+          const SizedBox(height: 8),
+          Text(error, style: t.body.copyWith(color: t.danger)),
+        ],
+        const SizedBox(height: 10),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,18 +139,18 @@ class _EnvironmentPanelState extends State<EnvironmentPanel> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  if (snapshot.hasError)
-                    Text(
-                      '${snapshot.error}',
-                      style: t.body.copyWith(color: t.danger),
-                    )
+                  if (snapshot.error case final error?)
+                    ..._errorSection(t, error)
                   else if (!snapshot.hasData)
                     const Padding(
                       padding: EdgeInsets.all(20),
                       child: Center(child: SimuSpinner()),
                     )
-                  else
+                  else ...[
+                    if (!snapshot.requireData.ready)
+                      _missingBanner(t, snapshot.requireData),
                     ..._rows(t, snapshot.requireData),
+                  ],
                 ],
               );
             },
@@ -86,6 +159,56 @@ class _EnvironmentPanelState extends State<EnvironmentPanel> {
       ),
     );
   }
+
+  /// The helper could not even answer: show why, and still offer the setup
+  /// that installs the whole toolchain.
+  List<Widget> _errorSection(SimuTokens t, Object error) {
+    final message = error is EmuException
+        ? error.hint == null
+              ? error.message
+              : '${error.message} — ${error.hint}'
+        : '$error';
+    final canSetup = error is! EmuException ||
+        error.code == 'sdk_not_found' ||
+        error.code == 'tool_missing';
+    return [
+      Text(message, style: t.body.copyWith(color: t.danger)),
+      if (canSetup) ...[
+        const SizedBox(height: 10),
+        if (_setup == null)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SimuButton(
+              label: 'Set up toolchain',
+              primary: true,
+              onPressed: () => _startSetup(_toolchainReport()),
+            ),
+          )
+        else ...[
+          LinearProgressIndicator(value: _setup!.progress / 100),
+          const SizedBox(height: 4),
+          Text(_setup!.currentStep ?? 'Preparing…', style: t.caption),
+          if (_setup!.error case final setupError?)
+            Text(setupError, style: t.body.copyWith(color: t.danger)),
+        ],
+      ],
+    ];
+  }
+
+  /// What a machine with nothing installed needs, for the setup button that
+  /// appears when the helper itself cannot start.
+  EnvironmentReport _toolchainReport() => const EnvironmentReport(
+    sdkPath: '',
+    avdHome: '',
+    adb: null,
+    emulator: null,
+    avdmanager: null,
+    sdkmanager: null,
+    xcode: null,
+    licensesAccepted: false,
+    ready: false,
+    missing: ['cmdline-tools', 'platform-tools', 'emulator'],
+  );
 
   List<Widget> _rows(SimuTokens t, EnvironmentReport report) {
     final rows = <String, String>{

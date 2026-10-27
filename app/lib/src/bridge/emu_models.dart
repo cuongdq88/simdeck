@@ -188,6 +188,8 @@ class EnvironmentReport {
     required this.xcode,
     required this.licensesAccepted,
     this.diskFreeBytes,
+    this.ready = true,
+    this.missing = const [],
   });
 
   factory EnvironmentReport.fromJson(Object? json) {
@@ -212,6 +214,10 @@ class EnvironmentReport {
           : null,
       licensesAccepted: map['licenses_accepted'] as bool? ?? false,
       diskFreeBytes: (map['disk_free_bytes'] as num?)?.toInt(),
+      ready: map['ready'] as bool? ?? true,
+      missing: [
+        for (final tool in (map['missing'] as List?) ?? const []) '$tool',
+      ],
     );
   }
 
@@ -224,6 +230,12 @@ class EnvironmentReport {
   final String? xcode;
   final bool licensesAccepted;
   final int? diskFreeBytes;
+
+  /// Everything the app needs to create and boot AVDs is installed.
+  final bool ready;
+
+  /// SDK packages that still have to be installed (`emulator`, …).
+  final List<String> missing;
 
   String get diskFreeLabel {
     final bytes = diskFreeBytes;

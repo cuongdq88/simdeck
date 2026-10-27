@@ -5,7 +5,9 @@ import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_app/src/ui/debug/debug_panel.dart';
 import 'package:simutil_app/src/scenarios/scenario_runs_cubit.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/ui/devices/device_sidebar.dart';
+import 'package:simutil_app/src/ui/environment/environment_panel.dart';
 import 'package:simutil_app/src/ui/recording_toast.dart';
 import 'package:simutil_app/src/ui/scenarios/scenarios_panel.dart';
 import 'package:simutil_app/src/ui/shared/responsive.dart';
@@ -41,6 +43,24 @@ class _Home extends StatefulWidget {
 
 class _HomeState extends State<_Home> {
   bool? _sidebarOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    // First run on a machine without the SDK/emulator: open the environment
+    // panel, which offers the one-click toolchain setup.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkToolchain());
+  }
+
+  Future<void> _checkToolchain() async {
+    final bridge = getIt<EmuBridge>();
+    try {
+      final report = await bridge.envCheck();
+      if (!report.ready && mounted) showEnvironmentPanel(context, bridge);
+    } on Object {
+      if (mounted) showEnvironmentPanel(context, bridge);
+    }
+  }
 
   /// Null until the user toggles it: shown while there are runs.
   bool? _scenariosOpen;
