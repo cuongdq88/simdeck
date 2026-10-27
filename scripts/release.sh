@@ -16,7 +16,7 @@ export SIMDECK_NO_UPDATE=1
 bash "$ROOT/scripts/build-helper.sh" "$EMU_DIR"
 
 cd "$ROOT/app"
-flutter build macos --release
+flutter build macos --release --dart-define=SIMDECK_NO_UPDATE=true
 
 APP=""
 for candidate in SimDeck.app SimUtil.app; do

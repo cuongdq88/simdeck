@@ -24,25 +24,50 @@ import 'package:simutil_core/simutil_core.dart';
 /// App-wide service locator.
 final getIt = GetIt.instance;
 
+/// Whether this build may check for updates. A brew-managed app must never
+/// update itself: brew's sha256 and the version in the app would drift
+/// (spec §12.2). [env] is the process environment, [dartDefine] the
+/// `--dart-define=SIMDECK_NO_UPDATE` value of a release build.
+bool updatesEnabled(
+  Map<String, String> env, {
+  String dartDefine = const String.fromEnvironment('SIMDECK_NO_UPDATE'),
+}) =>
+    dartDefine != 'true' &&
+    dartDefine != '1' &&
+    env['SIMDECK_NO_UPDATE'] != '1';
+
 /// Starts the shell-command isolate and registers the device services plus
 /// the app's cubits.
 Future<void> configureDependencies() async {
-  final isolateRunner = IsolateRunner();
-  await isolateRunner.init();
-  final debugLog = DebugLog();
-  final exec = LoggingCommandExec(CommandExec.isolate(isolateRunner), debugLog);
-  final settingsStore = DesktopSettingsStore();
-  await settingsStore.load();
+  await buildDi();
+}
 
-  getIt
+/// The registration itself, with the process-wide pieces injectable so
+/// tests can build a locator without touching the disk or an isolate.
+Future<GetIt> buildDi({
+  GetIt? di,
+  Map<String, String> env = const {},
+  String dartDefine = const String.fromEnvironment('SIMDECK_NO_UPDATE'),
+  IsolateRunner? isolateRunner,
+  DesktopSettingsStore? settingsStore,
+}) async {
+  final target = di ?? getIt;
+  final runner = isolateRunner ?? IsolateRunner();
+  if (isolateRunner == null) await runner.init();
+  final debugLog = DebugLog();
+  final exec = LoggingCommandExec(CommandExec.isolate(runner), debugLog);
+  final store = settingsStore ?? DesktopSettingsStore();
+  if (settingsStore == null) await store.load();
+
+  target
     // First in, last disposed: cubits close before the final save is awaited.
     ..registerSingleton<DesktopSettingsStore>(
-      settingsStore,
+      store,
       dispose: (store) => store.flush(),
     )
     ..registerSingleton<DebugLog>(debugLog)
     ..registerSingleton<IsolateRunner>(
-      isolateRunner,
+      runner,
       dispose: (runner) => runner.dispose(),
     )
     ..registerSingleton<CommandExec>(exec)
@@ -54,7 +79,7 @@ Future<void> configureDependencies() async {
         // Late lookup: the guard asks the cubit which AVDs are booted when it
         // is actually used, never at startup.
         runningAvdsLoader: () async => {
-          for (final device in getIt<DevicesCubit>().stateValue.androidEmulators)
+          for (final device in target<DevicesCubit>().stateValue.androidEmulators)
             if (device.state == DeviceState.booted) device.name,
         },
       ),
@@ -63,8 +88,8 @@ Future<void> configureDependencies() async {
     ..registerLazySingleton<WifiDiscoveryService>(MdnsWifiDiscoveryService.new)
     ..registerLazySingleton<AdbWirelessPairing>(
       () => AdbWirelessPairing(
-        getIt<AndroidDeviceService>(),
-        getIt<WifiDiscoveryService>(),
+        target<AndroidDeviceService>(),
+        target<WifiDiscoveryService>(),
       ),
     )
     ..registerSingleton<IOSDeviceService>(IOSDeviceService(exec))
@@ -72,17 +97,17 @@ Future<void> configureDependencies() async {
     ..registerSingleton<XcodeCacheService>(XcodeCacheService(exec))
     ..registerLazySingleton<DevicesCubit>(
       () => DevicesCubit(
-        android: getIt<AndroidDeviceService>(),
-        ios: getIt<IOSDeviceService>(),
-        slim: _SimulatorSlimControl(SimulatorSlimmer(getIt<CommandExec>())),
-        guard: getIt<DeletionGuard>(),
+        android: target<AndroidDeviceService>(),
+        ios: target<IOSDeviceService>(),
+        slim: _SimulatorSlimControl(SimulatorSlimmer(target<CommandExec>())),
+        guard: target<DeletionGuard>(),
         // Late lookup: SlimModeCubit itself depends on DevicesCubit.
-        slimOnLaunch: () => getIt<SlimModeCubit>().stateValue.enabled,
+        slimOnLaunch: () => target<SlimModeCubit>().stateValue.enabled,
       ),
       dispose: (cubit) => cubit.close(),
     )
     ..registerLazySingleton<DeviceSettingsCubit>(
-      () => DeviceSettingsCubit(store: getIt<DesktopSettingsStore>()),
+      () => DeviceSettingsCubit(store: target<DesktopSettingsStore>()),
       dispose: (cubit) => cubit.close(),
     )
     ..registerSingleton<SavedRecordings>(
@@ -93,8 +118,8 @@ Future<void> configureDependencies() async {
     ..registerSingleton(TouchMarks(), dispose: (marks) => marks.dispose())
     ..registerLazySingleton<GridRecorderCubit>(
       () => GridRecorderCubit(
-        onSaved: getIt<SavedRecordings>().add,
-        recordingLock: getIt<RecordingLock>(),
+        onSaved: target<SavedRecordings>().add,
+        recordingLock: target<RecordingLock>(),
       ),
       dispose: (cubit) => cubit.close(),
     )
@@ -103,36 +128,40 @@ Future<void> configureDependencies() async {
       dispose: (cubit) => cubit.close(),
     )
     ..registerLazySingleton<ViewSettingsCubit>(
-      () => ViewSettingsCubit(store: getIt<DesktopSettingsStore>()),
+      () => ViewSettingsCubit(store: target<DesktopSettingsStore>()),
       dispose: (cubit) => cubit.close(),
     )
     ..registerLazySingleton<StreamsCubit>(
       () => StreamsCubit(
         defaultSessionFactory(
-          exec: getIt<CommandExec>(),
-          adbPath: () => getIt<AndroidDeviceService>().adbPath,
-          settings: (device) => getIt<DeviceSettingsCubit>().of(device),
+          exec: target<CommandExec>(),
+          adbPath: () => target<AndroidDeviceService>().adbPath,
+          settings: (device) => target<DeviceSettingsCubit>().of(device),
         ),
-        onSaved: getIt<SavedRecordings>().add,
-        recordingLock: getIt<RecordingLock>(),
+        onSaved: target<SavedRecordings>().add,
+        recordingLock: target<RecordingLock>(),
       ),
       dispose: (cubit) => cubit.close(),
     )
     ..registerLazySingleton<AppInstaller>(
       () => AppInstaller(exec, quit: quitApp),
     )
-    ..registerSingleton<AppUpdateCubit>(
-      AppUpdateCubit(currentVersion: await getAppVersion()),
-      dispose: (cubit) => cubit.close(),
-    )
     ..registerLazySingleton<SlimModeCubit>(
       () => SlimModeCubit(
-        devices: getIt<DevicesCubit>(),
-        streams: getIt<StreamsCubit>(),
-        store: getIt<DesktopSettingsStore>(),
+        devices: target<DevicesCubit>(),
+        streams: target<StreamsCubit>(),
+        store: target<DesktopSettingsStore>(),
       ),
       dispose: (cubit) => cubit.close(),
     );
+
+  if (updatesEnabled(env, dartDefine: dartDefine)) {
+    target.registerSingleton<AppUpdateCubit>(
+      AppUpdateCubit(currentVersion: await getAppVersion()),
+      dispose: (cubit) => cubit.close(),
+    );
+  }
+  return target;
 }
 
 class _SimulatorSlimControl implements SlimControl {

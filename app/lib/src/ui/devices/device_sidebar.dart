@@ -158,11 +158,11 @@ class _BrandState extends State<_Brand> {
                   width: 24,
                   height: 24,
                   filterQuality: FilterQuality.medium,
-                  semanticLabel: 'SimUtil',
+                  semanticLabel: 'SimDeck',
                 ),
               ),
               const SizedBox(width: 10),
-              Text('SimUtil', style: t.title),
+              Text('SimDeck', style: t.title),
               const _UpdateButton(),
             ],
           ),
@@ -178,13 +178,15 @@ class _UpdateButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Release builds register no AppUpdateCubit at all (spec §12.2).
+    if (!getIt.isRegistered<AppUpdateCubit>()) return const SizedBox.shrink();
     final update = context.value<AppUpdateCubit, AppUpdate?>();
     if (update == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: SimuIconButton(
         icon: LucideIcons.circleArrowUp,
-        tooltip: 'SimUtil ${update.version} is available',
+        tooltip: 'SimDeck ${update.version} is available',
         color: SimuTokens.of(context).accent,
         onPressed: () => showUpdateToast(context, update),
       ),

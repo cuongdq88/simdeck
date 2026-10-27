@@ -36,9 +36,10 @@ class SimutilApp extends StatelessWidget {
         BlocSignalProvider<SlimModeCubit>(
           create: (_) => getIt<SlimModeCubit>(),
         ),
-        BlocSignalProvider<AppUpdateCubit>(
-          create: (_) => getIt<AppUpdateCubit>(),
-        ),
+        if (getIt.isRegistered<AppUpdateCubit>())
+          BlocSignalProvider<AppUpdateCubit>(
+            create: (_) => getIt<AppUpdateCubit>(),
+          ),
       ],
       child: const SimutilShell(),
     );

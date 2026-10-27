@@ -85,7 +85,7 @@ Future<void> main() async {
 
   await windowManager.waitUntilReadyToShow(
     WindowOptions(
-      title: 'SimUtil',
+      title: 'SimDeck',
       size: Size(1280, 800),
       minimumSize: Size(720, 480),
       center: true,
