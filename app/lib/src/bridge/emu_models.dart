@@ -175,3 +175,59 @@ class InstallProgress {
   final int percent;
   final String message;
 }
+
+/// `emu --json env check`, flattened for the Environment panel.
+class EnvironmentReport {
+  const EnvironmentReport({
+    required this.sdkPath,
+    required this.avdHome,
+    required this.adb,
+    required this.emulator,
+    required this.avdmanager,
+    required this.sdkmanager,
+    required this.xcode,
+    required this.licensesAccepted,
+    this.diskFreeBytes,
+  });
+
+  factory EnvironmentReport.fromJson(Object? json) {
+    final map = json as Map;
+    final tools = (map['tools'] as Map?) ?? const {};
+    final xcode = (map['xcode'] as Map?) ?? const {};
+    String? version(Object? tool) {
+      if (tool is! Map) return null;
+      final value = tool['version'] as String?;
+      return value ?? (tool['path'] as String?);
+    }
+
+    return EnvironmentReport(
+      sdkPath: map['sdk_path'] as String? ?? '',
+      avdHome: map['avd_home'] as String? ?? '',
+      adb: version(tools['adb']),
+      emulator: version(tools['emulator']),
+      avdmanager: version(tools['avdmanager']),
+      sdkmanager: version(tools['sdkmanager']),
+      xcode: xcode['present'] == true
+          ? xcode['version'] as String? ?? 'present'
+          : null,
+      licensesAccepted: map['licenses_accepted'] as bool? ?? false,
+      diskFreeBytes: (map['disk_free_bytes'] as num?)?.toInt(),
+    );
+  }
+
+  final String sdkPath;
+  final String avdHome;
+  final String? adb;
+  final String? emulator;
+  final String? avdmanager;
+  final String? sdkmanager;
+  final String? xcode;
+  final bool licensesAccepted;
+  final int? diskFreeBytes;
+
+  String get diskFreeLabel {
+    final bytes = diskFreeBytes;
+    if (bytes == null) return 'unknown';
+    return '${(bytes / (1 << 30)).toStringAsFixed(1)} GB';
+  }
+}

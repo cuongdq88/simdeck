@@ -14,7 +14,11 @@ import 'package:simutil_app/src/settings/recordings_dir.dart';
 import 'package:simutil_app/src/settings/view_settings_cubit.dart';
 import 'package:simutil_app/src/stream/streams_cubit.dart';
 import 'package:simutil_app/src/stream/streams_state.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
+import 'package:simutil_app/src/ui/environment/environment_panel.dart';
+import 'package:simutil_app/src/ui/runtimes/runtime_manager_controller.dart';
+import 'package:simutil_app/src/ui/runtimes/runtime_manager_panel.dart';
 import 'package:simutil_app/src/ui/shared/recording_clock.dart';
 import 'package:simutil_app/src/ui/mcp_connect_dialog.dart';
 import 'package:simutil_app/src/ui/recording_toast.dart';
@@ -89,7 +93,8 @@ class TopBar extends StatelessWidget {
   }
 }
 
-/// Xcode DerivedData cleanup (macOS) and the MCP connect guide.
+/// System images, environment diagnostics, Xcode DerivedData cleanup
+/// (macOS) and the MCP connect guide.
 class _CornerActions extends StatelessWidget {
   const _CornerActions();
 
@@ -99,6 +104,23 @@ class _CornerActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        SimuIconButton(
+          icon: LucideIcons.hardDriveDownload,
+          tooltip: 'System images',
+          onPressed: () => showRuntimeManager(
+            context,
+            RuntimeManagerController(
+              api: EmuRuntimeApi(getIt<EmuBridge>()),
+              guard: getIt(),
+            ),
+          ),
+        ),
+        SimuIconButton(
+          icon: LucideIcons.stethoscope,
+          tooltip: 'Environment check',
+          onPressed: () => showEnvironmentPanel(context, getIt<EmuBridge>()),
+        ),
+        const SimuToolbarDivider(),
         if (Platform.isMacOS) const _SlimModeButton(),
         if (Platform.isMacOS)
           SimuIconButton(

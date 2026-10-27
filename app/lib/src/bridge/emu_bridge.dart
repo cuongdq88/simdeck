@@ -123,6 +123,9 @@ class EmuBridge {
     ],
   );
 
+  Future<EnvironmentReport> envCheck() =>
+      run(['env', 'check'], EnvironmentReport.fromJson);
+
   Future<AvdConfig> avdShow(String name) =>
       run(['avd', 'show', '--name', name], AvdConfig.fromShow);
 
