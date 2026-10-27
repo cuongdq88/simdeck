@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:bloc_signals/bloc_signals.dart';
 import 'package:flutter/services.dart';
+import 'package:simutil_app/src/bridge/deletion_guard.dart';
 import 'package:simutil_app/src/devices/devices_state.dart';
 import 'package:simutil_core/simutil_core.dart';
 import 'package:simutil_shared/simutil_shared.dart';
@@ -28,11 +29,13 @@ class DevicesCubit extends CubitSignal<DevicesState> {
     required DeviceService android,
     required DeviceService ios,
     SlimControl? slim,
+    DeletionGuard? guard,
     bool Function()? slimOnLaunch,
     bool? loadIos,
     Duration pollInterval = const Duration(seconds: 1),
     Future<bool> Function()? cameraAccess,
   }) : _android = android,
+       _guard = guard,
        _cameraAccess = cameraAccess ?? _requestCameraAccess,
        _slimOnLaunch = slimOnLaunch,
        _pollInterval = pollInterval,
@@ -48,6 +51,10 @@ class DevicesCubit extends CubitSignal<DevicesState> {
 
   final DeviceService _android;
   final DeviceService _ios;
+
+  /// Blocks destructive Android operations (shared dirs, running AVDs);
+  /// null in tests and on platforms without AVDs.
+  final DeletionGuard? _guard;
 
   /// Asks for Camera access before an emulator boots with a host webcam.
   final Future<bool> Function() _cameraAccess;
@@ -227,6 +234,7 @@ class DevicesCubit extends CubitSignal<DevicesState> {
   /// Permanently deletes a shut-down emulator/simulator.
   Future<void> delete(Device device) async {
     if (device.type.isPhysical || device.state != DeviceState.shutdown) return;
+    if (await _blocked(device)) return;
     _setBusy(device.id, true);
     _progress(device, 'Deleting ${device.name}…');
     final ok = await _serviceFor(device).deleteSimulator(deviceId: device.id);
@@ -237,11 +245,23 @@ class DevicesCubit extends CubitSignal<DevicesState> {
   /// Erases a shut-down simulator / emulator's data (factory reset).
   Future<void> wipeData(Device device) async {
     if (device.type.isPhysical || device.state != DeviceState.shutdown) return;
+    if (await _blocked(device)) return;
     _setBusy(device.id, true);
     _progress(device, 'Wiping ${device.name}…');
     final ok = await _serviceFor(device).wipeData(deviceId: device.id);
     _result(device, ok, 'Wiped ${device.name}', 'Failed to wipe');
     await _settle(device.id);
+  }
+
+  /// True when the deletion guard refuses: the reason becomes an error
+  /// notice and the service is never called.
+  Future<bool> _blocked(Device device) async {
+    final guard = _guard;
+    if (guard == null || device.os != DeviceOs.android) return false;
+    final verdict = await guard.checkAvd(device.name);
+    if (verdict.allowed) return false;
+    _notify(verdict.message ?? 'Blocked', DeviceNoticeKind.error);
+    return true;
   }
 
   /// A loading toast for [device], replaced by its [_result].

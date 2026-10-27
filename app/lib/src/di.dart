@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
@@ -44,6 +46,19 @@ Future<void> configureDependencies() async {
       dispose: (runner) => runner.dispose(),
     )
     ..registerSingleton<CommandExec>(exec)
+    ..registerLazySingleton<EmuBridge>(
+      () => EmuBridge(emuPath: EmuBridge.resolveEmuPath()),
+    )
+    ..registerLazySingleton<DeletionGuard>(
+      () => DeletionGuard.load(
+        // Late lookup: the guard asks the cubit which AVDs are booted when it
+        // is actually used, never at startup.
+        runningAvdsLoader: () async => {
+          for (final device in getIt<DevicesCubit>().stateValue.androidEmulators)
+            if (device.state == DeviceState.booted) device.name,
+        },
+      ),
+    )
     ..registerSingleton<AndroidDeviceService>(AndroidDeviceService(exec))
     ..registerLazySingleton<WifiDiscoveryService>(MdnsWifiDiscoveryService.new)
     ..registerLazySingleton<AdbWirelessPairing>(
@@ -60,6 +75,7 @@ Future<void> configureDependencies() async {
         android: getIt<AndroidDeviceService>(),
         ios: getIt<IOSDeviceService>(),
         slim: _SimulatorSlimControl(SimulatorSlimmer(getIt<CommandExec>())),
+        guard: getIt<DeletionGuard>(),
         // Late lookup: SlimModeCubit itself depends on DevicesCubit.
         slimOnLaunch: () => getIt<SlimModeCubit>().stateValue.enabled,
       ),
