@@ -68,6 +68,16 @@ https://github.com/user-attachments/assets/b0463741-6d31-496d-99a8-264a5e69457a
 | | Custom tools (scrcpy, Maestro, scripts) as YAML plugins | | ✓ |
 | **Clean up** | Clear Xcode DerivedData after a size preview (macOS) | ✓ | ✓ |
 
+## Screenshots
+
+![SimDeck streaming an Android emulator and an iOS simulator side by side](docs/screenshots/grid.jpg)
+
+The sidebar groups what is **running** on top, keeps emulator/simulator groups
+(both with their add button) below, and every shut-down row offers start, edit,
+wipe and delete:
+
+<img src="docs/screenshots/sidebar.jpg" alt="SimDeck sidebar: RUNNING group with four devices, Android emulators and iOS simulators" width="300">
+
 ## Install
 
 ### SimUtil Desktop
