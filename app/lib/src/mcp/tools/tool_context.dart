@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/recording/grid_recorder.dart';
@@ -35,6 +36,7 @@ class ToolContext {
     required this.automation,
     this.marks,
     this.runs,
+    this.emu,
   });
 
   final DevicesCubit devices;
@@ -50,6 +52,9 @@ class ToolContext {
 
   /// Scenario runs shown in the scenarios panel; null in tests.
   final ScenarioRunsCubit? runs;
+
+  /// The `emu` helper, for tools that create or remove devices.
+  final EmuBridge? emu;
 
   /// MCP text content: [value] as is when a String, else pretty JSON.
   List<Map<String, Object?>> text(Object value) => [

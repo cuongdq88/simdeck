@@ -10,6 +10,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:simutil_app/src/automation/app_automation.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
 import 'package:simutil_app/src/app.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/logging/bloc_log.dart';
@@ -70,6 +71,7 @@ Future<void> main() async {
       ),
       marks: getIt<TouchMarks>(),
       runs: getIt<ScenarioRunsCubit>(),
+      emu: getIt<EmuBridge>(),
     ),
   );
   final mcp = getIt.registerSingleton(

@@ -1,5 +1,6 @@
 import 'package:simutil_app/src/mcp/mcp_server.dart';
 import 'package:simutil_app/src/mcp/tools/capture_tools.dart';
+import 'package:simutil_app/src/mcp/tools/create_tools.dart';
 import 'package:simutil_app/src/mcp/tools/device_tools.dart';
 import 'package:simutil_app/src/mcp/tools/input_tools.dart';
 import 'package:simutil_app/src/mcp/tools/tool_context.dart';
@@ -10,4 +11,5 @@ List<McpTool> simutilTools(ToolContext context) => [
   ...deviceTools(context),
   ...inputTools(context),
   ...captureTools(context),
+  ...createTools(context),
 ];

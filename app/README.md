@@ -46,6 +46,9 @@ claude mcp add --transport http simdeck http://127.0.0.1:8765/mcp
 | Tool | What it does |
 | ---- | ------------ |
 | `list_devices` | Devices with state, slim mode, streaming (with `fps` shown), and `recording_seconds` while recording |
+| `get_device_catalogs` | Installed Android APIs with their tag/ABI pairs, hardware profiles, iOS device types and runtimes |
+| `create_avd` / `create_simulator` | Create a device from those catalogs (then `start_device` boots it headless) |
+| `delete_device` | Delete a shut-down device; the shared-dir / running / physical guards apply |
 | `get_spotlight` | Stream layout, the device shown large, how long it and the grid have been recording |
 | `start_device` / `shutdown_device` | Boot (headless by default) or shut down an emulator / simulator |
 | `stream_device` | Show a running device in the grid |
