@@ -51,6 +51,17 @@ void main() {
     expect(c.canSubmit, isFalse);
   });
 
+  test('forCreate takes the platform from the group that opened it', () {
+    expect(
+      CreateDeviceController.forCreate(platform: FormPlatform.ios).form.platform,
+      FormPlatform.ios,
+    );
+    expect(
+      CreateDeviceController.forCreate().form.platform,
+      FormPlatform.android,
+    );
+  });
+
   test('suggests a name from the profile and API', () {
     expect(
       suggestName(

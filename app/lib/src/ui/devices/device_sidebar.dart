@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_app/src/ui/connect/connect_dialog.dart';
+import 'package:simutil_app/src/ui/create/create_device_controller.dart';
 import 'package:simutil_app/src/ui/create/create_device_sheet.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/devices/devices_state.dart';
@@ -93,6 +94,26 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
                       state: state,
                       collapsed: _collapsed.contains(key),
                       onToggle: () => _toggle(key),
+                      // The add row lives in the group it adds to, so the
+                      // form does not have to ask which platform.
+                      onAdd: switch (key) {
+                        'android-emulators' => () => showCreateDeviceSheet(
+                          context,
+                          platform: FormPlatform.android,
+                        ),
+                        'ios-simulators' => () => showCreateDeviceSheet(
+                          context,
+                          platform: FormPlatform.ios,
+                        ),
+                        _ => null,
+                      },
+                      addLabel: switch (key) {
+                        'android-emulators' => 'New Android emulator',
+                        'ios-simulators' => 'New iOS simulator',
+                        _ => null,
+                      },
+                      showWhenEmpty:
+                          key == 'android-emulators' || key == 'ios-simulators',
                     ),
                 ],
               ),
@@ -117,12 +138,6 @@ class _SearchRow extends StatelessWidget {
         children: [
           Expanded(child: DeviceSearchField(onChanged: onChanged)),
           const SizedBox(width: 4),
-          SimuIconButton(
-            icon: LucideIcons.plus,
-            tooltip: 'New device (c)',
-            size: 15,
-            onPressed: () => showCreateDeviceSheet(context),
-          ),
           SimuIconButton(
             icon: LucideIcons.wifi,
             tooltip: 'Connect a device over Wi-Fi',
@@ -234,6 +249,41 @@ List<Device> idleDevices(List<Device> devices) => [
     if (!device.isRunning) device,
 ];
 
+/// "＋ New Android emulator" under the last row of its group.
+class _AddRow extends StatelessWidget {
+  const _AddRow({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = SimuTokens.of(context);
+    return SimuHoverable(
+      onTap: onTap,
+      builder: (context, hovered) => Padding(
+        padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
+        child: Row(
+          children: [
+            Icon(
+              LucideIcons.plus,
+              size: 14,
+              color: hovered ? t.accent : t.textFaint,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: t.caption.copyWith(
+                color: hovered ? t.text : t.textMuted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// One collapsible sidebar group: a clickable header with a count, then the
 /// rows.
 class _Section extends StatelessWidget {
@@ -243,6 +293,8 @@ class _Section extends StatelessWidget {
     required this.state,
     required this.collapsed,
     required this.onToggle,
+    this.onAdd,
+    this.addLabel,
     this.showWhenEmpty = false,
   });
 
@@ -252,7 +304,12 @@ class _Section extends StatelessWidget {
   final bool collapsed;
   final VoidCallback onToggle;
 
-  /// Keep the header visible with a 0 count (RUNNING must not vanish).
+  /// Adds a device to this group; null for groups that come from USB.
+  final VoidCallback? onAdd;
+  final String? addLabel;
+
+  /// Keep the header visible with a 0 count (RUNNING and the emulator /
+  /// simulator groups must not vanish).
   final bool showWhenEmpty;
 
   @override
@@ -280,9 +337,12 @@ class _Section extends StatelessWidget {
             ),
           ),
         ),
-        if (!collapsed)
+        if (!collapsed) ...[
           for (final device in devices)
             DeviceRow(device: device, state: state),
+          if (onAdd case final add?)
+            _AddRow(label: addLabel ?? 'New device', onTap: add),
+        ],
       ],
     );
   }

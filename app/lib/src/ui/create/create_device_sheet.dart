@@ -14,10 +14,12 @@ import 'package:simutil_shared/simutil_shared.dart';
 Future<void> showCreateDeviceSheet(
   BuildContext context, {
   CreateDeviceController? edit,
+  FormPlatform platform = FormPlatform.android,
 }) => showDialog<void>(
   context: context,
   barrierDismissible: true,
-  builder: (context) => CreateDeviceSheet(controller: edit),
+  builder: (context) =>
+      CreateDeviceSheet(controller: edit, platform: platform),
 );
 
 /// Opens Edit for a shut-down Android emulator: reads its `config.ini`
@@ -50,7 +52,16 @@ Future<void> showEditDeviceSheet(BuildContext context, Device device) async {
 
 /// One form for both platforms and both modes (spec §9).
 class CreateDeviceSheet extends StatefulWidget {
-  const CreateDeviceSheet({super.key, this.controller, this.onCreate});
+  const CreateDeviceSheet({
+    super.key,
+    this.controller,
+    this.onCreate,
+    this.platform = FormPlatform.android,
+  });
+
+  /// Which group opened the sheet: the sidebar already chose the platform,
+  /// so there is no Android/iOS switch inside the form.
+  final FormPlatform platform;
 
   /// Edit mode; null means Create.
   final CreateDeviceController? controller;
@@ -64,7 +75,8 @@ class CreateDeviceSheet extends StatefulWidget {
 
 class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
   late final CreateDeviceController _c =
-      widget.controller ?? CreateDeviceController.forCreate();
+      widget.controller ??
+      CreateDeviceController.forCreate(platform: widget.platform);
   final _nameController = TextEditingController();
   final _ramController = TextEditingController();
   final _storageController = TextEditingController();
@@ -126,7 +138,14 @@ class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
                     color: t.accent,
                   ),
                   const SizedBox(width: 8),
-                  Text(editing ? 'Edit device' : 'New device', style: t.title),
+                  Text(
+                    editing
+                        ? 'Edit device'
+                        : form.platform == FormPlatform.ios
+                        ? 'New iOS simulator'
+                        : 'New Android emulator',
+                    style: t.title,
+                  ),
                   const Spacer(),
                   SimuIconButton(
                     icon: LucideIcons.x,
@@ -136,24 +155,6 @@ class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
                 ],
               ),
               const SizedBox(height: 14),
-              if (!editing)
-                SegmentedButton<FormPlatform>(
-                  segments: const [
-                    ButtonSegment(
-                      value: FormPlatform.android,
-                      label: Text('Android'),
-                      icon: Icon(LucideIcons.smartphone, size: 14),
-                    ),
-                    ButtonSegment(
-                      value: FormPlatform.ios,
-                      label: Text('iOS'),
-                      icon: Icon(LucideIcons.apple, size: 14),
-                    ),
-                  ],
-                  selected: {form.platform},
-                  onSelectionChanged: (selection) =>
-                      _c.setPlatform(selection.first),
-                ),
               const SizedBox(height: 14),
               if (form.platform == FormPlatform.android)
                 ..._androidFields(t)

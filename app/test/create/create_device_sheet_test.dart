@@ -32,6 +32,25 @@ Widget _wrap(Widget child) => MaterialApp(
 );
 
 void main() {
+  testWidgets('the sidebar picks the platform, there is no tab switch', (
+    tester,
+  ) async {
+    final controller = CreateDeviceController.forCreate(
+      platform: FormPlatform.ios,
+      bridge: EmuBridge(emuPath: 'emu', runner: _Runner()),
+    );
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      _wrap(CreateDeviceSheet(controller: controller)),
+    );
+    await tester.pump();
+
+    expect(find.text('New iOS simulator'), findsOneWidget);
+    expect(find.text('Device type'), findsOneWidget);
+    expect(find.text('Android'), findsNothing);
+    expect(find.byType(SegmentedButton<FormPlatform>), findsNothing);
+  });
+
   testWidgets('edit mode hides the locked image fields', (tester) async {
     final controller = CreateDeviceController.forEdit(
       const AvdConfig(

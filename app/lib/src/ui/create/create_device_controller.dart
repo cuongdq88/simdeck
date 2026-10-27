@@ -50,10 +50,13 @@ class CreateDeviceForm {
 /// Drives the Create / Edit Device sheet: loads the catalogs, keeps the form
 /// valid, and calls the helper.
 class CreateDeviceController extends ChangeNotifier {
-  CreateDeviceController({required this.bridge, AvdConfig? editing})
-    : _editing = editing,
-      _form = editing == null
-          ? const CreateDeviceForm()
+  CreateDeviceController({
+    required this.bridge,
+    AvdConfig? editing,
+    FormPlatform platform = FormPlatform.android,
+  }) : _editing = editing,
+       _form = editing == null
+           ? CreateDeviceForm(platform: platform)
           : CreateDeviceForm(
               name: editing.name,
               api: editing.api,
@@ -62,15 +65,18 @@ class CreateDeviceController extends ChangeNotifier {
               camera: editing.camera,
               orientation: editing.orientation,
               keyboard: editing.keyboard,
-              sdcard: editing.sdcard,
-            ) {
+               sdcard: editing.sdcard,
+             ) {
     notifyListeners();
   }
 
-  factory CreateDeviceController.forCreate({EmuBridge? bridge}) =>
-      CreateDeviceController(
-        bridge: bridge ?? EmuBridge(emuPath: EmuBridge.resolveEmuPath()),
-      );
+  factory CreateDeviceController.forCreate({
+    EmuBridge? bridge,
+    FormPlatform platform = FormPlatform.android,
+  }) => CreateDeviceController(
+    bridge: bridge ?? EmuBridge(emuPath: EmuBridge.resolveEmuPath()),
+    platform: platform,
+  );
 
   factory CreateDeviceController.forEdit(
     AvdConfig config, {
