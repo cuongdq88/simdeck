@@ -62,61 +62,61 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
           _SearchRow(onChanged: (query) => setState(() => _query = query)),
           Expanded(
             child: BlocSignalBuilder<DevicesCubit, DevicesState>(
-              builder: (context, state) => ListView(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
-                children: [
-                  if (state.loading)
-                    const Padding(
+              builder: (context, state) {
+                // One flat item list so ListView.builder only builds the rows
+                // on screen: 25+ devices should not cost a widget each.
+                final items = <_SidebarItem>[
+                  if (state.loading) const _LoadingItem(),
+                  ..._group(
+                    key: 'running',
+                    title: 'Running',
+                    devices: runningDevices(state),
+                    state: state,
+                    showWhenEmpty: true,
+                  ),
+                  ..._group(
+                    key: 'android-devices',
+                    title: 'Android devices',
+                    devices: state.androidDevices,
+                    state: state,
+                  ),
+                  ..._group(
+                    key: 'android-emulators',
+                    title: 'Android emulators',
+                    devices: state.androidEmulators,
+                    state: state,
+                    platform: FormPlatform.android,
+                  ),
+                  ..._group(
+                    key: 'ios-devices',
+                    title: 'iOS devices',
+                    devices: state.iosDevices,
+                    state: state,
+                  ),
+                  ..._group(
+                    key: 'ios-simulators',
+                    title: 'iOS simulators',
+                    devices: state.iosSimulators,
+                    state: state,
+                    platform: FormPlatform.ios,
+                  ),
+                ];
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                  itemCount: items.length,
+                  itemBuilder: (context, index) => switch (items[index]) {
+                    _LoadingItem() => const Padding(
                       padding: EdgeInsets.all(12),
                       child: Center(child: SimuSpinner()),
                     ),
-                  _Section(
-                    title: 'Running',
-                    devices: _filter(runningDevices(state)),
-                    state: state,
-                    collapsed: _collapsed.contains('running'),
-                    onToggle: () => _toggle('running'),
-                    showWhenEmpty: true,
-                  ),
-                  for (final (key, title, devices) in [
-                    ('android-devices', 'Android devices', state.androidDevices),
-                    (
-                      'android-emulators',
-                      'Android emulators',
-                      state.androidEmulators,
-                    ),
-                    ('ios-devices', 'iOS devices', state.iosDevices),
-                    ('ios-simulators', 'iOS simulators', state.iosSimulators),
-                  ])
-                    _Section(
-                      title: title,
-                      devices: _filter(idleDevices(devices)),
+                    _GroupItem(:final header) => header,
+                    _DeviceItem(:final device) => DeviceRow(
+                      device: device,
                       state: state,
-                      collapsed: _collapsed.contains(key),
-                      onToggle: () => _toggle(key),
-                      // The add row lives in the group it adds to, so the
-                      // form does not have to ask which platform.
-                      onAdd: switch (key) {
-                        'android-emulators' => () => showCreateDeviceSheet(
-                          context,
-                          platform: FormPlatform.android,
-                        ),
-                        'ios-simulators' => () => showCreateDeviceSheet(
-                          context,
-                          platform: FormPlatform.ios,
-                        ),
-                        _ => null,
-                      },
-                      addLabel: switch (key) {
-                        'android-emulators' => 'New Android emulator',
-                        'ios-simulators' => 'New iOS simulator',
-                        _ => null,
-                      },
-                      showWhenEmpty:
-                          key == 'android-emulators' || key == 'ios-simulators',
                     ),
-                ],
-              ),
+                  },
+                );
+              },
             ),
           ),
         ],
@@ -249,72 +249,119 @@ List<Device> idleDevices(List<Device> devices) => [
     if (!device.isRunning) device,
 ];
 
-/// One collapsible sidebar group: a clickable header with a count, then the
-/// rows.
-class _Section extends StatelessWidget {
-  const _Section({
+sealed class _SidebarItem {
+  const _SidebarItem();
+}
+
+class _LoadingItem extends _SidebarItem {
+  const _LoadingItem();
+}
+
+/// A group header; [header] is built only when this item is on screen.
+class _GroupItem extends _SidebarItem {
+  const _GroupItem(this.header);
+
+  final Widget header;
+}
+
+class _DeviceItem extends _SidebarItem {
+  const _DeviceItem(this.device);
+
+  final Device device;
+}
+
+extension on _DeviceSidebarState {
+  /// Header plus (unless collapsed) one item per device, already filtered.
+  List<_SidebarItem> _group({
+    required String key,
+    required String title,
+    required List<Device> devices,
+    required DevicesState state,
+    FormPlatform? platform,
+    bool showWhenEmpty = false,
+  }) {
+    final visible = _filter(idleDevices(devices));
+    if (visible.isEmpty && !showWhenEmpty) return const [];
+    final collapsed = _collapsed.contains(key);
+    return [
+      _GroupItem(
+        _GroupHeader(
+          title: title,
+          count: visible.length,
+          collapsed: collapsed,
+          onToggle: () => _toggle(key),
+          addTooltip: switch (platform) {
+            FormPlatform.android => 'New Android emulator',
+            FormPlatform.ios => 'New iOS simulator',
+            null => null,
+          },
+          onAdd: switch (platform) {
+            FormPlatform.android => () => showCreateDeviceSheet(
+              context,
+              platform: FormPlatform.android,
+            ),
+            FormPlatform.ios => () => showCreateDeviceSheet(
+              context,
+              platform: FormPlatform.ios,
+            ),
+            null => null,
+          },
+        ),
+      ),
+      if (!collapsed)
+        for (final device in visible) _DeviceItem(device),
+    ];
+  }
+}
+
+/// Collapsible group header: chevron, title, count, and the group's add
+/// button at the far right.
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
     required this.title,
-    required this.devices,
-    required this.state,
+    required this.count,
     required this.collapsed,
     required this.onToggle,
     this.onAdd,
-    this.addLabel,
-    this.showWhenEmpty = false,
+    this.addTooltip,
   });
 
   final String title;
-  final List<Device> devices;
-  final DevicesState state;
+  final int count;
   final bool collapsed;
   final VoidCallback onToggle;
-
-  /// Adds a device to this group; null for groups that come from USB.
   final VoidCallback? onAdd;
-  final String? addLabel;
-
-  /// Keep the header visible with a 0 count (RUNNING and the emulator /
-  /// simulator groups must not vanish).
-  final bool showWhenEmpty;
+  final String? addTooltip;
 
   @override
   Widget build(BuildContext context) {
-    if (devices.isEmpty && !showWhenEmpty) return const SizedBox.shrink();
     final t = SimuTokens.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SimuHoverable(
-          onTap: onToggle,
-          builder: (context, hovered) => Padding(
-            padding: const EdgeInsets.fromLTRB(4, 12, 0, 4),
-            child: Row(
-              children: [
-                Icon(
-                  collapsed ? LucideIcons.chevronRight : LucideIcons.chevronDown,
-                  size: 13,
-                  color: hovered ? t.text : t.textFaint,
-                ),
-                const SizedBox(width: 4),
-                Expanded(child: Text(title.toUpperCase(), style: t.overline)),
-                Text('${devices.length}', style: t.mono.copyWith(fontSize: 11)),
-                if (onAdd case final add?) ...[
-                  const SizedBox(width: 4),
-                  SimuIconButton(
-                    icon: LucideIcons.plus,
-                    tooltip: addLabel ?? 'New device',
-                    size: 13,
-                    onPressed: add,
-                  ),
-                ],
-              ],
+    return SimuHoverable(
+      onTap: onToggle,
+      builder: (context, hovered) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 12, 0, 4),
+        child: Row(
+          children: [
+            Icon(
+              collapsed ? LucideIcons.chevronRight : LucideIcons.chevronDown,
+              size: 13,
+              color: hovered ? t.text : t.textFaint,
             ),
-          ),
+            const SizedBox(width: 4),
+            Expanded(child: Text(title.toUpperCase(), style: t.overline)),
+            Text('$count', style: t.mono.copyWith(fontSize: 11)),
+            if (onAdd case final add?) ...[
+              const SizedBox(width: 4),
+              SimuIconButton(
+                icon: LucideIcons.plus,
+                tooltip: addTooltip ?? 'New device',
+                size: 13,
+                onPressed: add,
+              ),
+            ],
+          ],
         ),
-        if (!collapsed)
-          for (final device in devices)
-            DeviceRow(device: device, state: state),
-      ],
+      ),
     );
   }
 }

@@ -1,2 +1,8 @@
 #include "../../Flutter/Flutter-Release.xcconfig"
 #include "Warnings.xcconfig"
+
+// SimDeck ships for Apple Silicon only (spec §5): one architecture instead of
+// two halves the app bundle. Build with SIMDECK_UNIVERSAL=1 in
+// scripts/release.sh for a universal copy.
+ARCHS = arm64
+EXCLUDED_ARCHS[sdk=macosx*] = x86_64

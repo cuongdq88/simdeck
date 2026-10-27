@@ -9,16 +9,19 @@ OUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/build"
 cd "$EMU_DIR"
 export PATH="$HOME/.cargo/bin:$PATH"
 
-rustup target add aarch64-apple-darwin x86_64-apple-darwin >/dev/null 2>&1 || true
-
+# Apple Silicon by default; SIMDECK_UNIVERSAL=1 builds both slices.
 cargo build --release --target aarch64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
-
 mkdir -p "$OUT_DIR"
-lipo -create \
-  target/aarch64-apple-darwin/release/emu \
-  target/x86_64-apple-darwin/release/emu \
-  -output "$OUT_DIR/emu-universal"
+if [ "${SIMDECK_UNIVERSAL:-0}" = "1" ]; then
+  rustup target add x86_64-apple-darwin >/dev/null 2>&1 || true
+  cargo build --release --target x86_64-apple-darwin
+  lipo -create \
+    target/aarch64-apple-darwin/release/emu \
+    target/x86_64-apple-darwin/release/emu \
+    -output "$OUT_DIR/emu-universal"
+else
+  cp target/aarch64-apple-darwin/release/emu "$OUT_DIR/emu-universal"
+fi
 
 # Ad-hoc signature with the hardened runtime, so the app can ship without an
 # Apple Developer ID (spec §12.3).
