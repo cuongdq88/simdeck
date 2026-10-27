@@ -14,7 +14,7 @@ List<McpTool> deviceTools(ToolContext c) => [
     name: 'list_devices',
     description:
         'Android emulators/devices and iOS simulators/devices with their '
-        'state, slim mode, whether they are streamed in SimUtil (with the '
+        'state, slim mode, whether they are streamed in SimDeck (with the '
         'frames per second shown) and, when recording, for how many seconds.',
     handler: (_) async {
       await c.devices.refresh(silent: true);
@@ -72,7 +72,7 @@ List<McpTool> deviceTools(ToolContext c) => [
     name: 'start_device',
     description:
         'Boot an emulator/simulator. headless (default true) skips its own '
-        'window and streams it into SimUtil. Android emulators: coldBoot '
+        'window and streams it into SimDeck. Android emulators: coldBoot '
         'skips the snapshot, noAudio boots muted (both default false); '
         'cameraBack / cameraFront pick a camera source: webcam<N> (host '
         'camera), image:<path>, video:<path>, virtualscene, emulated or none '
@@ -177,7 +177,7 @@ List<McpTool> deviceTools(ToolContext c) => [
   ),
   McpTool(
     name: 'stream_device',
-    description: 'Show a running device in the SimUtil grid.',
+    description: 'Show a running device in the SimDeck grid.',
     properties: deviceArg,
     required: ['device'],
     handler: (args) async {

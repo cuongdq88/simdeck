@@ -7,6 +7,7 @@ import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/bridge/emu_exception.dart';
 import 'package:simutil_app/src/bridge/emu_models.dart';
 import 'package:simutil_app/src/setup/toolchain_setup_controller.dart';
+import 'package:simutil_app/src/update/app_update_cubit.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
 import 'package:simutil_app/src/ui/runtimes/runtime_manager_controller.dart';
 
@@ -29,6 +30,7 @@ class EnvironmentPanel extends StatefulWidget {
 
 class _EnvironmentPanelState extends State<EnvironmentPanel> {
   late Future<EnvironmentReport> _report = widget.bridge.envCheck();
+  final _version = getAppVersion();
   ToolchainSetupController? _setup;
 
   void _startSetup(EnvironmentReport report) {
@@ -119,6 +121,14 @@ class _EnvironmentPanelState extends State<EnvironmentPanel> {
                       Icon(LucideIcons.stethoscope, size: 16, color: t.accent),
                       const SizedBox(width: 8),
                       Text('Environment', style: t.title),
+                      const SizedBox(width: 8),
+                      FutureBuilder<String>(
+                        future: _version,
+                        builder: (context, snapshot) => Text(
+                          'SimDeck ${snapshot.data ?? ''}',
+                          style: t.caption,
+                        ),
+                      ),
                       const Spacer(),
                       SimuIconButton(
                         icon: LucideIcons.copy,

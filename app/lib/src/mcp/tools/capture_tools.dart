@@ -22,8 +22,8 @@ List<McpTool> captureTools(ToolContext c) => [
   McpTool(
     name: 'record_device',
     description:
-        'Start or stop recording a device to ~/Movies/SimUtil '
-        '(~/Videos/SimUtil). Returns the file when stopping.',
+        'Start or stop recording a device to ~/Movies/SimDeck '
+        '(~/Videos/SimDeck). Returns the file when stopping.',
     properties: deviceArg,
     required: ['device'],
     handler: (args) async {
@@ -39,7 +39,7 @@ List<McpTool> captureTools(ToolContext c) => [
   McpTool(
     name: 'record_grid',
     description:
-        'Start or stop recording the whole SimUtil grid. quality: low '
+        'Start or stop recording the whole SimDeck grid. quality: low '
         '(15 fps), standard (24 fps), high (30 fps, full resolution) or, on '
         'macOS, smooth (60 fps, full resolution); '
         "defaults to the app's choice. Only one recording (grid or device) "

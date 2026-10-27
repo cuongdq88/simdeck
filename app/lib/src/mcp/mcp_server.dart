@@ -176,7 +176,7 @@ class McpServer {
             'capabilities': _capabilities,
             'instructions':
                 'Controls the Android emulators/devices and iOS simulators '
-                'managed by the SimUtil desktop app.',
+                'managed by the SimDeck desktop app.',
             'ttlMs': 3600000,
             'cacheScope': 'public',
           }),
