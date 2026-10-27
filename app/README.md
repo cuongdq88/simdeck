@@ -1,20 +1,19 @@
 <p align="center">
-  <img src="macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png" alt="SimUtil desktop" width="128" />
+  <img src="macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_256.png" alt="SimDeck desktop" width="128" />
 </p>
 
-# SimUtil desktop
+# SimDeck desktop
 
-Flutter desktop app (macOS, Windows, Linux): a tray menu that lists and
-starts devices, and a window that streams and controls many Android
-emulators/devices and iOS simulators side by side.
+Flutter desktop app: a window that creates, streams and controls many Android
+emulators/devices and iOS simulators side by side. This package is part of
+[SimDeck](../README.md); the macOS app is what the cask installs.
 
 - Start devices headless (no emulator window / Simulator app) and stream
   them into the grid; stop them; slim iOS simulators to save memory.
 - Touch, swipe and navigation buttons on every stream; Apple device frames
   for simulators (from your Xcode), drawn frames otherwise.
 - Grid or spotlight layouts (one stream large, the rest in a strip).
-- Record one device or the whole grid to `~/Movies/SimUtil`
-  (`~/Videos/SimUtil` on Windows/Linux).
+- Record one device or the whole grid to `~/Movies/SimDeck`.
 - Right-click a device for per-device settings (headless, cold boot,
   stream resolution / frame rate / bit rate).
 - Clear Xcode DerivedData (macOS) from the top bar or the tray menu, after a
@@ -80,54 +79,26 @@ common start and `steps_ms`.
 
 ## Install
 
-On macOS and Linux one command installs the app and the tools it drives: `adb` (Android
-platform-tools) and `ffmpeg` (recordings). The scrcpy server ships inside the
-app, so scrcpy itself is optional.
-
-macOS: update Homebrew first so it sees the latest cask, then tap and
-install:
+SimDeck ships as a macOS app through Homebrew:
 
 ```bash
-brew update
-brew tap dungngminh/simutil
-brew install --cask simutil-desktop
+brew install --cask cuongdq88/simdeck/simdeck
 ```
 
-Linux:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/app/packaging/linux/install.sh | bash
-```
-
-Windows: run the setup `.exe` below. Installers are attached to the `app-v*`
-releases on
-[GitHub Releases](https://github.com/dungngminh/simutil/releases?q=app-v):
-
-- macOS: `SimUtil-macos.dmg` (Apple Silicon + Intel), drag SimUtil onto
-  Applications. Unsigned builds: run `xattr -dr com.apple.quarantine
-  /Applications/SimUtil.app` once if macOS says the app is damaged.
-- Windows: `SimUtil-windows-x64-setup.exe`, a per-user install (no admin);
-  it offers to install adb and FFmpeg with winget.
-- Linux: `SimUtil-linux-x86_64.AppImage`; `chmod +x` and run it. Needs
-  `libfuse2` (or pass `--appimage-extract-and-run`). Packaged as an AppImage
-  rather than Flatpak / Snap because their sandboxes block the host `adb`
-  and USB access the app relies on.
-
-Not installed for you: Android Studio / the SDK emulator (only needed to run
-Android emulators) and Xcode (iOS simulators, macOS only).
+The cask pulls in `adb` and `ffmpeg`. The Android SDK (command-line tools +
+`emulator`) and Xcode with a simulator runtime are prerequisites; the app offers
+to install the SDK pieces on first run. See the [root README](../README.md) for
+requirements, the MCP setup, troubleshooting and known limitations.
 
 ## Requirements
 
-- Android streaming: `adb`. The app ships the
-  [scrcpy](https://github.com/Genymobile/scrcpy) 4.0 server (Apache-2.0); an
-  installed scrcpy 3+ or `SCRCPY_SERVER_PATH` takes precedence.
-- iOS streaming: macOS with Xcode. On Xcode 27, Device Hub may take over input;
-  the tile offers a repair (restarts the simulator's apps).
-- Recording: `ffmpeg` (`.mp4` output for Android, and grid recording on
-  Windows / Linux). On macOS grid recording is native (macOS 12.3+) and asks
-  for the Screen Recording permission on first use.
-- Linux build: `libgtk-3-dev libx11-dev libxi-dev libayatana-appindicator3-dev
-  libavcodec-dev libswscale-dev`.
+- macOS 12+ (universal build; Apple Silicon tested).
+- Android: `sdkmanager`/`avdmanager` and the `emulator` binary; system images
+  are installed from the app's SDK Manager.
+- iOS: Xcode with at least one runtime. On Xcode 27, Device Hub may take over
+  input; the tile offers a repair (restarts the simulator's apps).
+- Recording: `ffmpeg` for `.mp4` output; grid recording on macOS is native and
+  asks for the Screen Recording permission.
 
 ## Run
 

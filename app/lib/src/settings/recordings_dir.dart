@@ -1,6 +1,6 @@
 import 'dart:io';
 
-/// `~/Movies/SimUtil` on macOS, `~/Videos/SimUtil` elsewhere; created on use.
+/// `~/Movies/SimDeck` on macOS, `~/Videos/SimDeck` elsewhere; created on use.
 String recordingsDirectory() {
   final home =
       Platform.environment['HOME'] ??
@@ -8,7 +8,7 @@ String recordingsDirectory() {
       '.';
   final dir = Directory(
     '$home${Platform.pathSeparator}${Platform.isMacOS ? 'Movies' : 'Videos'}'
-    '${Platform.pathSeparator}SimUtil',
+    '${Platform.pathSeparator}SimDeck',
   )..createSync(recursive: true);
   return dir.path;
 }

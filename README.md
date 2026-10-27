@@ -1,238 +1,186 @@
 <p align="center">
-  <img src="art/simutil.png" alt="SimDeck" width="160" />
+  <img src="art/simutil.png" alt="SimDeck" width="140" />
 </p>
 <h1 align="center">SimDeck</h1>
 
 <p align="center">
   <strong>Create, run, stream and delete Android emulators and iOS simulators, without Android Studio</strong><br>
-  A macOS desktop app with one place for AVDs, runtimes, scrcpy/gRPC streams, input, recording and an agent-facing MCP server.
+  One macOS app for AVDs, system images, iOS runtimes, device screens, input and agent automation.
 </p>
 
 > **Where this comes from.** SimDeck is a **public fork** of two MIT projects, and it says so on purpose:
 >
-> - [**dungngminh/simutil**](https://github.com/dungngminh/simutil) — the Flutter app shell, streams, input, recording, TUI/CLI and MCP server. Forked at tag `app-v0.5.0`.
-> - [**wasabeef/emu**](https://github.com/wasabeef/emu) — the Rust device manager (AVD create/edit, system images, iOS simulators), embedded as the `emu` JSON helper in `SimDeck.app/Contents/Resources/emu`. Our patches live in the fork [**cuongdq88/emu**](https://github.com/cuongdq88/emu/tree/simdeck-json-cli), based on tag `v1.3.0`.
+> - [**dungngminh/simutil**](https://github.com/dungngminh/simutil) — the Flutter app shell, streams, input, recording and MCP server. Forked at tag `app-v0.5.0`.
+> - [**wasabeef/emu**](https://github.com/wasabeef/emu) — the Rust device manager (AVD create/edit, system images, iOS simulators), embedded as the `emu` JSON helper. Our patches live in the fork [**cuongdq88/emu**](https://github.com/cuongdq88/emu/tree/simdeck-json-cli), based on `v1.3.0`.
 >
-> The changes on top are the Create/Edit device sheet, the JSON helper CLI, the deletion guard, the SDK Manager and first-run setup, packaging, and performance work. Both upstreams stay MIT-licensed: see [LICENSE](LICENSE) and [third_party/](third_party/).
-
-Mobile development means juggling Android Studio, Xcode, `adb`, `simctl`,
-scrcpy and a pile of scripts just to get a device up and look at it.
-SimDeck puts those chores in one place, without opening an IDE:
-
-- **SimDeck Desktop** — create Android AVDs and iOS simulators, install system
-  images, then stream and control several devices side by side, record them,
-  and let AI agents drive them over MCP.
-- **`simutil` CLI** — list, launch and shut down devices, connect over Wi-Fi,
-  read Logcat and run your own tools from scripts or the terminal.
-- **Dart packages** — the same device services (`adb`, `simctl`, `devicectl`)
-  as libraries for your own tooling.
-
-Runs on macOS, Linux and Windows. iOS features need macOS (Xcode).
-
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/2ffebae8-f22d-4b66-8fbe-e2e2e39c202f" alt="SimUtil Desktop" />
-</p>
-
-https://github.com/user-attachments/assets/b0463741-6d31-496d-99a8-264a5e69457a
-
-<p align="center">
-  <img src="art/showcase-simutil.gif" width="100%" alt="simutil interactive device picker" />
-</p>
-
-<p align="center">
-  <img src="art/showcase.png" alt="simutil interactive device picker" />
-</p>
-
-## Utilities
-
-| | Utility | Desktop | CLI |
-| --- | --- | :---: | :---: |
-| **Devices** | Start / stop emulators and simulators, headless or with their window | ✓ | ✓ |
-| | Android launch options: cold boot, no audio | ✓ | ✓ |
-| | Wipe data or delete an emulator / simulator | ✓ | |
-| | Slim iOS simulators (about 1 GB of memory instead of 4 GB) | ✓ | |
-| **Stream & control** | Many devices side by side, grid or spotlight layout | ✓ | |
-| | Real Android phones over USB or Wi-Fi | ✓ | |
-| | Touch, swipe, navigation buttons and keyboard typing on every stream | ✓ | |
-| | Real iPhones / iPads connected by USB: device frame, screenshots, recording with sound (view only, macOS) | ✓ | |
-| | Built-in scrcpy server, no separate install | ✓ | |
-| **Connect** | Wireless ADB by QR code, pairing code or IP | ✓ | ✓ |
-| **Capture** | Screenshot one device or the whole grid | ✓ | |
-| | Record one device or the whole grid (native 60 fps on macOS) | ✓ | |
-| **Apps** | Install by dropping an `.apk` / `.app` / `.ipa` on a device | ✓ | |
-| | Convert an iPhone build so it runs on a simulator (Apple Silicon) | ✓ | |
-| **Test & automate** | Scenario studio: YAML steps (tap by label, swipe, type, assert) on many devices at once | ✓ | |
-| | MCP server for Claude Code, Codex, Cursor, Gemini CLI, VS Code | ✓ | |
-| | JSON output and a full command schema for scripts and agents | | ✓ |
-| **Debug** | Logcat with filtering | | ✓ |
-| | Custom tools (scrcpy, Maestro, scripts) as YAML plugins | | ✓ |
-| **Clean up** | Clear Xcode DerivedData after a size preview (macOS) | ✓ | ✓ |
+> What SimDeck adds on top: the Create/Edit device sheet, the helper JSON CLI, the deletion guard, the SDK Manager, first-run toolchain setup, the brew cask and the performance work. Both upstreams stay MIT-licensed — see [LICENSE](LICENSE) and [third_party/](third_party/).
 
 ## Screenshots
 
-![SimDeck streaming an Android emulator and an iOS simulator side by side](docs/screenshots/grid.jpg)
+![SimDeck streaming Android emulators and an iOS simulator side by side](docs/screenshots/grid.jpg)
 
-The sidebar groups what is **running** on top, keeps emulator/simulator groups
-(both with their add button) below, and every shut-down row offers start, edit,
-wipe and delete:
+The sidebar puts what is **running** on top; emulator and simulator groups keep
+their add button, and every shut-down row offers start, edit, wipe and delete:
 
-<img src="docs/screenshots/sidebar.jpg" alt="SimDeck sidebar: RUNNING group with four devices, Android emulators and iOS simulators" width="300">
+<img src="docs/screenshots/sidebar.jpg" alt="SimDeck sidebar: RUNNING group, Android emulators and iOS simulators" width="300">
+
+## What it does
+
+- **Create** an Android AVD from a hardware profile and an installed system
+  image (API, tag, ABI, RAM, storage, camera, orientation, keyboard), or an iOS
+  simulator from a device type and runtime.
+- **Edit** a shut-down AVD: RAM, storage, camera, orientation, keyboard, SD
+  card. The image identity (profile / API / tag / ABI) stays locked, like
+  Android Studio; every other `config.ini` key is preserved byte for byte and
+  the file is written atomically.
+- **SDK Manager**: installed and downloadable system images grouped by API,
+  install/uninstall with progress, SDK licence acceptance.
+- **Run**: start headless (the screen only appears in SimDeck), stop, wipe,
+  delete. Deletion is refused when two `.ini` files point at one AVD directory,
+  when the device is running, or when an image is still in use — with the names
+  involved in the message.
+- **See and control**: Android emulators over their gRPC API, other Android
+  devices through scrcpy, iOS simulators natively. Tap, swipe, Back/Home/
+  Recents, typing, screenshots, recording.
+- **Diagnose**: one panel with `ANDROID_HOME`, `adb` / `emulator` /
+  `avdmanager` / `sdkmanager` versions, Xcode, licence state and free disk.
+- **Automate**: an MCP server so agents can list catalogs, create devices,
+  boot them headless, tap, screenshot and delete.
+
+## Requirements
+
+- macOS 12+ (Apple Silicon tested; the build is universal).
+- **Android**: `sdkmanager`, `avdmanager` (command-line tools) and the
+  `emulator` binary. Without Android Studio:
+
+  ```bash
+  brew install --cask android-commandlinetools
+  sdkmanager "platform-tools" "emulator" "platforms;android-36"
+  ```
+
+  SimDeck finds the SDK via `ANDROID_HOME`, else `ANDROID_SDK_ROOT`, else
+  `~/Library/Android/sdk`, else `/opt/homebrew/share/android-commandlinetools`.
+- **iOS**: Xcode with at least one downloaded simulator runtime.
+- The cask pulls in `adb` (`android-platform-tools`) and `ffmpeg` (recording).
 
 ## Install
 
-### SimUtil Desktop
+```bash
+brew install --cask cuongdq88/simdeck/simdeck
+```
 
-Installers are on the [releases page](https://github.com/dungngminh/simutil/releases?q=app-v)
-(`app-v*` tags). The app updates itself in place from where you installed it.
+Or download `SimDeck-<version>.dmg` from the
+[releases page](https://github.com/cuongdq88/simdeck/releases) and drag SimDeck
+into Applications. Updates come from `brew upgrade --cask simdeck`; the app has
+**no self-updater**.
 
-**macOS** (Monterey or later; pulls in `adb` and `ffmpeg`):
+On first launch the Environment panel opens by itself when the toolchain is
+incomplete, with a **Set up toolchain** button that installs the command-line
+tools (Homebrew), `platform-tools` and `emulator` (sdkmanager) with progress.
+System images are installed from **SDK Manager** in the toolbar.
+
+SimDeck is ad-hoc signed. If macOS says it is damaged:
 
 ```bash
-brew update
-brew tap dungngminh/simutil
-brew install --cask simutil-desktop
+xattr -dr com.apple.quarantine "/Applications/SimDeck.app"
 ```
 
-Or download `SimUtil-macos.dmg` and drag SimUtil into Applications.
+Uninstall: `brew uninstall --cask simdeck` (settings stay in `~/.simutil`).
 
-**Windows**: run `SimUtil-windows-x64-setup.exe` from the
-[latest desktop release](https://github.com/dungngminh/simutil/releases?q=app-v).
-The installer offers to install Android platform-tools and FFmpeg.
+## Agents (MCP)
 
-**Linux** (x86_64 AppImage; installs `adb`, `ffmpeg` and FUSE, re-run to update):
+The app serves MCP over HTTP at `http://127.0.0.1:8765/mcp` while it is running
+(loopback only; `SIMDECK_MCP_PORT` changes the port). For OpenCode, add to
+`opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "simdeck": { "type": "remote", "url": "http://127.0.0.1:8765/mcp", "enabled": true }
+  }
+}
+```
+
+The plug icon in the toolbar shows copy-ready snippets for Claude Code, Codex,
+Cursor, Gemini CLI and VS Code. 27 tools, including `get_device_catalogs`,
+`create_avd`, `create_simulator`, `start_device` (headless by default),
+`stream_device`, `tap`, `swipe`, `type_text`, `screenshot`, `shutdown_device`
+and `delete_device`. `start_device` boots with `-no-window`, so the emulator
+only appears inside SimDeck.
+
+## Build from source
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/app/packaging/linux/install.sh | bash
+flutter pub get                     # the whole workspace (needs Flutter >= 3.38)
+
+# the Rust helper (universal; SIMDECK_ARM64_ONLY=1 for one slice)
+git clone https://github.com/cuongdq88/emu -b simdeck-json-cli ~/emu
+bash scripts/build-helper.sh ~/emu
+
+cd app && flutter run -d macos      # or: bash scripts/release.sh 0.1.0
 ```
 
-More, including the MCP tool list: [app/README.md](app/README.md).
+`scripts/release.sh <version>` builds the helper, builds the app with
+`SIMDECK_NO_UPDATE=true`, signs the bundle inside-out (keeping its
+entitlements) and writes `build/SimDeck-<version>.dmg` plus its sha256.
 
-### `simutil` CLI
+Tests: `cd app && flutter test`, `dart run melos run analyze`,
+`cd packages/simutil_adb && dart test`, `cargo test` in the emu checkout.
 
-```bash
-# macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/dungngminh/simutil/main/install.sh | bash
+## Layout
 
-# Homebrew
-brew tap dungngminh/simutil && brew install simutil
+| Path | Contents |
+| --- | --- |
+| `app/` | the desktop app: UI, `lib/src/bridge/` (helper client), MCP tools, DI |
+| `packages/simutil_core` | device models, `DeviceService`, `CommandExec`, `IsolateRunner` |
+| `packages/simutil_adb` / `simutil_apple` | adb / scrcpy / emulator-gRPC and simctl/devicectl services |
+| `packages/simutil_shared` | settings, app state, the deletion guard |
+| `packages/simutil_h264` | native H.264 decoder used by the app |
+| `packages/simutil` | the TUI + CLI from SimUtil (source only, not shipped by the cask) |
+| `scripts/` | `build-helper.sh`, `release.sh` |
+| `packaging/` | the cask and release notes for the tap |
 
-# pub.dev
-dart pub global activate simutil
-```
+The helper lives at `SimDeck.app/Contents/Resources/emu` in a release build and
+talks the JSON envelope `{"ok", "data", "error"}` (exit 0 / 1 / 2).
 
-Windows (PowerShell):
+## Troubleshooting
 
-```powershell
-powershell -ExecutionPolicy Bypass -Command "iwr -useb https://raw.githubusercontent.com/dungngminh/simutil/main/install.ps1 | iex"
-```
+| Symptom | Fix |
+| --- | --- |
+| "SimDeck is damaged" | `xattr -dr com.apple.quarantine "/Applications/SimDeck.app"` |
+| Environment shows `sdk_not_found` | install the command-line tools (see Requirements) and reopen the panel |
+| `emulator` or `platform-tools` missing | Set up toolchain in the Environment panel |
+| A device is muted | it was started before audio was fixed; stop and start it again |
+| Grid recording fails | allow SimDeck under System Settings › Privacy & Security › Screen Recording |
+| Nothing in the device list | `adb devices` and `emulator -list-avds` must work in a terminal; refresh the sidebar |
 
-`simutil upgrade` updates it the same way you installed it. simutil checks for
-a new release at most once a day; set `SIMUTIL_NO_UPDATE_CHECK=1` to turn that off.
+## Known limitations
 
-## CLI usage
-
-```bash
-simutil list -v                    # devices on every platform, grouped
-simutil list --json                # for scripts and agents
-simutil launch <device-id>         # boot (alias: start)
-simutil launch <id> -c --no-audio  # cold boot, no audio (Android)
-simutil launch <id> --headless     # no emulator window / Simulator app
-simutil shutdown <device-id>       # alias: stop
-simutil wipe <device-id>           # erase data of a shut-down device (asks y/N)
-simutil delete <device-id> -y      # delete it; -y skips the prompt
-simutil android device list -r     # running adb devices only
-simutil plugin run scrcpy mirror -d emulator-5554
-simutil schema                     # every command as JSON, for agents
-```
-
-Run `simutil` with no arguments for an interactive device picker with ADB
-tools, Logcat and plugins. `simutil <command> --help` lists each command's flags.
-
-### Plugins
-
-Wire external tools (scrcpy, Maestro, your own scripts) to a device in
-`~/.simutil/settings.yaml`, no code changes needed:
-
-```yaml
-plugins:
-  - id: scrcpy
-    label: scrcpy
-    availability:
-      command: scrcpy
-      args: [--version]
-    commands:
-      - id: mirror
-        label: Screen Mirror
-        command: scrcpy
-        args: [-s, "{device.id}"]
-        platforms: [android]
-        requires_running: true
-```
-
-Full reference: [docs/plugins.md](docs/plugins.md).
-
-## Supported platforms
-
-| Host OS | Android emulators & devices | iOS simulators & devices |
-| ------- | --------------------------- | ------------------------ |
-| macOS   | Yes                         | Yes (requires Xcode)     |
-| Linux   | Yes                         | No                       |
-| Windows | Yes                         | No                       |
-
-iOS support uses Apple's tools (`xcrun simctl`, `xcrun devicectl`), which only
-exist on macOS. On Xcode 27+, a simulator opens in DeviceHub.app; earlier
-versions use Simulator.app.
-
-## Packages
-
-Monorepo (pub workspace); each package is versioned and published separately:
-
-| Package | Contents |
-| ------- | -------- |
-| [`app`](app) | SimUtil Desktop: multi-device streaming, recording, scenarios, MCP server |
-| [`simutil`](packages/simutil) | The `simutil` CLI |
-| [`simutil_core`](packages/simutil_core) | Models, `CommandExec`, `DeviceService` |
-| [`simutil_adb`](packages/simutil_adb) | Android: devices, wireless ADB, scrcpy session, Logcat |
-| [`simutil_apple`](packages/simutil_apple) | Apple: simulators, physical devices, Xcode cache |
-| [`simutil_plugins`](packages/simutil_plugins) | YAML plugin catalog and runner |
-| [`simutil_shared`](packages/simutil_shared) | Shared app layer: settings, app state, changelog |
-| [`simutil_h264`](packages/simutil_h264) | Native H.264 decoding into Flutter textures |
-
-## Contributing
-
-```bash
-git clone https://github.com/dungngminh/simutil.git
-cd simutil
-flutter pub get              # whole workspace, desktop app included
-dart run melos run check     # analyze + Dart and Flutter tests
-cd app && flutter run -d macos
-```
-
-Fork, branch, open a Pull Request. Architecture notes: [docs/ai/architecture.md](docs/ai/architecture.md).
-
-## License
-
-MIT — see [LICENSE](LICENSE)
+- macOS only; Windows/Linux are not tested or packaged.
+- Minor API levels such as `android-36.1` cannot be created yet (the helper's
+  `--api` is an integer); their images are visible but not selectable.
+- Without an Apple Developer ID the app is ad-hoc signed, so Gatekeeper needs
+  the `xattr` step above; notarisation is a release-time decision.
+- Streaming an Android device that has no emulator gRPC endpoint (a real phone,
+  or an emulator started by another tool) currently fails to load the bundled
+  scrcpy server — tracked, the gRPC path is unaffected.
 
 ## Credits
 
-SimDeck would not exist without these two projects:
-
 | Project | What we use | Licence | Upstream |
 | --- | --- | --- | --- |
-| SimUtil | App shell (Flutter), streaming, tap/type, recording, CLI/TUI, MCP server | MIT, © 2026 dungngminh | <https://github.com/dungngminh/simutil> |
-| emu | AVD/system-image/iOS-simulator logic, embedded as the `emu` helper | MIT, © 2025 Daichi Furiya | <https://github.com/wasabeef/emu> (our fork: [cuongdq88/emu](https://github.com/cuongdq88/emu/tree/simdeck-json-cli)) |
+| SimUtil | App shell (Flutter), streaming, tap/type, recording, MCP server | MIT, © 2026 dungngminh | <https://github.com/dungngminh/simutil> |
+| emu | AVD / system-image / iOS-simulator logic, embedded as the `emu` helper | MIT, © 2025 Daichi Furiya | <https://github.com/wasabeef/emu> (our fork: [cuongdq88/emu](https://github.com/cuongdq88/emu/tree/simdeck-json-cli)) |
 
-Their licence texts are kept verbatim in [third_party/SIMUTIL-LICENSE](third_party/SIMUTIL-LICENSE)
-and [third_party/EMU-LICENSE](third_party/EMU-LICENSE); the root [LICENSE](LICENSE)
-is SimUtil's MIT text, unchanged.
+Licence texts are kept verbatim in
+[third_party/SIMUTIL-LICENSE](third_party/SIMUTIL-LICENSE) and
+[third_party/EMU-LICENSE](third_party/EMU-LICENSE); the root
+[LICENSE](LICENSE) is SimUtil's MIT text, unchanged.
 
-The Android emulator, `adb`, `avdmanager`, `sdkmanager` and `xcrun simctl` are Google/Apple
-tools; SimDeck only drives them.
+The Android emulator, `adb`, `avdmanager`, `sdkmanager` and `xcrun simctl` are
+Google/Apple tools; SimDeck only drives them.
 
-### Building the helper
+## License
 
-```bash
-git clone https://github.com/cuongdq88/emu -b simdeck-json-cli ~/emu
-bash scripts/build-helper.sh ~/emu     # build/emu-universal, ad-hoc signed
-```
+MIT — see [LICENSE](LICENSE).
