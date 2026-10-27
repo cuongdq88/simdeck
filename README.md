@@ -1,30 +1,27 @@
 <p align="center">
-  <img src="art/simutil.png" alt="SimUtil" width="200" />
+  <img src="art/simutil.png" alt="SimDeck" width="160" />
 </p>
-<h1 align="center">SimUtil</h1>
+<h1 align="center">SimDeck</h1>
 
 <p align="center">
-  <strong>Everyday utilities for Android emulators, iOS simulators and real devices</strong><br>
-  Launch, stream, control, record, test and clean up, from one desktop app or the command line.
+  <strong>Create, run, stream and delete Android emulators and iOS simulators, without Android Studio</strong><br>
+  A macOS desktop app with one place for AVDs, runtimes, scrcpy/gRPC streams, input, recording and an agent-facing MCP server.
 </p>
 
-<p align="center">
-  <a href="https://www.producthunt.com/products/simutil?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-simutil" target="_blank" rel="noopener noreferrer"><img alt="SimUtil on Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1111003&amp;theme=light&amp;t=1774974338508"></a>
-</p>
-<p align="center">
-  <img src="https://img.shields.io/github/stars/dungngminh/simutil" alt="GitHub Repo stars" />
-  <a href="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml"><img src="https://github.com/dungngminh/simutil/actions/workflows/ci.yaml/badge.svg" alt="Build" /></a>
-  <a href="https://github.com/dungngminh/simutil/releases?q=app-v"><img src="https://img.shields.io/github/v/release/dungngminh/simutil?filter=app-v*&label=Desktop" alt="Desktop release" /></a>
-  <a href="https://github.com/dungngminh/simutil/releases?q=cli-v"><img src="https://img.shields.io/github/v/release/dungngminh/simutil?filter=!app-v*&label=CLI" alt="CLI release" /></a>
-</p>
+> **Where this comes from.** SimDeck is a **public fork** of two MIT projects, and it says so on purpose:
+>
+> - [**dungngminh/simutil**](https://github.com/dungngminh/simutil) — the Flutter app shell, streams, input, recording, TUI/CLI and MCP server. Forked at tag `app-v0.5.0`.
+> - [**wasabeef/emu**](https://github.com/wasabeef/emu) — the Rust device manager (AVD create/edit, system images, iOS simulators), embedded as the `emu` JSON helper in `SimDeck.app/Contents/Resources/emu`. Forked at tag `v1.3.0`.
+>
+> The changes on top are the Create/Edit device sheet, the JSON helper CLI, the deletion guard, the SDK Manager and first-run setup, packaging, and performance work. Both upstreams stay MIT-licensed: see [LICENSE](LICENSE) and [third_party/](third_party/).
 
 Mobile development means juggling Android Studio, Xcode, `adb`, `simctl`,
 scrcpy and a pile of scripts just to get a device up and look at it.
-SimUtil puts those chores in one place, without opening an IDE:
+SimDeck puts those chores in one place, without opening an IDE:
 
-- **SimUtil Desktop** — stream and control many devices side by side
-  (emulators, simulators, real Android phones and real iPhones / iPads), record
-  them, run scenarios across them, and let AI agents drive them over MCP.
+- **SimDeck Desktop** — create Android AVDs and iOS simulators, install system
+  images, then stream and control several devices side by side, record them,
+  and let AI agents drive them over MCP.
 - **`simutil` CLI** — list, launch and shut down devices, connect over Wi-Fi,
   read Logcat and run your own tools from scripts or the terminal.
 - **Dart packages** — the same device services (`adb`, `simctl`, `devicectl`)
@@ -206,3 +203,19 @@ Fork, branch, open a Pull Request. Architecture notes: [docs/ai/architecture.md]
 ## License
 
 MIT — see [LICENSE](LICENSE)
+
+## Credits
+
+SimDeck would not exist without these two projects:
+
+| Project | What we use | Licence | Upstream |
+| --- | --- | --- | --- |
+| SimUtil | App shell (Flutter), streaming, tap/type, recording, CLI/TUI, MCP server | MIT, © 2026 dungngminh | <https://github.com/dungngminh/simutil> |
+| emu | AVD/system-image/iOS-simulator logic, embedded as the `emu` helper | MIT, © 2025 Daichi Furiya | <https://github.com/wasabeef/emu> |
+
+Their licence texts are kept verbatim in [third_party/SIMUTIL-LICENSE](third_party/SIMUTIL-LICENSE)
+and [third_party/EMU-LICENSE](third_party/EMU-LICENSE); the root [LICENSE](LICENSE)
+is SimUtil's MIT text, unchanged.
+
+The Android emulator, `adb`, `avdmanager`, `sdkmanager` and `xcrun simctl` are Google/Apple
+tools; SimDeck only drives them.
