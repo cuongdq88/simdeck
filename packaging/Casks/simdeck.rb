@@ -20,7 +20,7 @@ cask "simdeck" do
       sdkmanager "platform-tools" "emulator" "platforms;android-36"
     SimDeck finds the SDK via ANDROID_HOME, else ~/Library/Android/sdk,
     else Homebrew's android-commandlinetools. System images can be
-    installed from the app (toolbar > System images).
+    installed from the app (toolbar > SDK Manager).
     If macOS says "SimDeck is damaged", run:
       xattr -dr com.apple.quarantine "/Applications/SimDeck.app"
   EOS
