@@ -417,6 +417,15 @@ void main() {
       ]);
     });
 
+    test('headless keeps the sound on', () async {
+      final exec = FakeCommandExec((_, _) => FakeCommandExec.ok());
+
+      await service(exec).launchDevice(deviceId: 'Pixel_7', headless: true);
+
+      expect(exec.calls.single.arguments, isNot(contains('-no-audio')));
+      expect(exec.calls.single.arguments, contains('-no-window'));
+    });
+
     test('headless keeps the gpu mode the caller passes', () async {
       final exec = FakeCommandExec((_, _) => FakeCommandExec.ok());
 
@@ -443,10 +452,13 @@ void main() {
         additionalArgs: ['-no-audio', '-no-snapshot-load'],
       );
 
+      // `-no-audio` now comes only from the caller, so it is not repeated
+      // and must survive.
       expect(exec.calls.single.arguments, [
         '@Pixel_7',
         ...AndroidDeviceService.headlessArgs,
         ...AndroidDeviceService.headlessGpuArgs,
+        '-no-audio',
         '-no-snapshot-load',
       ]);
     });

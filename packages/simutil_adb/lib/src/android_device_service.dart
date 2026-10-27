@@ -193,7 +193,8 @@ class AndroidDeviceService implements DeviceService {
     List<String> additionalArgs = const [],
     bool headless = false,
   }) async {
-    // A set: `-no-audio` may come from both headless and the caller.
+    // A set: `-no-audio` / `-no-boot-anim` may come from both headless and
+    // the caller.
     final launchArgs = {
       '@$deviceId',
       if (headless) ...headlessArgs,
@@ -208,9 +209,10 @@ class AndroidDeviceService implements DeviceService {
     );
   }
 
-  /// Emulator flags added by `headless`: no window, audio or boot animation,
-  /// so many emulators fit at once while something else shows the screen.
-  static const headlessArgs = ['-no-window', '-no-audio', '-no-boot-anim'];
+  /// Emulator flags added by `headless`: no window and no boot animation, so
+  /// many emulators fit at once while something else shows the screen. Audio
+  /// stays on — a headless emulator is still the one making the sound.
+  static const headlessArgs = ['-no-window', '-no-boot-anim'];
 
   /// GPU flags added by `headless` unless the caller passes `-gpu`: without a
   /// window `-gpu auto` picks software rendering (lavapipe), which streams
