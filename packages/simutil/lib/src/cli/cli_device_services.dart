@@ -5,6 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_apple/simutil_apple.dart';
 import 'package:simutil_core/simutil_core.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 
 /// Headless device services for CLI commands.
 class CliDeviceServices {
@@ -12,10 +13,16 @@ class CliDeviceServices {
   ///
   /// Defaults to adb and simctl services backed by a synchronous
   /// `CommandExec()`; pass [services] to inject fakes in tests.
-  CliDeviceServices({Map<DeviceOs, DeviceService>? services})
-    : _services = services ?? _defaultServices(CommandExec());
+  CliDeviceServices({
+    Map<DeviceOs, DeviceService>? services,
+    DeletionGuard Function()? guard,
+  }) : _services = services ?? _defaultServices(CommandExec()),
+       _guard = guard ?? DeletionGuard.load;
 
   final Map<DeviceOs, DeviceService> _services;
+
+  /// Builds the deletion guard; tests inject a fixed AVD list.
+  final DeletionGuard Function() _guard;
 
   static Map<DeviceOs, DeviceService> _defaultServices(CommandExec exec) => {
     DeviceOs.android: AndroidDeviceService(exec),
@@ -90,12 +97,28 @@ class CliDeviceServices {
       _serviceFor(device).shutdownSimulator(deviceId: device.id);
 
   /// Erases a shut-down simulator/emulator's user data.
-  Future<bool> wipeDevice(Device device) =>
-      _serviceFor(device).wipeData(deviceId: device.id);
+  Future<bool> wipeDevice(Device device) async {
+    await _guardDestructive(device);
+    return _serviceFor(device).wipeData(deviceId: device.id);
+  }
 
   /// Permanently deletes a shut-down simulator/emulator.
-  Future<bool> deleteDevice(Device device) =>
-      _serviceFor(device).deleteSimulator(deviceId: device.id);
+  Future<bool> deleteDevice(Device device) async {
+    await _guardDestructive(device);
+    return _serviceFor(device).deleteSimulator(deviceId: device.id);
+  }
+
+  /// Refuses shared AVD directories and running AVDs (spec §10), so the CLI
+  /// cannot bypass the guard the GUI runs.
+  Future<void> _guardDestructive(Device device) async {
+    if (device.os != DeviceOs.android) return;
+    final verdict = await _guard().checkAvd(device.name);
+    // A device adb knows but the AVD home does not (created elsewhere, or
+    // already gone) has no shared directory to protect.
+    if (!verdict.allowed && verdict.code != 'not_found') {
+      throw UsageException(verdict.message ?? 'Blocked', '');
+    }
+  }
 
   DeviceService _serviceFor(Device device) =>
       _services[device.os] ??

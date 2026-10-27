@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:test/test.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 
 void main() {
   test('blocks delete when two ini share one avd dir', () async {

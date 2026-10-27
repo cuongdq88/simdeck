@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_apple/simutil_apple.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';

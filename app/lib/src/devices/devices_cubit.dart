@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:bloc_signals/bloc_signals.dart';
 import 'package:flutter/services.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 import 'package:simutil_app/src/devices/devices_state.dart';
 import 'package:simutil_core/simutil_core.dart';
-import 'package:simutil_shared/simutil_shared.dart';
 
 /// Reads and toggles slim mode for an iOS simulator.
 abstract interface class SlimControl {

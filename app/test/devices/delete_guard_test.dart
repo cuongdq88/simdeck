@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_core/simutil_core.dart';
 import 'package:simutil_core/testing.dart';

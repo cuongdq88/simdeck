@@ -726,6 +726,16 @@ class _SimutilTuiAppState extends State<SimutilTuiApp> {
       );
       return;
     }
+    // The same guard the desktop app uses: a shared AVD directory must not
+    // be destroyed from the TUI either (spec §10).
+    if (device.os == DeviceOs.android) {
+      final verdict = await DeletionGuard.load().checkAvd(device.name);
+      if (!verdict.allowed) {
+        if (!mounted) return;
+        setState(() => _statusMessage = verdict.message ?? 'Blocked');
+        return;
+      }
+    }
 
     final confirmed = await showConfirmDialog(
       context: context,

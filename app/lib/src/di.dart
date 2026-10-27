@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_adb/simutil_adb.dart';

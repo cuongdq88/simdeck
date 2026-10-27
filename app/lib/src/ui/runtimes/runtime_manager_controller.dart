@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/bridge/emu_exception.dart';
 import 'package:simutil_app/src/bridge/emu_models.dart';
