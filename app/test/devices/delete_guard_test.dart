@@ -53,6 +53,73 @@ void main() {
     await cubit.close();
   });
 
+  test('a running device is refused with a message, not silently', () async {
+    final android = FakeDeviceService(
+      simulators: [
+        Device.android(
+          id: 'ZZ_Run',
+          name: 'ZZ_Run',
+          state: DeviceState.booted,
+          type: DeviceType.simulator,
+        ),
+      ],
+    );
+    final cubit = DevicesCubit(
+      android: android,
+      ios: FakeDeviceService(),
+      loadIos: false,
+      guard: DeletionGuard.fromFiles(const [
+        IniFile('ZZ_Run', '/avd/ZZ_Run.avd'),
+      ]),
+    );
+    await cubit.refresh();
+    final notices = <DeviceNotice>[];
+    cubit.notices.listen(notices.add);
+
+    await cubit.delete(emulator('ZZ_Run'));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(android.deleted, isEmpty);
+    expect(notices.last.kind, DeviceNoticeKind.error);
+    expect(notices.last.text, contains('Stop ZZ_Run'));
+    await cubit.close();
+  });
+
+  test('a row built from a stale booted state still deletes', () async {
+    final android = FakeDeviceService(
+      simulators: [
+        Device.android(
+          id: 'ZZ_Stale',
+          name: 'ZZ_Stale',
+          state: DeviceState.shutdown,
+          type: DeviceType.simulator,
+        ),
+      ],
+    );
+    final cubit = DevicesCubit(
+      android: android,
+      ios: FakeDeviceService(),
+      loadIos: false,
+      guard: DeletionGuard.fromFiles(const [
+        IniFile('ZZ_Stale', '/avd/ZZ_Stale.avd'),
+      ]),
+    );
+    await cubit.refresh();
+
+    // The row was rendered while the device was still booted.
+    await cubit.delete(
+      Device.android(
+        id: 'ZZ_Stale',
+        name: 'ZZ_Stale',
+        state: DeviceState.booted,
+        type: DeviceType.simulator,
+      ),
+    );
+
+    expect(android.deleted, ['ZZ_Stale']);
+    await cubit.close();
+  });
+
   test('a lone AVD still deletes', () async {
     final android = FakeDeviceService();
     final cubit = DevicesCubit(

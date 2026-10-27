@@ -67,6 +67,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Edit device'), findsOneWidget);
+    expect(
+      find.text('The name cannot change; create a new device for another name.'),
+      findsOneWidget,
+    );
     expect(find.text('Hardware profile'), findsNothing);
     expect(find.text('API level (installed images)'), findsNothing);
     expect(find.text('RAM (MB)'), findsOneWidget);
@@ -88,7 +92,8 @@ void main() {
     await tester.pumpWidget(_wrap(CreateDeviceSheet(controller: controller)));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).first, '4096');
+    // The name field is read-only in Edit, so RAM is the second field.
+    await tester.enterText(find.byType(TextField).at(1), '4096');
     await tester.pump();
     await tester.tap(find.text('Update'));
     await tester.pumpAndSettle();

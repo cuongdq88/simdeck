@@ -230,9 +230,26 @@ class DevicesCubit extends CubitSignal<DevicesState> {
     return null;
   }
 
+  /// The device as the latest refresh sees it; a row can be built from a
+  /// state that changed since (stopped or booted meanwhile).
+  Device _current(Device device) =>
+      stateValue.all.where((d) => d.id == device.id).firstOrNull ?? device;
+
+  /// Only a shut-down device may be destroyed; say so instead of returning
+  /// silently, which looked like "delete did nothing".
+  bool _refuseUnlessStopped(Device device, String action) {
+    if (_current(device).state == DeviceState.shutdown) return false;
+    _notify(
+      'Stop ${device.name} before you $action it',
+      DeviceNoticeKind.error,
+    );
+    return true;
+  }
+
   /// Permanently deletes a shut-down emulator/simulator.
   Future<void> delete(Device device) async {
-    if (device.type.isPhysical || device.state != DeviceState.shutdown) return;
+    if (device.type.isPhysical) return;
+    if (_refuseUnlessStopped(device, 'delete')) return;
     if (await _blocked(device)) return;
     _setBusy(device.id, true);
     _progress(device, 'Deleting ${device.name}…');
@@ -243,7 +260,8 @@ class DevicesCubit extends CubitSignal<DevicesState> {
 
   /// Erases a shut-down simulator / emulator's data (factory reset).
   Future<void> wipeData(Device device) async {
-    if (device.type.isPhysical || device.state != DeviceState.shutdown) return;
+    if (device.type.isPhysical) return;
+    if (_refuseUnlessStopped(device, 'wipe')) return;
     if (await _blocked(device)) return;
     _setBusy(device.id, true);
     _progress(device, 'Wiping ${device.name}…');

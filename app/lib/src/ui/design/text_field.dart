@@ -17,6 +17,7 @@ class SimuTextField extends StatelessWidget {
     this.trailing,
     this.monospace = false,
     this.autofocus = false,
+    this.readOnly = false,
     this.keyboardType,
     this.inputFormatters,
   });
@@ -30,6 +31,9 @@ class SimuTextField extends StatelessWidget {
   final Widget? trailing;
   final bool monospace;
   final bool autofocus;
+
+  /// Shows the value but does not accept edits (e.g. a locked AVD name).
+  final bool readOnly;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? inputFormatters;
 
@@ -37,7 +41,9 @@ class SimuTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = SimuTokens.of(context);
     final style = monospace
-        ? t.mono.copyWith(fontSize: 13, color: t.text)
+        ? t.mono.copyWith(fontSize: 13, color: readOnly ? t.textMuted : t.text)
+        : readOnly
+        ? t.body.copyWith(color: t.textMuted)
         : t.body;
     Widget field = Material(
       type: MaterialType.transparency,
@@ -46,6 +52,7 @@ class SimuTextField extends StatelessWidget {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
         autofocus: autofocus,
+        readOnly: readOnly,
         keyboardType: keyboardType,
         inputFormatters: inputFormatters,
         style: style,

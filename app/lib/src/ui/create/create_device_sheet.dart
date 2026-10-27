@@ -194,9 +194,18 @@ class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
       _label(t, 'Name'),
       SimuTextField(
         controller: _nameController,
-        hint: 'ZZ_MyDevice',
+        hint: 'Emulator',
+        readOnly: locked,
         onChanged: _c.setName,
       ),
+      if (locked)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'The name cannot change; create a new device for another name.',
+            style: t.caption,
+          ),
+        ),
       if (_c.nameError case final error?)
         Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -266,7 +275,7 @@ class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
       _label(t, 'Name'),
       SimuTextField(
         controller: _nameController,
-        hint: 'ZZ_MySimulator',
+        hint: 'Simulator',
         onChanged: _c.setName,
       ),
       const SizedBox(height: 12),
