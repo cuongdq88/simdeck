@@ -27,6 +27,9 @@ import 'package:simutil_app/src/update/app_update_cubit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Never disposed on purpose: semantics expose the custom-drawn UI to
+  // VoiceOver and to UI automation for the whole run.
+  WidgetsBinding.instance.ensureSemantics();
   await windowManager.ensureInitialized();
   await configureDependencies();
   final debugLog = getIt<DebugLog>();
@@ -39,7 +42,8 @@ Future<void> main() async {
     ),
   );
 
-  getIt<AppUpdateCubit>().check();
+  // Release builds register no update cubit at all (spec §12.2).
+  if (getIt.isRegistered<AppUpdateCubit>()) getIt<AppUpdateCubit>().check();
   final devices = getIt<DevicesCubit>()..start();
   final streams = getIt<StreamsCubit>();
   devices.state.subscribe((state) {

@@ -34,9 +34,18 @@ mkdir -p "$APP/Contents/Resources"
 cp "$BUILD/emu-universal" "$APP/Contents/Resources/emu"
 chmod +x "$APP/Contents/Resources/emu"
 
-# Inside out: nested binaries first, then the bundle.
+# Inside out: nested binaries first, then the bundle. The bundle must keep
+# its entitlements: re-signing without them drops disable-library-validation
+# and the app cannot load the emulator libraries (it dies on launch).
 codesign --force --sign - --options runtime --timestamp=none "$APP/Contents/Resources/emu"
-codesign --force --deep --sign - --options runtime --timestamp=none "$APP"
+codesign --force --preserve-metadata=entitlements,requirements,flags \
+  --sign - --options runtime --timestamp=none "$APP"
+
+codesign --verify --deep --strict "$APP"
+if ! codesign -d --entitlements :- "$APP" 2>/dev/null | grep -q disable-library-validation; then
+  echo "release: the signature lost disable-library-validation; the app would not launch" >&2
+  exit 1
+fi
 
 STAGE="$BUILD/dmg"
 rm -rf "$STAGE"
