@@ -17,12 +17,11 @@ void main() {
     await di.reset();
   });
 
-  test('the release build define alone disables updates', () {
-    expect(
-      updatesEnabled(const {}, dartDefine: 'true'),
-      isFalse,
-    );
+  test('updates are off unless a build opts in', () {
+    expect(updatesEnabled(const {}, dartDefine: 'true'), isFalse);
     expect(updatesEnabled(const {'SIMDECK_NO_UPDATE': '1'}), isFalse);
-    expect(updatesEnabled(const {}), isTrue);
+    // A dev build must not offer the upstream SimUtil release.
+    expect(updatesEnabled(const {}), isFalse);
+    expect(updatesEnabled(const {'SIMDECK_UPDATES': '1'}), isTrue);
   });
 }

@@ -31,10 +31,14 @@ final getIt = GetIt.instance;
 bool updatesEnabled(
   Map<String, String> env, {
   String dartDefine = const String.fromEnvironment('SIMDECK_NO_UPDATE'),
-}) =>
-    dartDefine != 'true' &&
-    dartDefine != '1' &&
-    env['SIMDECK_NO_UPDATE'] != '1';
+}) {
+  // SimDeck ships through Homebrew and has no release feed of its own, so the
+  // updater stays off unless a build opts in explicitly. Without this a dev
+  // build offered SimUtil 0.5.0 from the upstream repository.
+  if (dartDefine == 'true' || dartDefine == '1') return false;
+  if (env['SIMDECK_NO_UPDATE'] == '1') return false;
+  return env['SIMDECK_UPDATES'] == '1';
+}
 
 /// Starts the shell-command isolate and registers the device services plus
 /// the app's cubits.
