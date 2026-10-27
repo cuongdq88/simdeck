@@ -44,10 +44,14 @@ class _RuntimeManagerPanelState extends State<RuntimeManagerPanel> {
   @override
   Widget build(BuildContext context) {
     final t = SimuTokens.of(context);
-    final rows = [
-      for (final image in _c.images)
-        if (_c.installing == null || _c.installing == image.package) image,
-    ];
+    // Grouped like sdkmanager: one block per API, newest first.
+    final groups = {
+      for (final entry in _c.groupedByApi.entries)
+        entry.key: [
+          for (final image in entry.value)
+            if (_c.installing == null || _c.installing == image.package) image,
+        ],
+    }..removeWhere((_, images) => images.isEmpty);
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
@@ -118,15 +122,32 @@ class _RuntimeManagerPanelState extends State<RuntimeManagerPanel> {
                 )
               else
                 Flexible(
-                  child: ListView.builder(
+                  child: ListView(
                     shrinkWrap: true,
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) => _ImageRow(
-                      image: rows[index],
-                      busy: _c.installing != null,
-                      onInstall: () => _c.install(rows[index].package),
-                      onUninstall: () => _c.uninstall(rows[index].package),
-                    ),
+                    children: [
+                      for (final entry in groups.entries) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(0, 12, 0, 4),
+                          child: Row(
+                            children: [
+                              Text('API ${entry.key}', style: t.overline),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${entry.value.length}',
+                                style: t.mono.copyWith(fontSize: 11),
+                              ),
+                            ],
+                          ),
+                        ),
+                        for (final image in entry.value)
+                          _ImageRow(
+                            image: image,
+                            busy: _c.installing != null,
+                            onInstall: () => _c.install(image.package),
+                            onUninstall: () => _c.uninstall(image.package),
+                          ),
+                      ],
+                    ],
                   ),
                 ),
             ],

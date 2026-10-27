@@ -19,21 +19,31 @@ class _AgentGuide {
 
 final _guides = [
   _AgentGuide(
+    'OpenCode',
+    'Add to opencode.json (project) or ~/.config/opencode/opencode.json',
+    (url) => _json({
+      r'$schema': 'https://opencode.ai/config.json',
+      'mcp': {
+        'simdeck': {'type': 'remote', 'url': '$url', 'enabled': true},
+      },
+    }),
+  ),
+  _AgentGuide(
     'Claude Code',
     'Run in a terminal',
-    (url) => 'claude mcp add --transport http simutil $url',
+    (url) => 'claude mcp add --transport http simdeck $url',
   ),
   _AgentGuide(
     'Codex',
     'Add to ~/.codex/config.toml',
-    (url) => '[mcp_servers.simutil]\nurl = "$url"',
+    (url) => '[mcp_servers.simdeck]\nurl = "$url"',
   ),
   _AgentGuide(
     'Cursor',
     'Add to ~/.cursor/mcp.json',
     (url) => _json({
       'mcpServers': {
-        'simutil': {'url': '$url'},
+        'simdeck': {'url': '$url'},
       },
     }),
   ),
@@ -42,7 +52,7 @@ final _guides = [
     'Add to ~/.gemini/settings.json',
     (url) => _json({
       'mcpServers': {
-        'simutil': {'httpUrl': '$url'},
+        'simdeck': {'httpUrl': '$url'},
       },
     }),
   ),
@@ -51,7 +61,7 @@ final _guides = [
     'Add to .vscode/mcp.json',
     (url) => _json({
       'servers': {
-        'simutil': {'type': 'http', 'url': '$url'},
+        'simdeck': {'type': 'http', 'url': '$url'},
       },
     }),
   ),
@@ -104,7 +114,7 @@ Future<void> showMcpConnectDialog(
   builder: (_) => McpConnectDialog(url: url, running: running),
 );
 
-/// Lists agents and the snippet that connects each to SimUtil's MCP server.
+/// Lists agents and the snippet that connects each to SimDeck's MCP server.
 class McpConnectDialog extends StatefulWidget {
   const McpConnectDialog({super.key, required this.url, required this.running});
 
@@ -151,7 +161,7 @@ class _McpConnectDialogState extends State<McpConnectDialog> {
               const SizedBox(height: 12),
               Text(
                 'Restart the agent session after adding the server so it '
-                'loads the SimUtil tools.',
+                'loads the SimDeck tools.',
                 style: t.caption,
               ),
             ],

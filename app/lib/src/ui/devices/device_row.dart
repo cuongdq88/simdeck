@@ -6,8 +6,11 @@ import 'package:simutil_app/src/devices/devices_state.dart';
 import 'package:simutil_app/src/settings/view_settings_cubit.dart';
 import 'package:simutil_app/src/stream/streams_cubit.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
+import 'package:simutil_app/src/devices/devices_cubit.dart';
+import 'package:simutil_app/src/ui/create/create_device_sheet.dart';
 import 'package:simutil_app/src/ui/shared/device_actions.dart';
 import 'package:simutil_app/src/ui/shared/device_context_menu.dart';
+import 'package:simutil_app/src/ui/shared/destructive_dialogs.dart';
 import 'package:simutil_app/src/ui/shared/install_drop_target.dart';
 import 'package:simutil_core/simutil_core.dart';
 
@@ -23,6 +26,21 @@ class DeviceRow extends StatelessWidget {
     DeviceActionKind.stop => LucideIcons.power,
     DeviceActionKind.stream => LucideIcons.monitorPlay,
   };
+
+  /// Both ask first: wipe wants the device name typed (spec §10).
+  Future<void> _wipe(BuildContext context) async {
+    final devices = context.read<DevicesCubit>();
+    if (await confirmWipeDevice(context, device)) {
+      await devices.wipeData(device);
+    }
+  }
+
+  Future<void> _delete(BuildContext context) async {
+    final devices = context.read<DevicesCubit>();
+    if (await confirmDeleteDevice(context, device)) {
+      await devices.delete(device);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +100,7 @@ class DeviceRow extends StatelessWidget {
               ),
               if (busy)
                 const Padding(padding: EdgeInsets.all(7), child: SimuSpinner())
-              else
+              else ...[
                 for (final action in deviceActions(context, device, state))
                   SimuIconButton(
                     icon: _actionIcon(action.kind),
@@ -90,6 +108,29 @@ class DeviceRow extends StatelessWidget {
                     size: 15,
                     onPressed: action.onPressed,
                   ),
+                if (device.state == DeviceState.shutdown &&
+                    !device.type.isPhysical) ...[
+                  if (device.os == DeviceOs.android)
+                    SimuIconButton(
+                      icon: LucideIcons.pencil,
+                      tooltip: 'Edit device',
+                      size: 14,
+                      onPressed: () => showEditDeviceSheet(context, device),
+                    ),
+                  SimuIconButton(
+                    icon: LucideIcons.eraser,
+                    tooltip: 'Wipe data',
+                    size: 14,
+                    onPressed: () => _wipe(context),
+                  ),
+                  SimuIconButton(
+                    icon: LucideIcons.trash2,
+                    tooltip: 'Delete device',
+                    size: 14,
+                    onPressed: () => _delete(context),
+                  ),
+                ],
+              ],
             ],
           ),
         ),

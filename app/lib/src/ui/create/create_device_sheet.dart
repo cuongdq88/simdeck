@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:bloc_signals_flutter/bloc_signals_flutter.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/bridge/emu_models.dart';
+import 'package:simutil_app/src/devices/devices_cubit.dart';
+import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/ui/create/create_device_controller.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
+import 'package:simutil_core/simutil_core.dart';
+import 'package:simutil_shared/simutil_shared.dart';
 
 /// Opens the Create / Edit Device sheet; [edit] switches it to Edit mode.
 Future<void> showCreateDeviceSheet(
@@ -13,6 +19,34 @@ Future<void> showCreateDeviceSheet(
   barrierDismissible: true,
   builder: (context) => CreateDeviceSheet(controller: edit),
 );
+
+/// Opens Edit for a shut-down Android emulator: reads its `config.ini`
+/// through the helper, after the same guard the delete path uses.
+Future<void> showEditDeviceSheet(BuildContext context, Device device) async {
+  final verdict = await getIt<DeletionGuard>().checkAvd(device.name);
+  if (!context.mounted) return;
+  if (verdict.code == 'not_found' || verdict.code == 'shared_dir') {
+    // A shared directory would rewrite a config.ini other AVDs also boot.
+    context.read<DevicesCubit>().notify(
+      verdict.message ?? 'Cannot edit this AVD',
+      error: true,
+    );
+    return;
+  }
+  final bridge = getIt<EmuBridge>();
+  try {
+    final config = await bridge.avdShow(device.name);
+    if (!context.mounted) return;
+    await showCreateDeviceSheet(
+      context,
+      edit: CreateDeviceController.forEdit(config, bridge: bridge),
+    );
+  } on Object catch (e) {
+    if (context.mounted) {
+      context.read<DevicesCubit>().notify('$e', error: true);
+    }
+  }
+}
 
 /// One form for both platforms and both modes (spec §9).
 class CreateDeviceSheet extends StatefulWidget {

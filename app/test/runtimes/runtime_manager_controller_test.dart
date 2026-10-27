@@ -112,6 +112,38 @@ void main() {
     expect(c.errorCode, 'image_in_use');
   });
 
+  test('groups images by API, newest API first', () async {
+    final c = RuntimeManagerController(api: _FakeApi())
+      ..images = const [
+      ImagePackage(
+        package: 'system-images;android-35;google_apis;arm64-v8a',
+        api: '35',
+        tag: 'google_apis',
+        abi: 'arm64-v8a',
+        installed: false,
+      ),
+      ImagePackage(
+        package: 'system-images;android-36.1;google_apis_playstore;arm64-v8a',
+        api: '36.1',
+        tag: 'google_apis_playstore',
+        abi: 'arm64-v8a',
+        installed: true,
+      ),
+      ImagePackage(
+        package: 'system-images;android-36;google_apis_playstore;arm64-v8a',
+        api: '36',
+        tag: 'google_apis_playstore',
+        abi: 'arm64-v8a',
+        installed: true,
+      ),
+    ];
+
+    final groups = c.groupedByApi;
+
+    expect(groups.keys.toList(), ['36.1', '36', '35']);
+    expect(groups['36.1']!.single.tag, 'google_apis_playstore');
+  });
+
   test('uninstall is allowed when nothing uses the image', () async {
     final api = _FakeApi();
     final c = RuntimeManagerController(api: api);

@@ -23,14 +23,24 @@ emulators/devices and iOS simulators side by side.
 
 ## MCP server
 
-SimUtil serves [MCP](https://modelcontextprotocol.io) over HTTP at
-`http://127.0.0.1:8765/mcp` (loopback only; set `SIMUTIL_MCP_PORT` to change
+SimDeck serves [MCP](https://modelcontextprotocol.io) over HTTP at
+`http://127.0.0.1:8765/mcp` (loopback only; set `SIMDECK_MCP_PORT` to change
 the port). Click the plug icon in the top-right corner for a copy-ready setup
-for Claude Code, Codex, Cursor, Gemini CLI and VS Code; the tray menu copies
-the URL. For example:
+for OpenCode, Claude Code, Codex, Cursor, Gemini CLI and VS Code; the tray
+menu copies the URL. For OpenCode, add to `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "simdeck": { "type": "remote", "url": "http://127.0.0.1:8765/mcp", "enabled": true }
+  }
+}
+```
+
+For example for Claude Code:
 
 ```bash
-claude mcp add --transport http simutil http://127.0.0.1:8765/mcp
+claude mcp add --transport http simdeck http://127.0.0.1:8765/mcp
 ```
 
 | Tool | What it does |

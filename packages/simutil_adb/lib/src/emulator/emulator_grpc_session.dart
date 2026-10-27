@@ -8,6 +8,11 @@ import 'package:simutil_adb/src/emulator/generated/emulator_controller.pbgrpc.da
 import 'package:simutil_adb/src/ffmpeg.dart';
 import 'package:simutil_core/simutil_core.dart';
 
+/// The emulator's gRPC API answers this while the guest has not drawn a
+/// frame yet, which is the normal state for the first seconds of a boot.
+bool waitingForFirstFrame(String message) =>
+    message.contains('has not posted new frame');
+
 /// One frame [EmulatorGrpcSession.frames] wrote: [width]x[height] packed
 /// RGB888 pixels at the start of the shared file.
 typedef EmulatorFrame = ({int width, int height});
@@ -139,14 +144,25 @@ class _EmulatorGrpcSession implements EmulatorGrpcSession {
   Future<void> _readDisplay() async {
     final deadline = DateTime.now().add(_bootTimeout);
     while (!_stopped) {
-      final image = await _client.getScreenshot(
-        ImageFormat(
-          format: ImageFormat_ImgFormat.RGB888,
-          width: 1 << 16,
-          height: 1 << 16,
-        ),
-        options: CallOptions(timeout: const Duration(seconds: 10)),
-      );
+      final Image image;
+      try {
+        image = await _client.getScreenshot(
+          ImageFormat(
+            format: ImageFormat_ImgFormat.RGB888,
+            width: 1 << 16,
+            height: 1 << 16,
+          ),
+          options: CallOptions(timeout: const Duration(seconds: 10)),
+        );
+      } on GrpcError catch (e) {
+        // Not an error: the guest simply has not drawn its first frame.
+        if (!waitingForFirstFrame(e.message ?? '')) rethrow;
+        if (DateTime.now().isAfter(deadline)) {
+          throw StateError('emulator display did not turn on');
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        continue;
+      }
       final format = image.format;
       if (format.width > 0 && format.height > 0) {
         _rotation = format.rotation.rotation;

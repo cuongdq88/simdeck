@@ -75,7 +75,12 @@ Future<void> main() async {
   final mcp = getIt.registerSingleton(
     McpServer(
       port:
-          int.tryParse(Platform.environment['SIMUTIL_MCP_PORT'] ?? '') ?? 8765,
+          int.tryParse(
+            Platform.environment['SIMDECK_MCP_PORT'] ??
+                Platform.environment['SIMUTIL_MCP_PORT'] ??
+                '',
+          ) ??
+          8765,
       tools: simutilTools(tools),
       log: (line, {error = false}) =>
           debugLog.add(DebugSource.mcp, line, error: error),

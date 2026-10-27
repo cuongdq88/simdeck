@@ -55,6 +55,19 @@ class RuntimeManagerController extends ChangeNotifier {
   String? error;
   String? errorCode;
 
+  /// Rows grouped the way sdkmanager shows them: one block per API level,
+  /// newest first (36.1 before 36 before 35).
+  Map<String, List<ImagePackage>> get groupedByApi {
+    final groups = <String, List<ImagePackage>>{};
+    for (final image in images) {
+      (groups[image.api] ??= []).add(image);
+    }
+    double version(String api) => double.tryParse(api) ?? 0;
+    final keys = groups.keys.toList()
+      ..sort((a, b) => version(b).compareTo(version(a)));
+    return {for (final key in keys) key: groups[key]!};
+  }
+
   Future<void> load() async {
     loading = true;
     notifyListeners();

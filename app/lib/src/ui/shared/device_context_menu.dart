@@ -6,16 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_apple/simutil_apple.dart';
-import 'package:simutil_shared/simutil_shared.dart';
-import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
 import 'package:simutil_app/src/recording/grid_recorder.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/settings/device_settings_cubit.dart';
 import 'package:simutil_app/src/settings/recordings_dir.dart';
-import 'package:simutil_app/src/ui/create/create_device_controller.dart';
 import 'package:simutil_app/src/ui/create/create_device_sheet.dart';
+import 'package:simutil_app/src/ui/shared/destructive_dialogs.dart';
 import 'package:simutil_app/src/stream/ios/sim_camera.dart';
 import 'package:simutil_app/src/stream/streams_cubit.dart';
 import 'package:simutil_app/src/ui/shared/device_actions.dart';
@@ -177,34 +175,7 @@ List<native.MenuItem> _editItems(BuildContext context, Device device) {
   if (device.state != DeviceState.shutdown) {
     return [menuItem('Edit device (shut down first)', null)];
   }
-  return [
-    menuItem('Edit device…', () async {
-      final guard = getIt<DeletionGuard>();
-      final verdict = await guard.checkAvd(device.name);
-      if (!context.mounted) return;
-      if (verdict.code == 'not_found' || verdict.code == 'shared_dir') {
-        // Editing a shared dir would rewrite config.ini others also boot.
-        context.read<DevicesCubit>().notify(
-          verdict.message ?? 'Cannot edit this AVD',
-          error: true,
-        );
-        return;
-      }
-      final bridge = getIt<EmuBridge>();
-      try {
-        final config = await bridge.avdShow(device.name);
-        if (!context.mounted) return;
-        showCreateDeviceSheet(
-          context,
-          edit: CreateDeviceController.forEdit(config, bridge: bridge),
-        );
-      } on Object catch (e) {
-        if (context.mounted) {
-          context.read<DevicesCubit>().notify('$e', error: true);
-        }
-      }
-    }),
-  ];
+  return [menuItem('Edit device…', () => showEditDeviceSheet(context, device))];
 }
 
 /// Headless for every start, and one-off launch modes for a shut-down
@@ -446,8 +417,20 @@ List<native.MenuItem> _deleteItems(BuildContext context, Device device) {
     return [menuItem('Wipe data / Delete (shut down first)', null)];
   }
   final devices = context.read<DevicesCubit>();
+  Future<void> wipe() async {
+    if (await confirmWipeDevice(context, device)) {
+      await devices.wipeData(device);
+    }
+  }
+
+  Future<void> remove() async {
+    if (await confirmDeleteDevice(context, device)) {
+      await devices.delete(device);
+    }
+  }
+
   return [
-    menuItem('Wipe data', () => devices.wipeData(device)),
-    menuItem('Delete “${device.name}”', () => devices.delete(device)),
+    menuItem('Wipe data…', wipe),
+    menuItem('Delete “${device.name}”…', remove),
   ];
 }
