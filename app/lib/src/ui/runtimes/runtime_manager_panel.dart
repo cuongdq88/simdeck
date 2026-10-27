@@ -4,8 +4,8 @@ import 'package:simutil_app/src/bridge/emu_models.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
 import 'package:simutil_app/src/ui/runtimes/runtime_manager_controller.dart';
 
-/// Opens the Runtime Manager: installed and downloadable system images,
-/// progress, licenses (spec §9.3).
+/// Opens the SDK Manager: installed and downloadable SDK packages (system
+/// images), progress, licenses (spec §9.3).
 Future<void> showRuntimeManager(BuildContext context, RuntimeManagerController c) =>
     showDialog<void>(
       context: context,
@@ -66,7 +66,7 @@ class _RuntimeManagerPanelState extends State<RuntimeManagerPanel> {
                 children: [
                   Icon(LucideIcons.hardDriveDownload, size: 16, color: t.accent),
                   const SizedBox(width: 8),
-                  Text('System images', style: t.title),
+                  Text('SDK Manager', style: t.title),
                   const Spacer(),
                   SimuIconButton(
                     icon: LucideIcons.refreshCw,

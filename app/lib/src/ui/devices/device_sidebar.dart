@@ -249,41 +249,6 @@ List<Device> idleDevices(List<Device> devices) => [
     if (!device.isRunning) device,
 ];
 
-/// "＋ New Android emulator" under the last row of its group.
-class _AddRow extends StatelessWidget {
-  const _AddRow({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = SimuTokens.of(context);
-    return SimuHoverable(
-      onTap: onTap,
-      builder: (context, hovered) => Padding(
-        padding: const EdgeInsets.fromLTRB(6, 2, 4, 2),
-        child: Row(
-          children: [
-            Icon(
-              LucideIcons.plus,
-              size: 14,
-              color: hovered ? t.accent : t.textFaint,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: t.caption.copyWith(
-                color: hovered ? t.text : t.textMuted,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// One collapsible sidebar group: a clickable header with a count, then the
 /// rows.
 class _Section extends StatelessWidget {
@@ -322,7 +287,7 @@ class _Section extends StatelessWidget {
         SimuHoverable(
           onTap: onToggle,
           builder: (context, hovered) => Padding(
-            padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
+            padding: const EdgeInsets.fromLTRB(4, 12, 0, 4),
             child: Row(
               children: [
                 Icon(
@@ -333,16 +298,22 @@ class _Section extends StatelessWidget {
                 const SizedBox(width: 4),
                 Expanded(child: Text(title.toUpperCase(), style: t.overline)),
                 Text('${devices.length}', style: t.mono.copyWith(fontSize: 11)),
+                if (onAdd case final add?) ...[
+                  const SizedBox(width: 4),
+                  SimuIconButton(
+                    icon: LucideIcons.plus,
+                    tooltip: addLabel ?? 'New device',
+                    size: 13,
+                    onPressed: add,
+                  ),
+                ],
               ],
             ),
           ),
         ),
-        if (!collapsed) ...[
+        if (!collapsed)
           for (final device in devices)
             DeviceRow(device: device, state: state),
-          if (onAdd case final add?)
-            _AddRow(label: addLabel ?? 'New device', onTap: add),
-        ],
       ],
     );
   }

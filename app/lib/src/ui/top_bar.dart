@@ -93,7 +93,7 @@ class TopBar extends StatelessWidget {
   }
 }
 
-/// System images, environment diagnostics, Xcode DerivedData cleanup
+/// SDK Manager, environment diagnostics, Xcode DerivedData cleanup
 /// (macOS) and the MCP connect guide.
 class _CornerActions extends StatelessWidget {
   const _CornerActions();
@@ -106,7 +106,7 @@ class _CornerActions extends StatelessWidget {
       children: [
         SimuIconButton(
           icon: LucideIcons.hardDriveDownload,
-          tooltip: 'System images',
+          tooltip: 'SDK Manager',
           onPressed: () => showRuntimeManager(
             context,
             RuntimeManagerController(

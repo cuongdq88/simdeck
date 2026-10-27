@@ -217,7 +217,7 @@ class _CreateDeviceSheetState extends State<CreateDeviceSheet> {
         _dropdown<int>(
           value: form.api,
           hint: _c.installedApis.isEmpty
-              ? 'No installed image; install one in Runtimes'
+              ? 'No installed image; install one in SDK Manager'
               : 'Choose an API',
           items: _c.installedApis,
           label: (api) => 'API $api',

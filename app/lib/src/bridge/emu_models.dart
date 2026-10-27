@@ -80,7 +80,7 @@ class IosRuntime {
   final String version;
 }
 
-/// One system image / runtime row of the Runtime Manager.
+/// One system image / runtime row of the SDK Manager.
 class ImagePackage {
   const ImagePackage({
     required this.package,

@@ -36,7 +36,7 @@ class EmuRuntimeApi implements RuntimeApi {
   );
 }
 
-/// Drives the Runtime Manager: install with progress, uninstall behind the
+/// Drives the SDK Manager: install with progress, uninstall behind the
 /// deletion guard, and the license prompt (spec §9.3).
 class RuntimeManagerController extends ChangeNotifier {
   RuntimeManagerController({required this.api, DeletionGuard? guard})
