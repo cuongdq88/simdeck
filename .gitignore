@@ -6,3 +6,6 @@ doc/api/
 
 # macOS Finder metadata
 .DS_Store
+
+# release artifacts
+build/
