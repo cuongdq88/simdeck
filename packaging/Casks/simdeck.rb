@@ -1,6 +1,6 @@
 cask "simdeck" do
-  version "0.2.11"
-  sha256 "f90cc030c50e72e23ec2c306b1ccfc08dac2816fa537dfa377c8086e47206ab3"
+  version "0.2.13"
+  sha256 "c0e146539559cb821b0c125297096d23dcd5335a2f90431118022cbc0307fd9f"
 
   url "https://github.com/cuong/simdeck/releases/download/v#{version}/SimDeck-#{version}.dmg"
   name "SimDeck"

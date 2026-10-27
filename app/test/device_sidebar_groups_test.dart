@@ -52,6 +52,19 @@ void main() {
     );
   });
 
+  test('the RUNNING group keeps the devices it was given', () {
+    final running = [
+      android('on', DeviceState.booted),
+      iphone('sim-on', DeviceState.booting),
+    ];
+
+    expect(groupDevices(running, running: true).map((d) => d.name), [
+      'on',
+      'sim-on',
+    ]);
+    expect(groupDevices(running, running: false), isEmpty);
+  });
+
   test('idleDevices drops what RUNNING already shows', () {
     final devices = [
       android('on', DeviceState.booted),

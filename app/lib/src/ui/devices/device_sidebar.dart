@@ -73,6 +73,7 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
                     devices: runningDevices(state),
                     state: state,
                     showWhenEmpty: true,
+                    running: true,
                   ),
                   ..._group(
                     key: 'android-devices',
@@ -86,6 +87,7 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
                     devices: state.androidEmulators,
                     state: state,
                     platform: FormPlatform.android,
+                    showWhenEmpty: true,
                   ),
                   ..._group(
                     key: 'ios-devices',
@@ -99,6 +101,7 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
                     devices: state.iosSimulators,
                     state: state,
                     platform: FormPlatform.ios,
+                    showWhenEmpty: true,
                   ),
                 ];
                 return ListView.builder(
@@ -243,6 +246,11 @@ List<Device> runningDevices(DevicesState state) => [
     if (device.isRunning) device,
 ];
 
+/// What one group lists: RUNNING keeps running devices, the platform groups
+/// drop them so nothing is shown twice.
+List<Device> groupDevices(List<Device> devices, {required bool running}) =>
+    running ? devices : idleDevices(devices);
+
 /// The devices of a platform group the RUNNING group does not already show.
 List<Device> idleDevices(List<Device> devices) => [
   for (final device in devices)
@@ -272,6 +280,8 @@ class _DeviceItem extends _SidebarItem {
 
 extension on _DeviceSidebarState {
   /// Header plus (unless collapsed) one item per device, already filtered.
+  /// [running] keeps the devices as given: the RUNNING group is built from
+  /// running devices, the platform groups drop them because RUNNING has them.
   List<_SidebarItem> _group({
     required String key,
     required String title,
@@ -279,8 +289,9 @@ extension on _DeviceSidebarState {
     required DevicesState state,
     FormPlatform? platform,
     bool showWhenEmpty = false,
+    bool running = false,
   }) {
-    final visible = _filter(idleDevices(devices));
+    final visible = _filter(groupDevices(devices, running: running));
     if (visible.isEmpty && !showWhenEmpty) return const [];
     final collapsed = _collapsed.contains(key);
     return [
