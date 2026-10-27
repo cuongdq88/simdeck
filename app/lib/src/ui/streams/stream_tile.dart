@@ -309,7 +309,9 @@ List<TileAction> _tileActions(
   final device = entry.device;
   final streams = context.read<StreamsCubit>();
   final view = context.read<ViewSettingsCubit>();
-  final live = entry.status is SessionLive;
+  // The entry's status can lag the session by a rebuild; trust either, so
+  // Back/Home/Recents are not stuck disabled under a live picture.
+  final live = entry.status is SessionLive || session?.status is SessionLive;
   return [
     for (final button in session?.buttons ?? const <DeviceButton>[])
       TileAction(

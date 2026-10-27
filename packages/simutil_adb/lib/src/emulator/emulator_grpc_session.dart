@@ -8,6 +8,17 @@ import 'package:simutil_adb/src/emulator/generated/emulator_controller.pbgrpc.da
 import 'package:simutil_adb/src/ffmpeg.dart';
 import 'package:simutil_core/simutil_core.dart';
 
+/// Android key codes for the buttons a stream tile offers. `input keyevent`
+/// takes these numbers, unlike the evdev/USB codes an InputEvent would need.
+int emulatorKeyEventCode(DeviceButton button) => switch (button) {
+  DeviceButton.back => 4,
+  DeviceButton.home => 3,
+  DeviceButton.recents => 187,
+  DeviceButton.lock => 26,
+  DeviceButton.volumeUp => 24,
+  DeviceButton.volumeDown => 25,
+};
+
 /// The emulator's gRPC API answers this while the guest has not drawn a
 /// frame yet, which is the normal state for the first seconds of a boot.
 bool waitingForFirstFrame(String message) =>
@@ -234,9 +245,24 @@ class _EmulatorGrpcSession implements EmulatorGrpcSession {
     );
   }
 
+  /// Buttons go through `adb shell input keyevent`: the emulator ignores a
+  /// `KeyEvent` with a W3C `key` name on this build (37.1.x), while touch on
+  /// the same stream works. 40 ms per press is fine for nav buttons.
   @override
-  void press(DeviceButton button) =>
-      _send(EmulatorInput.key(EmulatorInput.buttonKey(button)));
+  void press(DeviceButton button) => unawaited(
+    _exec.run(
+      adbPath,
+      arguments: [
+        '-s',
+        serial,
+        'shell',
+        'input',
+        'keyevent',
+        '${emulatorKeyEventCode(button)}',
+      ],
+      priority: CommandPriority.interactive,
+    ),
+  );
 
   @override
   void typeText(String text) => _send(EmulatorInput.text(text));
