@@ -28,6 +28,15 @@ class DeviceSidebar extends StatefulWidget {
 class _DeviceSidebarState extends State<DeviceSidebar> {
   String _query = '';
 
+  /// Group keys the user collapsed; kept for the session.
+  final _collapsed = <String>{};
+
+  void _toggle(String group) => setState(
+    () => _collapsed.contains(group)
+        ? _collapsed.remove(group)
+        : _collapsed.add(group),
+  );
+
   List<Device> _filter(List<Device> devices) {
     final query = _query.trim().toLowerCase();
     if (query.isEmpty) return devices;
@@ -60,13 +69,31 @@ class _DeviceSidebarState extends State<DeviceSidebar> {
                       padding: EdgeInsets.all(12),
                       child: Center(child: SimuSpinner()),
                     ),
-                  for (final (title, devices) in [
-                    ('Android devices', state.androidDevices),
-                    ('Android emulators', state.androidEmulators),
-                    ('iOS devices', state.iosDevices),
-                    ('iOS simulators', state.iosSimulators),
+                  _Section(
+                    title: 'Running',
+                    devices: _filter(runningDevices(state)),
+                    state: state,
+                    collapsed: _collapsed.contains('running'),
+                    onToggle: () => _toggle('running'),
+                    showWhenEmpty: true,
+                  ),
+                  for (final (key, title, devices) in [
+                    ('android-devices', 'Android devices', state.androidDevices),
+                    (
+                      'android-emulators',
+                      'Android emulators',
+                      state.androidEmulators,
+                    ),
+                    ('ios-devices', 'iOS devices', state.iosDevices),
+                    ('ios-simulators', 'iOS simulators', state.iosSimulators),
                   ])
-                    _Section(title, _filter(devices), state),
+                    _Section(
+                      title: title,
+                      devices: _filter(idleDevices(devices)),
+                      state: state,
+                      collapsed: _collapsed.contains(key),
+                      onToggle: () => _toggle(key),
+                    ),
                 ],
               ),
             ),
@@ -194,30 +221,68 @@ class _UpdateButton extends StatelessWidget {
   }
 }
 
+/// Everything the device lists report as running, in sidebar order, so the
+/// RUNNING group can sit on top of the platform groups.
+List<Device> runningDevices(DevicesState state) => [
+  for (final device in state.all)
+    if (device.isRunning) device,
+];
+
+/// The devices of a platform group the RUNNING group does not already show.
+List<Device> idleDevices(List<Device> devices) => [
+  for (final device in devices)
+    if (!device.isRunning) device,
+];
+
+/// One collapsible sidebar group: a clickable header with a count, then the
+/// rows.
 class _Section extends StatelessWidget {
-  const _Section(this.title, this.devices, this.state);
+  const _Section({
+    required this.title,
+    required this.devices,
+    required this.state,
+    required this.collapsed,
+    required this.onToggle,
+    this.showWhenEmpty = false,
+  });
 
   final String title;
   final List<Device> devices;
   final DevicesState state;
+  final bool collapsed;
+  final VoidCallback onToggle;
+
+  /// Keep the header visible with a 0 count (RUNNING must not vanish).
+  final bool showWhenEmpty;
 
   @override
   Widget build(BuildContext context) {
-    if (devices.isEmpty) return const SizedBox.shrink();
+    if (devices.isEmpty && !showWhenEmpty) return const SizedBox.shrink();
     final t = SimuTokens.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
-          child: Row(
-            children: [
-              Expanded(child: Text(title.toUpperCase(), style: t.overline)),
-              Text('${devices.length}', style: t.mono.copyWith(fontSize: 11)),
-            ],
+        SimuHoverable(
+          onTap: onToggle,
+          builder: (context, hovered) => Padding(
+            padding: const EdgeInsets.fromLTRB(4, 14, 4, 6),
+            child: Row(
+              children: [
+                Icon(
+                  collapsed ? LucideIcons.chevronRight : LucideIcons.chevronDown,
+                  size: 13,
+                  color: hovered ? t.text : t.textFaint,
+                ),
+                const SizedBox(width: 4),
+                Expanded(child: Text(title.toUpperCase(), style: t.overline)),
+                Text('${devices.length}', style: t.mono.copyWith(fontSize: 11)),
+              ],
+            ),
           ),
         ),
-        for (final device in devices) DeviceRow(device: device, state: state),
+        if (!collapsed)
+          for (final device in devices)
+            DeviceRow(device: device, state: state),
       ],
     );
   }
