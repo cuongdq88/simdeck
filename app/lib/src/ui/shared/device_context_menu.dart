@@ -6,12 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:simutil_adb/simutil_adb.dart';
 import 'package:simutil_apple/simutil_apple.dart';
+import 'package:simutil_app/src/bridge/deletion_guard.dart';
+import 'package:simutil_app/src/bridge/emu_bridge.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/devices/slim_mode_cubit.dart';
 import 'package:simutil_app/src/recording/grid_recorder.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/settings/device_settings_cubit.dart';
 import 'package:simutil_app/src/settings/recordings_dir.dart';
+import 'package:simutil_app/src/ui/create/create_device_controller.dart';
+import 'package:simutil_app/src/ui/create/create_device_sheet.dart';
 import 'package:simutil_app/src/stream/ios/sim_camera.dart';
 import 'package:simutil_app/src/stream/streams_cubit.dart';
 import 'package:simutil_app/src/ui/shared/device_actions.dart';
@@ -93,6 +97,7 @@ Future<void> showDeviceContextMenu(BuildContext context, Device device) async {
     () => [
       _actionItems(context, device),
       if (!busy) _deviceItems(context, device),
+      if (emulator) _editItems(context, device),
       if (!device.type.isPhysical) _launchItems(context, device, set),
       if (emulator)
         [
@@ -164,6 +169,41 @@ List<native.MenuItem> _deviceItems(BuildContext context, Device device) {
         await getIt<AndroidDeviceService>().disconnectDevice(device.id);
         await devices.refresh(silent: true);
       }),
+  ];
+}
+
+/// Edit the AVD's RAM/storage/camera, only while it is shut down.
+List<native.MenuItem> _editItems(BuildContext context, Device device) {
+  if (device.state != DeviceState.shutdown) {
+    return [menuItem('Edit device (shut down first)', null)];
+  }
+  return [
+    menuItem('Edit device…', () async {
+      final guard = getIt<DeletionGuard>();
+      final verdict = await guard.checkAvd(device.name);
+      if (!context.mounted) return;
+      if (verdict.code == 'not_found' || verdict.code == 'shared_dir') {
+        // Editing a shared dir would rewrite config.ini others also boot.
+        context.read<DevicesCubit>().notify(
+          verdict.message ?? 'Cannot edit this AVD',
+          error: true,
+        );
+        return;
+      }
+      final bridge = getIt<EmuBridge>();
+      try {
+        final config = await bridge.avdShow(device.name);
+        if (!context.mounted) return;
+        showCreateDeviceSheet(
+          context,
+          edit: CreateDeviceController.forEdit(config, bridge: bridge),
+        );
+      } on Object catch (e) {
+        if (context.mounted) {
+          context.read<DevicesCubit>().notify('$e', error: true);
+        }
+      }
+    }),
   ];
 }
 

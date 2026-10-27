@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:simutil_app/src/di.dart';
 import 'package:simutil_app/src/logging/debug_log.dart';
 import 'package:simutil_app/src/ui/connect/connect_dialog.dart';
+import 'package:simutil_app/src/ui/create/create_device_sheet.dart';
 import 'package:simutil_app/src/devices/devices_cubit.dart';
 import 'package:simutil_app/src/devices/devices_state.dart';
 import 'package:simutil_app/src/ui/design/design.dart';
@@ -89,6 +90,12 @@ class _SearchRow extends StatelessWidget {
         children: [
           Expanded(child: DeviceSearchField(onChanged: onChanged)),
           const SizedBox(width: 4),
+          SimuIconButton(
+            icon: LucideIcons.plus,
+            tooltip: 'New device (c)',
+            size: 15,
+            onPressed: () => showCreateDeviceSheet(context),
+          ),
           SimuIconButton(
             icon: LucideIcons.wifi,
             tooltip: 'Connect a device over Wi-Fi',
