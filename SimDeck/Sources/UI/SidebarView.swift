@@ -210,7 +210,7 @@ struct SidebarDeviceRow: View {
               Task { await model.start(device) }
             }
           }
-          if device.isRunning {
+          if device.isRunning && (device.os == .ios || device.serial != nil) {
             SimuIconButton(
               icon: "play.rectangle",
               help: streaming ? "Streaming" : "Stream",

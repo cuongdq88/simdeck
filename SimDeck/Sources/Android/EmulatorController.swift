@@ -69,13 +69,61 @@ final class EmulatorController {
   }
 
   func stop(name: String, serial: String?) async {
-    if let serial {
-      _ = await AdbService.kill(serial: serial)
+    // adb may have lost the emulator (a stale server, a crashed window)
+    // while qemu keeps running; ask adb again, then fall back to the process.
+    let running = await AdbService.runningAvds()
+    if let current = running[name] ?? serial {
+      _ = await AdbService.kill(serial: current)
     }
     if let process = processes[name], process.isRunning {
       process.terminate()
     }
     processes[name] = nil
+    await Self.terminateProcesses(forAVD: name)
+  }
+
+  /// qemu processes that belong to [avdName], found by command line. Covers
+  /// emulators started by an earlier app session or another tool.
+  nonisolated static func runningAVDProcesses() async -> [String: Int32] {
+    let result = await ProcessRunner.run(
+      "/bin/ps", ["-axo", "pid=,command="], timeout: 10)
+    guard result.ok else { return [:] }
+    var map: [String: Int32] = [:]
+    for line in result.stdout.components(separatedBy: .newlines) {
+      let trimmed = line.trimmingCharacters(in: .whitespaces)
+      guard trimmed.contains("qemu-system") else { continue }
+      let parts = trimmed.split(separator: " ", maxSplits: 1).map(String.init)
+      guard parts.count == 2, let pid = Int32(parts[0]) else { continue }
+      let command = parts[1]
+      if let range = command.range(
+        of: #"-avd\s+(\S+)"#, options: .regularExpression)
+      {
+        let name = command[range].split(separator: " ").last.map(String.init) ?? ""
+        if !name.isEmpty { map[name] = pid }
+      } else if let range = command.range(of: #"@(\S+)"#, options: .regularExpression) {
+        map[String(command[range].dropFirst())] = pid
+      }
+    }
+    return map
+  }
+
+  nonisolated static func avdProcesses(name: String) async -> [Int32] {
+    let all = await runningAVDProcesses()
+    return all[name].map { [$0] } ?? []
+  }
+
+  /// Escalates TERM to KILL so a wedged qemu cannot keep running unseen.
+  nonisolated static func terminateProcesses(forAVD name: String) async {
+    var pids = await avdProcesses(name: name)
+    guard !pids.isEmpty else { return }
+    for pid in pids { kill(pid, SIGTERM) }
+    for _ in 0..<8 {
+      try? await Task.sleep(nanoseconds: 400_000_000)
+      pids = await avdProcesses(name: name)
+      if pids.isEmpty { return }
+    }
+    for pid in pids { kill(pid, SIGKILL) }
+    try? await Task.sleep(nanoseconds: 300_000_000)
   }
 
   func lastLog(for name: String) -> String {

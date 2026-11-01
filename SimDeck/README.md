@@ -48,6 +48,7 @@ runtime for the simulator screen and input, so a signed build needs the
 | Screenshots | `adb exec-out screencap` / `simctl io screenshot`, saved to `~/Pictures/SimDeck` |
 | Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
 | SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
+| MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` (14 tools: list/create/start/stop/delete, tap, swipe, type, buttons, screenshot) |
 | Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |
 
 ## Layout
@@ -57,8 +58,10 @@ runtime for the simulator screen and input, so a signed build needs the
 | `Sources/App` | `AppModel` (state, streams, actions) and the `@main` app |
 | `Sources/Design` | SimUtil's tokens and components |
 | `Sources/UI` | sidebar, top bar, grid, tiles, device frame, create sheet |
-| `Sources/Android` | SDK paths, AVD store/creator, images, profiles, adb, emulator control, deletion guard |
+| `Sources/Android` | SDK paths, AVD store/creator, images, profiles, adb, emulator control, deletion guard, SDK Manager |
 | `Sources/Apple` | `simctl` service |
+| `Sources/Capture` | screenshots and screen recordings |
+| `Sources/MCP` | loopback MCP server and tools |
 | `Sources/Streaming` | scrcpy protocol/session, H.264 decoder, simulator capture and HID, video sink/layer |
 | `Resources` | bundled `scrcpy-server` (Genymobile/scrcpy, Apache-2.0) and the logo |
 
@@ -69,8 +72,22 @@ runtime for the simulator screen and input, so a signed build needs the
 - `SIMDECK_SHOW_SDK=1` opens the SDK Manager at launch.
   Use `open --env KEY=VALUE SimDeck.app`.
 
+## MCP
+
+The app serves MCP over HTTP on loopback while it runs
+(`SIMDECK_MCP_PORT` changes the port). Add it to an agent:
+
+```json
+{ "mcp": { "simdeck": { "type": "remote", "url": "http://127.0.0.1:8765/mcp" } } }
+```
+
+Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
+`create_simulator`, `start_device`, `stream_device`, `stop_device`,
+`shutdown_device`, `delete_device`, `tap`, `swipe`, `type_text`,
+`press_button`, `screenshot`.
+
 ## Not ported yet
 
-Emulator gRPC video (Android uses scrcpy, which works headless too), the MCP
-server, grid recording, scenarios, and Apple's DeviceKit chrome images (the
-bezel is drawn instead).
+Emulator gRPC video (Android uses scrcpy, which works headless too), grid
+recording, scenarios, and Apple's DeviceKit chrome images (the bezel is drawn
+instead).

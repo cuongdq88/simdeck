@@ -114,9 +114,12 @@ final class AppModel: ObservableObject {
   }
 
   private static func loadAndroidSimulators() async -> [Device] {
-    let running = await AdbService.runningAvds()
+    async let serials = AdbService.runningAvds()
+    async let processes = EmulatorController.runningAVDProcesses()
+    let (running, qemu) = await (serials, processes)
     return AvdStore.list().map { avd in
       let serial = running[avd.name]
+      let alive = serial != nil || qemu[avd.name] != nil
       return Device(
         key: "android:\(avd.name)",
         rawID: avd.name,
@@ -124,7 +127,7 @@ final class AppModel: ObservableObject {
         os: .android,
         kind: .simulator,
         platform: avd.platform,
-        state: serial == nil ? .shutdown : .booted,
+        state: alive ? .booted : .shutdown,
         serial: serial,
         avdName: avd.name)
     }
@@ -236,6 +239,9 @@ final class AppModel: ObservableObject {
   }
 
   func stop(_ device: Device) async {
+    guard !busy.contains(device.key) else { return }
+    busy.insert(device.key)
+    defer { busy.remove(device.key) }
     closeStream(device)
     switch device.os {
     case .android:
@@ -249,6 +255,10 @@ final class AppModel: ObservableObject {
     case .ios:
       _ = await SimctlService.shutdown(udid: device.rawID)
     }
+    await refresh()
+    // The emulator needs a moment to drop off adb; refresh again so the row
+    // does not linger in RUNNING.
+    try? await Task.sleep(nanoseconds: 1_200_000_000)
     await refresh()
   }
 
