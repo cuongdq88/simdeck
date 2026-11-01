@@ -45,6 +45,10 @@ struct StreamGridView: View {
                   if index < devices.count {
                     StreamTileView(device: devices[index])
                       .frame(width: tileWidth, height: tileHeight)
+                      // The grid is built from positions, so a tile that
+                      // changes place would otherwise keep its old NSView
+                      // (and the previous device's video layer).
+                      .id(devices[index].key)
                   } else {
                     Color.clear
                       .frame(width: tileWidth, height: tileHeight)
