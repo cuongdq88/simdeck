@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct TopBar: View {
@@ -8,6 +9,7 @@ struct TopBar: View {
   let onToggleSidebar: () -> Void
 
   @State private var environmentShown = false
+  @State private var mcpShown = false
 
   var body: some View {
     HStack {
@@ -38,6 +40,14 @@ struct TopBar: View {
           action: { environmentShown.toggle() })
           .popover(isPresented: $environmentShown, arrowEdge: .bottom) {
             environment
+          }
+        SimuIconButton(
+          icon: "powerplug",
+          help: model.mcpRunning ? "MCP is running" : "Connect an agent (MCP)",
+          color: model.mcpRunning ? nil : t.danger,
+          action: { mcpShown.toggle() })
+          .popover(isPresented: $mcpShown, arrowEdge: .bottom) {
+            mcp
           }
       }
     }
@@ -71,5 +81,55 @@ struct TopBar: View {
         .lineLimit(1)
         .truncationMode(.middle)
     }
+  }
+
+  private var mcp: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 6) {
+        Circle()
+          .fill(model.mcpRunning ? Color.green : Color.orange)
+          .frame(width: 7, height: 7)
+        Text("MCP server")
+          .font(.system(size: 13, weight: .semibold))
+        Spacer()
+        Text(model.mcpRunning ? "running" : "stopped")
+          .font(.custom("Menlo", size: 10))
+          .foregroundStyle(.secondary)
+      }
+      HStack(spacing: 8) {
+        Text(model.mcpURL)
+          .font(.custom("Menlo", size: 11))
+          .textSelection(.enabled)
+        Spacer()
+        Button("Copy") {
+          NSPasteboard.general.clearContents()
+          NSPasteboard.general.setString(model.mcpURL, forType: .string)
+        }
+        .controlSize(.small)
+      }
+      if let error = model.mcpError {
+        Text(error)
+          .font(.caption)
+          .foregroundStyle(.orange)
+      }
+      Text("Add this to your agent's MCP config:")
+        .font(.caption)
+        .foregroundStyle(.secondary)
+      Text(
+        """
+        { "mcp": { "simdeck": {
+            "type": "remote",
+            "url": "\(model.mcpURL)" } } }
+        """
+      )
+      .font(.custom("Menlo", size: 10))
+      .textSelection(.enabled)
+      .padding(8)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .background(Color.black.opacity(0.18))
+      .clipShape(RoundedRectangle(cornerRadius: 6))
+    }
+    .padding(14)
+    .frame(width: 400)
   }
 }

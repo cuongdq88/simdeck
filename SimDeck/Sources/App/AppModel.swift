@@ -19,6 +19,9 @@ final class AppModel: ObservableObject {
   @Published private(set) var installMessage: [String: String] = [:]
   @Published private(set) var loadingRemoteImages = false
   @Published private(set) var tick = 0
+  @Published private(set) var mcpRunning = false
+  @Published private(set) var mcpError: String?
+  @Published private(set) var mcpURL = ""
   @Published var errorMessage: String?
   @Published var notice: String?
   @Published var createSheetShown = false
@@ -30,6 +33,7 @@ final class AppModel: ObservableObject {
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
   private var misses: [String: Int] = [:]
   private var recordings: [String: CaptureService.ActiveRecording] = [:]
+  private var mcpServer: McpServer?
 
   var runningDevices: [Device] { devices.filter(\.isRunning) }
   var androidDevices: [Device] {
@@ -61,6 +65,7 @@ final class AppModel: ObservableObject {
       }
     }
     guard loop == nil else { return }
+    startMcp()
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SDK"] == "1" {
       sdkSheetShown = true
     }
@@ -79,6 +84,22 @@ final class AppModel: ObservableObject {
 
   func reloadImages() async {
     images = await Task.detached(priority: .utility) { SystemImages.installed() }.value
+  }
+
+  // MARK: - MCP
+
+  private func startMcp() {
+    guard mcpServer == nil else { return }
+    let port = UInt16(ProcessInfo.processInfo.environment["SIMDECK_MCP_PORT"] ?? "") ?? 8765
+    let server = McpServer(model: self, port: port)
+    mcpURL = server.url
+    server.onChange = { [weak self, weak server] in
+      guard let self, let server else { return }
+      self.mcpRunning = server.running
+      self.mcpError = server.error
+    }
+    server.start()
+    mcpServer = server
   }
 
   // MARK: - Device list
