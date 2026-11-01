@@ -12,14 +12,24 @@ final class AppModel: ObservableObject {
   @Published private(set) var images: [SystemImage] = []
   @Published private(set) var androidHome = ""
   @Published private(set) var showFrames: [String: Bool] = [:]
+  @Published private(set) var recordingStarts: [String: Date] = [:]
+  @Published private(set) var remoteImages: [RemoteImage] = []
+  @Published private(set) var installing: Set<String> = []
+  @Published private(set) var installProgress: [String: Double] = [:]
+  @Published private(set) var installMessage: [String: String] = [:]
+  @Published private(set) var loadingRemoteImages = false
+  @Published private(set) var tick = 0
   @Published var errorMessage: String?
+  @Published var notice: String?
   @Published var createSheetShown = false
+  @Published var sdkSheetShown = false
   @Published var createPlatform = 0
 
   private let emulator = EmulatorController()
   private var loop: Task<Void, Never>?
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
   private var misses: [String: Int] = [:]
+  private var recordings: [String: CaptureService.ActiveRecording] = [:]
 
   var runningDevices: [Device] { devices.filter(\.isRunning) }
   var androidDevices: [Device] {
@@ -41,18 +51,26 @@ final class AppModel: ObservableObject {
     androidHome = ShellEnv.androidHome
     await reloadImages()
     await refresh()
-    if ProcessInfo.processInfo.environment["SIMDECK_OPEN_STREAMS"] == "1" {
-      for device in devices where device.isRunning {
+    if let flag = ProcessInfo.processInfo.environment["SIMDECK_OPEN_STREAMS"],
+      flag == "1" || flag == "first"
+    {
+      let running = devices.filter(\.isRunning)
+      let targets = flag == "first" ? Array(running.prefix(1)) : running
+      for device in targets {
         await openStream(device)
       }
     }
     guard loop == nil else { return }
+    if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SDK"] == "1" {
+      sdkSheetShown = true
+    }
     loop = Task { [weak self] in
       var ticks = 0
       while !Task.isCancelled {
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         guard let self else { return }
         self.measureFPS()
+        self.tick &+= 1
         ticks += 1
         if ticks % 3 == 0 { await self.refresh() }
       }
@@ -300,6 +318,111 @@ final class AppModel: ObservableObject {
   func retry(_ device: Device) async {
     closeStream(device)
     await openStream(device)
+  }
+
+  // MARK: - Capture
+
+  func takeScreenshot(_ device: Device) async {
+    do {
+      let url = try await CaptureService.screenshot(device)
+      showNotice("Screenshot saved to \(url.lastPathComponent)")
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func isRecording(_ device: Device) -> Bool { recordingStarts[device.key] != nil }
+
+  func recordingStart(_ device: Device) -> Date? { recordingStarts[device.key] }
+
+  func toggleRecording(_ device: Device) async {
+    if let active = recordings.removeValue(forKey: device.key) {
+      recordingStarts[device.key] = nil
+      if let url = await CaptureService.stopRecording(device, recording: active) {
+        showNotice("Recording saved to \(url.lastPathComponent)")
+      }
+    } else {
+      do {
+        let active = try await CaptureService.startRecording(device)
+        recordings[device.key] = active
+        recordingStarts[device.key] = active.started
+        showNotice("Recording \(device.name)…")
+      } catch {
+        errorMessage = error.localizedDescription
+      }
+    }
+  }
+
+  func showNotice(_ text: String) {
+    notice = text
+    Task { [weak self] in
+      try? await Task.sleep(nanoseconds: 2_600_000_000)
+      guard let self else { return }
+      if self.notice == text { self.notice = nil }
+    }
+  }
+
+  // MARK: - SDK Manager
+
+  func loadRemoteImages() async {
+    guard !loadingRemoteImages else { return }
+    loadingRemoteImages = true
+    remoteImages = await SdkManagerService.availableImages()
+    loadingRemoteImages = false
+  }
+
+  func installImage(_ packageId: String) async {
+    guard !installing.contains(packageId) else { return }
+    installing.insert(packageId)
+    installProgress[packageId] = 0
+    installMessage[packageId] = "Starting…"
+    do {
+      try await SdkManagerService.install(packageId) { [weak self] progress, message in
+        DispatchQueue.main.async {
+          guard let self else { return }
+          if progress >= 0 { self.installProgress[packageId] = progress }
+          let text = message.trimmingCharacters(in: .whitespaces)
+          if !text.isEmpty { self.installMessage[packageId] = text }
+        }
+      }
+      installing.remove(packageId)
+      installProgress[packageId] = nil
+      installMessage[packageId] = nil
+      showNotice("Installed \(packageId)")
+      await reloadImages()
+      remoteImages.removeAll { $0.packageId == packageId }
+    } catch {
+      installing.remove(packageId)
+      installProgress[packageId] = nil
+      installMessage[packageId] = nil
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func uninstallImage(_ packageId: String) async {
+    do {
+      if let issue = DeletionGuard.checkImage(packageId: packageId) { throw issue }
+      try SdkManagerService.uninstall(packageId)
+      await reloadImages()
+      showNotice("Removed \(packageId)")
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func acceptLicenses() async {
+    do {
+      try await SdkManagerService.acceptLicenses { [weak self] _, message in
+        DispatchQueue.main.async {
+          let text = message.trimmingCharacters(in: .whitespaces)
+          if !text.isEmpty { self?.installMessage["licenses"] = text }
+        }
+      }
+      installMessage["licenses"] = nil
+      showNotice("Licences accepted")
+    } catch {
+      errorMessage = error.localizedDescription
+    }
   }
 
   // MARK: - Sessions

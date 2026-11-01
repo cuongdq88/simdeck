@@ -29,6 +29,10 @@ struct TopBar: View {
           action: { Task { await model.refresh() } })
         SimuToolbarDivider()
         SimuIconButton(
+          icon: "externaldrive",
+          help: "SDK Manager",
+          action: { model.sdkSheetShown = true })
+        SimuIconButton(
           icon: "stethoscope",
           help: "Environment check",
           action: { environmentShown.toggle() })

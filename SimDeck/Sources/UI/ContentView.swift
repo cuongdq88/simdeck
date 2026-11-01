@@ -22,11 +22,35 @@ struct ContentView: View {
       }
     }
     .background(tokens.page)
+    .ignoresSafeArea(.container, edges: .top)
     .environment(\.simu, tokens)
     .sheet(isPresented: $model.createSheetShown) {
       CreateDeviceSheet()
         .environment(\.simu, tokens)
     }
+    .sheet(isPresented: $model.sdkSheetShown) {
+      SdkManagerSheet()
+        .environment(\.simu, tokens)
+    }
+    .overlay(alignment: .bottom) {
+      if let notice = model.notice {
+        Text(notice)
+          .font(tokens.caption)
+          .foregroundStyle(tokens.text)
+          .padding(.horizontal, 14)
+          .padding(.vertical, 9)
+          .background(
+            RoundedRectangle(cornerRadius: SimuTokens.radius)
+              .fill(tokens.raised))
+          .overlay(
+            RoundedRectangle(cornerRadius: SimuTokens.radius)
+              .strokeBorder(tokens.border, lineWidth: 1))
+          .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+          .padding(.bottom, 22)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.easeOut(duration: 0.18), value: model.notice)
     .alert(
       "SimDeck",
       isPresented: Binding(

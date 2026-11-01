@@ -122,6 +122,66 @@ enum ProcessRunner {
       stderr: String(decoding: err, as: UTF8.self))
   }
 
+  /// Runs to completion and returns raw stdout, for binary output such as
+  /// `adb exec-out screencap -p`.
+  static func runData(
+    _ executable: String, _ arguments: [String] = [], timeout: TimeInterval = 60
+  ) async -> (status: Int32, data: Data, stderr: String) {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async {
+        let process = Process()
+        if executable.contains("/") {
+          process.executableURL = URL(fileURLWithPath: executable)
+          process.arguments = arguments
+        } else {
+          process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+          process.arguments = [executable] + arguments
+        }
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        process.standardOutput = outPipe
+        process.standardError = errPipe
+        process.standardInput = FileHandle.nullDevice
+        do {
+          try process.run()
+        } catch {
+          continuation.resume(
+            returning: (-1, Data(), error.localizedDescription))
+          return
+        }
+        try? outPipe.fileHandleForWriting.close()
+        try? errPipe.fileHandleForWriting.close()
+        let group = DispatchGroup()
+        var output = Data()
+        var errorData = Data()
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+          output = outPipe.fileHandleForReading.readDataToEndOfFile()
+          group.leave()
+        }
+        group.enter()
+        DispatchQueue.global(qos: .userInitiated).async {
+          errorData = errPipe.fileHandleForReading.readDataToEndOfFile()
+          group.leave()
+        }
+        let deadline = DispatchWorkItem {
+          if process.isRunning { process.terminate() }
+        }
+        if timeout > 0 {
+          DispatchQueue.global().asyncAfter(deadline: .now() + timeout, execute: deadline)
+        }
+        process.waitUntilExit()
+        deadline.cancel()
+        group.wait()
+        continuation.resume(
+          returning: (
+            process.terminationStatus, output,
+            String(decoding: errorData, as: UTF8.self)
+          ))
+      }
+    }
+  }
+
   /// Starts a long-running tool and returns immediately.
   @discardableResult
   static func launch(

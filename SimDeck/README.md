@@ -45,6 +45,9 @@ runtime for the simulator screen and input, so a signed build needs the
 | iOS input | legacy Indigo HID client plus a GSEvent orientation message for rotate |
 | Create AVD | writes `config.ini` from a built-in hardware profile catalog |
 | Create simulator | `xcrun simctl create` |
+| Screenshots | `adb exec-out screencap` / `simctl io screenshot`, saved to `~/Pictures/SimDeck` |
+| Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
+| SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
 | Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |
 
 ## Layout
@@ -61,11 +64,13 @@ runtime for the simulator screen and input, so a signed build needs the
 
 ## Debug
 
-- `SIMDECK_OPEN_STREAMS=1` opens a stream for every running device at launch
-  (`launchctl setenv SIMDECK_OPEN_STREAMS 1` before `open`, then unset).
+- `SIMDECK_OPEN_STREAMS=1` opens a stream for every running device at launch;
+  `SIMDECK_OPEN_STREAMS=first` opens only the first one.
+- `SIMDECK_SHOW_SDK=1` opens the SDK Manager at launch.
+  Use `open --env KEY=VALUE SimDeck.app`.
 
 ## Not ported yet
 
-Emulator gRPC video (Android uses scrcpy, which works headless too), MCP
-server, SDK Manager downloads, screen recording, scenarios, and Apple's
-DeviceKit chrome images (the bezel is drawn instead).
+Emulator gRPC video (Android uses scrcpy, which works headless too), the MCP
+server, grid recording, scenarios, and Apple's DeviceKit chrome images (the
+bezel is drawn instead).

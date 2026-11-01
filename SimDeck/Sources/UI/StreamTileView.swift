@@ -88,7 +88,15 @@ struct StreamTileView: View {
             .lineLimit(1)
             .truncationMode(.tail)
           let fps = model.fps(for: device)
-          if fps > 0 {
+          if model.isRecording(device), let start = model.recordingStart(device) {
+            HStack(spacing: 4) {
+              Circle().fill(t.danger).frame(width: 6, height: 6)
+              Text(elapsed(since: start))
+                .font(t.monoSmall)
+                .foregroundStyle(t.danger)
+            }
+            .lineLimit(1)
+          } else if fps > 0 {
             Text("\(Int(fps.rounded())) fps")
               .font(t.monoSmall)
               .foregroundStyle(live && fps < 20 ? t.warning : t.textFaint)
@@ -157,15 +165,6 @@ struct StreamTileView: View {
       }
       .frame(width: geometry.size.width, height: geometry.size.height)
     }
-    .aspectRatio(bodyAspect, contentMode: .fit)
-    .frame(maxWidth: .infinity, maxHeight: 620)
-  }
-
-  private var bodyAspect: CGFloat {
-    guard let session else { return 9.0 / 19.5 }
-    let size = session.size
-    guard size.width > 0, size.height > 0 else { return 9.0 / 19.5 }
-    return size.width / size.height
   }
 
   private func failedState(_ message: String) -> some View {
@@ -234,6 +233,24 @@ struct StreamTileView: View {
         priority: 4,
         action: live ? { session?.rotate() } : nil))
 
+    actions.append(
+      TileAction(
+        id: "screenshot",
+        icon: "camera",
+        label: "Screenshot",
+        priority: 4,
+        action: live ? { Task { await model.takeScreenshot(device) } } : nil))
+
+    let recording = model.isRecording(device)
+    actions.append(
+      TileAction(
+        id: "record",
+        icon: recording ? "stop.circle" : "video",
+        label: recording ? "Stop recording" : "Record screen",
+        priority: 5,
+        color: recording ? t.danger : nil,
+        action: live ? { Task { await model.toggleRecording(device) } } : nil))
+
     let framed = model.showFrame(device)
     actions.append(
       TileAction(
@@ -297,6 +314,11 @@ struct StreamTileView: View {
       }
     }
     return t.warning
+  }
+
+  private func elapsed(since start: Date) -> String {
+    let seconds = max(0, Int(Date().timeIntervalSince(start)))
+    return String(format: "%d:%02d", seconds / 60, seconds % 60)
   }
 }
 
