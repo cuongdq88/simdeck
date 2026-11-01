@@ -20,7 +20,13 @@ struct StreamGridView: View {
       } else {
         let availableWidth = max(geometry.size.width - Self.padding * 2, 1)
         let availableHeight = max(geometry.size.height - Self.padding, 1)
-        let columns = devices.count == 1 ? 1 : (availableWidth >= 760 ? 2 : 1)
+        // Devices sit side by side while a tile stays wide enough; 3 devices
+        // mean 3 columns, not a stack.
+        let minTileWidth: CGFloat = 300
+        let maxColumns = max(
+          1,
+          Int((availableWidth + Self.spacing) / (minTileWidth + Self.spacing)))
+        let columns = min(devices.count, maxColumns)
         let rows = Int(ceil(Double(devices.count) / Double(columns)))
         let tileWidth = (availableWidth - Self.spacing * CGFloat(columns - 1))
           / CGFloat(columns)

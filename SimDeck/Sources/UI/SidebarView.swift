@@ -1,5 +1,19 @@
 import SwiftUI
 
+private enum SidebarItem: Identifiable {
+  case group(id: String, title: String, count: Int, addPlatform: Int?)
+  case device(groupID: String, device: Device)
+
+  var id: String {
+    switch self {
+    case .group(let id, _, _, _):
+      return "group:\(id)"
+    case .device(let groupID, let device):
+      return "\(groupID):\(device.key)"
+    }
+  }
+}
+
 struct SidebarView: View {
   @EnvironmentObject private var model: AppModel
   @Environment(\.simu) private var t
@@ -15,22 +29,17 @@ struct SidebarView: View {
       searchRow
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 0) {
-          group(
-            id: "running", title: "Running", devices: filter(model.runningDevices),
-            showWhenEmpty: true)
-          group(
-            id: "android-devices", title: "Android devices",
-            devices: filter(model.devices.filter { $0.os == .android && $0.kind == .physical }))
-          group(
-            id: "android-emulators", title: "Android emulators",
-            devices: filter(model.devices.filter {
-              $0.os == .android && $0.kind == .simulator && !$0.isRunning
-            }),
-            showWhenEmpty: true, addPlatform: 0)
-          group(
-            id: "ios-simulators", title: "iOS simulators",
-            devices: filter(model.iosSimulators.filter { !$0.isRunning }),
-            showWhenEmpty: true, addPlatform: 1)
+          ForEach(items) { item in
+            switch item {
+            case .group(let id, let title, let count, let addPlatform):
+              groupHeader(id: id, title: title, count: count, addPlatform: addPlatform)
+            case .device(_, let device):
+              SidebarDeviceRow(
+                device: device,
+                onWipe: { wipeTarget = device },
+                onDelete: { deleteTarget = device })
+            }
+          }
         }
         .padding(.horizontal, 8)
         .padding(.bottom, 12)
@@ -102,22 +111,37 @@ struct SidebarView: View {
     return devices.filter { $0.name.lowercased().contains(query) }
   }
 
-  @ViewBuilder
-  private func group(
-    id: String, title: String, devices: [Device],
-    showWhenEmpty: Bool = false, addPlatform: Int? = nil
-  ) -> some View {
-    if !devices.isEmpty || showWhenEmpty {
-      groupHeader(id: id, title: title, count: devices.count, addPlatform: addPlatform)
-      if !collapsed.contains(id) {
-        ForEach(devices) { device in
-          SidebarDeviceRow(
-            device: device,
-            onWipe: { wipeTarget = device },
-            onDelete: { deleteTarget = device })
-        }
-      }
+  /// Flattened rows so a device that moves between groups gets a new
+  /// identity: SwiftUI otherwise reuses the old row (and its buttons) for a
+  /// moment.
+  private var items: [SidebarItem] {
+    var items: [SidebarItem] = []
+    func add(
+      id: String, title: String, devices: [Device],
+      showWhenEmpty: Bool = false, addPlatform: Int? = nil
+    ) {
+      let visible = filter(devices)
+      guard !visible.isEmpty || showWhenEmpty else { return }
+      items.append(
+        .group(id: id, title: title, count: visible.count, addPlatform: addPlatform))
+      guard !collapsed.contains(id) else { return }
+      items.append(contentsOf: visible.map { .device(groupID: id, device: $0) })
     }
+    add(id: "running", title: "Running", devices: model.runningDevices, showWhenEmpty: true)
+    add(
+      id: "android-devices", title: "Android devices",
+      devices: model.devices.filter { $0.os == .android && $0.kind == .physical })
+    add(
+      id: "android-emulators", title: "Android emulators",
+      devices: model.devices.filter {
+        $0.os == .android && $0.kind == .simulator && !$0.isRunning
+      },
+      showWhenEmpty: true, addPlatform: 0)
+    add(
+      id: "ios-simulators", title: "iOS simulators",
+      devices: model.iosSimulators.filter { !$0.isRunning },
+      showWhenEmpty: true, addPlatform: 1)
+    return items
   }
 
   private func groupHeader(

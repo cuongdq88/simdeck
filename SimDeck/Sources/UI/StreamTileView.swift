@@ -73,7 +73,7 @@ struct StreamTileView: View {
   private var header: some View {
     GeometryReader { geometry in
       let actions = tileActions
-      let kept = TileAction.fit(actions, budget: geometry.size.width - 16 - 56)
+      let kept = TileAction.fit(actions, budget: geometry.size.width - 16 - 90)
       let keptIDs = Set(kept.map(\.id))
       let hidden = actions.filter { !keptIDs.contains($0.id) }
 
@@ -105,6 +105,7 @@ struct StreamTileView: View {
           Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .layoutPriority(1)
 
         ForEach(Array(kept.enumerated()), id: \.element.id) { index, action in
           if index > 0, kept[index - 1].isNav, !action.isNav {
