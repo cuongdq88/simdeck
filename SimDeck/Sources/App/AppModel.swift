@@ -1,0 +1,368 @@
+import Foundation
+
+@MainActor
+final class AppModel: ObservableObject {
+  @Published private(set) var devices: [Device] = []
+  @Published private(set) var sessions: [String: DeviceSession] = [:]
+  /// Streams shown in the grid, in the order they were opened.
+  @Published private(set) var openKeys: [String] = []
+  @Published private(set) var fps: [String: Double] = [:]
+  @Published private(set) var busy: Set<String> = []
+  @Published private(set) var sessionErrors: [String: String] = [:]
+  @Published private(set) var images: [SystemImage] = []
+  @Published private(set) var androidHome = ""
+  @Published private(set) var showFrames: [String: Bool] = [:]
+  @Published var errorMessage: String?
+  @Published var createSheetShown = false
+  @Published var createPlatform = 0
+
+  private let emulator = EmulatorController()
+  private var loop: Task<Void, Never>?
+  private var fpsSamples: [String: (count: Int, time: Date)] = [:]
+  private var misses: [String: Int] = [:]
+
+  var runningDevices: [Device] { devices.filter(\.isRunning) }
+  var androidDevices: [Device] {
+    devices.filter { $0.os == .android && $0.kind == .physical }
+  }
+  var iosSimulators: [Device] { devices.filter { $0.os == .ios } }
+
+  /// The devices whose streams are open, in grid order.
+  var openDevices: [Device] {
+    openKeys.compactMap { key in devices.first { $0.key == key } }
+  }
+
+  var emulatorAvailable: Bool { ShellEnv.exists(ShellEnv.emulatorPath) }
+  var adbAvailable: Bool { ShellEnv.exists(ShellEnv.adbPath) }
+
+  // MARK: - Lifecycle
+
+  func start() async {
+    androidHome = ShellEnv.androidHome
+    await reloadImages()
+    await refresh()
+    if ProcessInfo.processInfo.environment["SIMDECK_OPEN_STREAMS"] == "1" {
+      for device in devices where device.isRunning {
+        await openStream(device)
+      }
+    }
+    guard loop == nil else { return }
+    loop = Task { [weak self] in
+      var ticks = 0
+      while !Task.isCancelled {
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        guard let self else { return }
+        self.measureFPS()
+        ticks += 1
+        if ticks % 3 == 0 { await self.refresh() }
+      }
+    }
+  }
+
+  func reloadImages() async {
+    images = await Task.detached(priority: .utility) { SystemImages.installed() }.value
+  }
+
+  // MARK: - Device list
+
+  func refresh() async {
+    async let simulators = Self.loadAndroidSimulators()
+    async let android = Self.loadAndroidDevices()
+    async let ios = SimctlService.listDevices()
+    devices = await (simulators + android + ios)
+    openKeys.removeAll { key in !devices.contains { $0.key == key } }
+    pruneSessions()
+  }
+
+  private static func loadAndroidSimulators() async -> [Device] {
+    let running = await AdbService.runningAvds()
+    return AvdStore.list().map { avd in
+      let serial = running[avd.name]
+      return Device(
+        key: "android:\(avd.name)",
+        rawID: avd.name,
+        name: avd.name,
+        os: .android,
+        kind: .simulator,
+        platform: avd.platform,
+        state: serial == nil ? .shutdown : .booted,
+        serial: serial,
+        avdName: avd.name)
+    }
+  }
+
+  private static func loadAndroidDevices() async -> [Device] {
+    let entries = await AdbService.devices()
+    return entries
+      .filter { !$0.serial.hasPrefix("emulator-") }
+      .map { entry in
+        Device(
+          key: "android:\(entry.serial)",
+          rawID: entry.serial,
+          name: entry.serial,
+          os: .android,
+          kind: .physical,
+          platform: entry.isReady ? "Android device" : entry.state,
+          state: entry.isReady ? .booted : .booting,
+          serial: entry.serial,
+          avdName: nil)
+      }
+  }
+
+  private func pruneSessions() {
+    for (key, session) in sessions {
+      let running = devices.first { $0.key == key }?.isRunning ?? false
+      if running {
+        misses[key] = 0
+        continue
+      }
+      let count = (misses[key] ?? 0) + 1
+      misses[key] = count
+      if count >= 2 {
+        session.stop()
+        sessions[key] = nil
+        openKeys.removeAll { $0 == key }
+        fps[key] = nil
+        sessionErrors[key] = nil
+        misses[key] = nil
+      }
+    }
+  }
+
+  // MARK: - Actions
+
+  func start(_ device: Device) async {
+    guard !busy.contains(device.key) else { return }
+    busy.insert(device.key)
+    defer { busy.remove(device.key) }
+    do {
+      switch device.os {
+      case .android:
+        if device.kind == .simulator {
+          let name = device.avdName ?? device.rawID
+          try emulator.start(name: name, headless: true)
+          guard let serial = await emulator.waitForSerial(avdName: name) else {
+            throw EmulatorError.bootTimedOut(name)
+          }
+          try await attachScrcpy(device: device, serial: serial)
+        } else if let serial = device.serial {
+          try await attachScrcpy(device: device, serial: serial)
+        }
+      case .ios:
+        guard await SimctlService.boot(udid: device.rawID) else {
+          throw SimulatorError("Could not boot \(device.name).")
+        }
+        try await attachSimulator(device)
+      }
+      if !openKeys.contains(device.key) { openKeys.append(device.key) }
+      sessionErrors[device.key] = nil
+      await refresh()
+    } catch {
+      sessionErrors[device.key] = error.localizedDescription
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func openStream(_ device: Device) async {
+    guard sessions[device.key] == nil, !busy.contains(device.key) else { return }
+    busy.insert(device.key)
+    defer { busy.remove(device.key) }
+    do {
+      switch device.os {
+      case .android:
+        guard let serial = device.serial else {
+          throw ScrcpyError.server("Start the device before streaming it.")
+        }
+        try await attachScrcpy(device: device, serial: serial)
+      case .ios:
+        guard device.isRunning else {
+          throw SimulatorError("Boot the simulator before streaming it.")
+        }
+        try await attachSimulator(device)
+      }
+      if !openKeys.contains(device.key) { openKeys.append(device.key) }
+      sessionErrors[device.key] = nil
+    } catch {
+      sessionErrors[device.key] = error.localizedDescription
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func closeStream(_ device: Device) {
+    sessions[device.key]?.stop()
+    sessions[device.key] = nil
+    openKeys.removeAll { $0 == device.key }
+    fps[device.key] = nil
+    sessionErrors[device.key] = nil
+  }
+
+  func stop(_ device: Device) async {
+    closeStream(device)
+    switch device.os {
+    case .android:
+      if device.kind == .simulator {
+        let name = device.avdName ?? device.rawID
+        await emulator.stop(name: name, serial: device.serial)
+        emulator.forget(name: name)
+      } else if let serial = device.serial {
+        _ = await AdbService.kill(serial: serial)
+      }
+    case .ios:
+      _ = await SimctlService.shutdown(udid: device.rawID)
+    }
+    await refresh()
+  }
+
+  func delete(_ device: Device) async {
+    do {
+      guard !device.isRunning else {
+        throw GuardIssue(
+          code: "device_running", message: "Stop \(device.name) before deleting it.")
+      }
+      switch device.os {
+      case .android:
+        guard device.kind == .simulator else {
+          throw GuardIssue(
+            code: "unsupported", message: "A physical device is removed by unplugging it.")
+        }
+        let running = Set(await AdbService.runningAvds().keys)
+        if let issue = DeletionGuard.checkAvd(name: device.rawID, running: running) {
+          throw issue
+        }
+        try AvdStore.delete(name: device.rawID)
+      case .ios:
+        guard await SimctlService.delete(udid: device.rawID) else {
+          throw SimulatorError("simctl delete failed for \(device.name).")
+        }
+      }
+      closeStream(device)
+      await refresh()
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func wipe(_ device: Device) async {
+    do {
+      guard !busy.contains(device.key) else { return }
+      busy.insert(device.key)
+      defer { busy.remove(device.key) }
+      switch device.os {
+      case .android:
+        guard device.kind == .simulator else { return }
+        let running = Set(await AdbService.runningAvds().keys)
+        if let issue = DeletionGuard.checkAvd(name: device.rawID, running: running) {
+          throw issue
+        }
+        try AvdStore.wipe(name: device.rawID)
+      case .ios:
+        if device.isRunning {
+          closeStream(device)
+          _ = await SimctlService.shutdown(udid: device.rawID)
+        }
+        guard await SimctlService.erase(udid: device.rawID) else {
+          throw SimulatorError("simctl erase failed for \(device.name).")
+        }
+      }
+      await refresh()
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func createAndroid(_ form: AvdCreateForm) async throws {
+    let existing = Set(AvdStore.list().map(\.name))
+    _ = try AvdCreator.create(form, existing: existing)
+    await refresh()
+  }
+
+  func createSimulator(name: String, deviceTypeID: String, runtimeID: String) async throws {
+    let result = await SimctlService.create(
+      name: name, deviceTypeID: deviceTypeID, runtimeID: runtimeID)
+    switch result {
+    case .success:
+      await refresh()
+    case .failure(let error):
+      throw error
+    }
+  }
+
+  func session(for device: Device) -> DeviceSession? { sessions[device.key] }
+  func fps(for device: Device) -> Double { fps[device.key] ?? 0 }
+  func isBusy(_ device: Device) -> Bool { busy.contains(device.key) }
+  func isStreaming(_ device: Device) -> Bool { sessions[device.key] != nil }
+  func showFrame(_ device: Device) -> Bool { showFrames[device.key] ?? true }
+
+  func toggleFrame(_ device: Device) {
+    showFrames[device.key] = !showFrame(device)
+  }
+
+  func retry(_ device: Device) async {
+    closeStream(device)
+    await openStream(device)
+  }
+
+  // MARK: - Sessions
+
+  private func attachScrcpy(device: Device, serial: String) async throws {
+    let session = ScrcpySession(deviceKey: device.key, serial: serial)
+    session.onStatusChange = { [weak self] status in
+      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    }
+    sessions[device.key] = session
+    do {
+      try await Task.detached(priority: .userInitiated) {
+        try await session.start()
+      }.value
+    } catch {
+      sessions[device.key] = nil
+      sessionErrors[device.key] = error.localizedDescription
+      throw error
+    }
+  }
+
+  private func attachSimulator(_ device: Device) async throws {
+    let session = SimulatorSession(deviceKey: device.key, udid: device.rawID)
+    session.onStatusChange = { [weak self] status in
+      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    }
+    sessions[device.key] = session
+    do {
+      try await session.start()
+    } catch {
+      sessions[device.key] = nil
+      sessionErrors[device.key] = error.localizedDescription
+      throw error
+    }
+  }
+
+  private func apply(_ status: SessionStatus, key: String) {
+    if case .failed(let message) = status {
+      sessionErrors[key] = message
+      sessions[key]?.stop()
+      sessions[key] = nil
+      fps[key] = nil
+    }
+    objectWillChange.send()
+  }
+
+  private func measureFPS() {
+    let now = Date()
+    for (key, session) in sessions {
+      let count = session.framesShown
+      if let sample = fpsSamples[key] {
+        let seconds = now.timeIntervalSince(sample.time)
+        if seconds >= 0.5 {
+          fps[key] = max(0, Double(count - sample.count) / seconds)
+          fpsSamples[key] = (count, now)
+        }
+      } else {
+        fpsSamples[key] = (count, now)
+      }
+    }
+    for key in fpsSamples.keys where sessions[key] == nil {
+      fpsSamples[key] = nil
+      fps[key] = nil
+    }
+  }
+}

@@ -1,0 +1,71 @@
+# SimDeck (SwiftUI)
+
+A native macOS rewrite of SimDeck: create, run, stream and delete Android
+emulators and iOS simulators. It shares **no code** with the Flutter app in
+`app/`, the `packages/simutil_*` libraries or the Rust `emu` helper — the only
+external pieces are the platform tools themselves (`adb`, `emulator`,
+`xcrun simctl`) and the bundled `scrcpy-server`.
+
+The UI is a one-to-one port of SimUtil's design system (tokens, sidebar, top
+bar, stream tiles), so both shells look the same.
+
+## Requirements
+
+- macOS 14 or newer.
+- Xcode 27 with at least one installed simulator runtime.
+- Android SDK with `platform-tools` and `emulator` (`ANDROID_HOME`,
+  `ANDROID_SDK_ROOT`, `~/Library/Android/sdk` or the Homebrew command-line
+  tools are probed in that order).
+- No Java and no `avdmanager`: AVDs are written directly as `config.ini` +
+  `<name>.ini`, and system images are found by scanning the SDK.
+
+## Build and run
+
+```bash
+cd SimDeck
+xcodegen generate                # project.yml -> SimDeck.xcodeproj
+xcodebuild -project SimDeck.xcodeproj -scheme SimDeck \
+  -configuration Debug -derivedDataPath build build
+open build/Build/Products/Debug/SimDeck.app
+```
+
+The app loads Xcode's private `CoreSimulator` / `SimulatorKit` frameworks at
+runtime for the simulator screen and input, so a signed build needs the
+`com.apple.security.cs.disable-library-validation` entitlement. It is set in
+`Config/SimDeck.entitlements`.
+
+## What it does
+
+| Feature | How |
+| --- | --- |
+| Device list | AVDs from `~/.android/avd`, running emulators and USB devices from `adb devices`, simulators from `xcrun simctl list` |
+| Android streaming | own scrcpy client: pushes `scrcpy-server`, `adb forward`, parses the 4.x protocol, decodes H.264 with VideoToolbox |
+| Android input | scrcpy control socket (touch, keys, text, rotate) |
+| iOS streaming | private `SimulatorKit` framebuffer callbacks → `AVSampleBufferDisplayLayer` |
+| iOS input | legacy Indigo HID client plus a GSEvent orientation message for rotate |
+| Create AVD | writes `config.ini` from a built-in hardware profile catalog |
+| Create simulator | `xcrun simctl create` |
+| Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |
+
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `Sources/App` | `AppModel` (state, streams, actions) and the `@main` app |
+| `Sources/Design` | SimUtil's tokens and components |
+| `Sources/UI` | sidebar, top bar, grid, tiles, device frame, create sheet |
+| `Sources/Android` | SDK paths, AVD store/creator, images, profiles, adb, emulator control, deletion guard |
+| `Sources/Apple` | `simctl` service |
+| `Sources/Streaming` | scrcpy protocol/session, H.264 decoder, simulator capture and HID, video sink/layer |
+| `Resources` | bundled `scrcpy-server` (Genymobile/scrcpy, Apache-2.0) and the logo |
+
+## Debug
+
+- `SIMDECK_OPEN_STREAMS=1` opens a stream for every running device at launch
+  (`launchctl setenv SIMDECK_OPEN_STREAMS 1` before `open`, then unset).
+
+## Not ported yet
+
+Emulator gRPC video (Android uses scrcpy, which works headless too), MCP
+server, SDK Manager downloads, screen recording, scenarios, and Apple's
+DeviceKit chrome images (the bezel is drawn instead).
