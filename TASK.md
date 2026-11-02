@@ -3,6 +3,29 @@
 App SwiftUI trong `SimDeck/` **là toàn bộ app**; bản Flutter, `packages/` và các
 workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
+## Trạng thái hiện tại (2026-11-02)
+
+- **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `main`.
+- **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
+  (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
+- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp`, CLI `SimDeck/bin/simdeck`,
+  bridge stdio `SimDeck/bin/simdeck-mcp` (OpenCode dùng bridge, tự bật app).
+  `start_device` luôn boot headless — không có cửa sổ emulator riêng.
+- **License**: MIT © 2026 cuongdq88 (`LICENSE`), notices third-party trong
+  `third_party/` (SimUtil MIT, emu MIT, serve-sim Apache-2.0, scrcpy Apache-2.0).
+- **Chạy nhanh**:
+  ```bash
+  cd SimDeck
+  xcodegen generate
+  xcodebuild -project SimDeck.xcodeproj -scheme SimDeck \
+    -configuration Release -derivedDataPath build-release build
+  open build-release/Build/Products/Release/SimDeck.app
+  ```
+- **Lưu ý**: app ad-hoc signed → máy khác cần
+  `xattr -dr com.apple.quarantine SimDeck.app`; Dock icon có thể cần xoá cache
+  `~/Library/Caches/com.apple.iconservices.store` + `killall Dock`; macOS icon
+  style “Clear Dark” làm icon hiển thị đơn sắc (đổi sang Default để thấy màu).
+
 ## Hoãn — làm sau
 
 - [ ] **Notification Center trong app**: lịch sử thông báo (toast gần đây) trong một
