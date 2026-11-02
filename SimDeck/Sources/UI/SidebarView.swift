@@ -286,6 +286,9 @@ struct SidebarDeviceRow: View {
         }
       } else {
         Button("Stream") { Task { await model.openStream(device) } }
+        if device.os == .android {
+          Button("Logcat…") { model.openLogcat(device) }
+        }
         Button("Restart") { Task { await model.restart(device) } }
         Button("Shut down") { Task { await model.stop(device) } }
       }

@@ -36,6 +36,16 @@ struct ContentView: View {
       ConnectDeviceSheet()
         .environment(\.simu, tokens)
     }
+    .sheet(
+      isPresented: Binding(
+        get: { model.logcatDevice != nil },
+        set: { if !$0 { model.closeLogcat() } })
+    ) {
+      if let device = model.logcatDevice {
+        LogcatSheet(device: device)
+          .environment(\.simu, tokens)
+      }
+    }
     .overlay(alignment: .bottom) {
       if let notice = model.notice {
         NoticeCapsule(text: notice)

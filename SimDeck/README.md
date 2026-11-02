@@ -78,6 +78,7 @@ runtime for the simulator screen and input, so a signed build needs the
   `SIMDECK_OPEN_STREAMS=first` opens only the first one.
 - `SIMDECK_SHOW_SDK=1` opens the SDK Manager at launch.
 - `SIMDECK_SHOW_CONNECT=1` opens the Wi-Fi connect sheet at launch.
+- `SIMDECK_SHOW_LOGCAT=1` opens logcat for the first running Android device.
   Use `open --env KEY=VALUE SimDeck.app`.
 
 ## MCP

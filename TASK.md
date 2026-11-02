@@ -36,4 +36,5 @@ nguyên, chưa thay thế).
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Toast cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] Wi-Fi pairing: mDNS pairing/connect service, nhập tay IP:port + mã, `adb pair/connect`
+- [x] Logcat viewer: lọc text/level, tạm dừng, xoá, copy (giới hạn 3000 dòng)
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)

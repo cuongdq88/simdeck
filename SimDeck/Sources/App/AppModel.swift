@@ -29,6 +29,8 @@ final class AppModel: ObservableObject {
   @Published var connectSheetShown = false
   @Published var createPlatform = 0
   @Published private(set) var discoveredServices: [AdbMdnsService] = []
+  @Published var logcatDevice: Device?
+  @Published private(set) var logcatLines: [String] = []
 
   private let emulator = EmulatorController()
   let settingsStore = DeviceSettingsStore()
@@ -37,6 +39,8 @@ final class AppModel: ObservableObject {
   private var misses: [String: Int] = [:]
   private var recordings: [String: CaptureService.ActiveRecording] = [:]
   private var mcpServer: McpServer?
+  private var logcatProcess: Process?
+  private var logcatBuffer = ""
 
   var runningDevices: [Device] { devices.filter(\.isRunning) }
   var androidDevices: [Device] {
@@ -80,6 +84,11 @@ final class AppModel: ObservableObject {
     }
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_CONNECT"] == "1" {
       connectSheetShown = true
+    }
+    if ProcessInfo.processInfo.environment["SIMDECK_SHOW_LOGCAT"] == "1",
+      let device = devices.first(where: { $0.os == .android && $0.isRunning })
+    {
+      openLogcat(device)
     }
     loop = Task { [weak self] in
       var ticks = 0
@@ -295,6 +304,7 @@ final class AppModel: ObservableObject {
     guard !busy.contains(device.key) else { return }
     busy.insert(device.key)
     defer { busy.remove(device.key) }
+    if logcatDevice?.key == device.key { closeLogcat() }
     closeStream(device)
     switch device.os {
     case .android:
@@ -470,6 +480,49 @@ final class AppModel: ObservableObject {
     let result = await AdbService.disconnect(hostPort: hostPort)
     await refresh()
     return result.combined.isEmpty ? "Disconnected." : result.combined
+  }
+
+  // MARK: - Logcat
+
+  func openLogcat(_ device: Device) {
+    guard device.os == .android, let serial = device.serial else {
+      errorMessage = "Start the Android device before reading its logcat."
+      return
+    }
+    closeLogcat()
+    logcatDevice = device
+    logcatLines = []
+    logcatBuffer = ""
+    logcatProcess = ProcessRunner.launch(
+      ShellEnv.adbPath,
+      ["-s", serial, "logcat", "-v", "time"],
+      onOutput: { [weak self] chunk in
+        Task { @MainActor in self?.appendLogcat(chunk) }
+      })
+  }
+
+  func closeLogcat() {
+    logcatProcess?.terminate()
+    logcatProcess = nil
+    logcatDevice = nil
+    logcatBuffer = ""
+  }
+
+  func clearLogcat() {
+    logcatLines = []
+    logcatBuffer = ""
+  }
+
+  private func appendLogcat(_ chunk: String) {
+    logcatBuffer += chunk
+    let parts = logcatBuffer.components(separatedBy: "\n")
+    logcatBuffer = parts.last ?? ""
+    let complete = parts.dropLast()
+    guard !complete.isEmpty else { return }
+    logcatLines.append(contentsOf: complete)
+    if logcatLines.count > 3000 {
+      logcatLines.removeFirst(logcatLines.count - 3000)
+    }
   }
 
   // MARK: - Capture
