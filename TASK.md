@@ -17,6 +17,8 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [ ] **MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
 - [ ] **Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
 - [ ] **Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
+- [ ] **Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
+      Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew
 
 ## Đã xong
 
