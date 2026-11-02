@@ -15,6 +15,7 @@ nguyên, chưa thay thế).
 - [ ] **Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
 - [ ] **Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
 - [ ] **MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
+- [ ] **Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
 - [ ] **Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
 
 ## Đã xong
@@ -33,4 +34,6 @@ nguyên, chưa thay thế).
 - [x] Wi-Fi pairing: mDNS pairing/connect service, nhập tay IP:port + mã, `adb pair/connect`
 - [x] Logcat viewer: lọc text/level, tạm dừng, xoá, copy (giới hạn 3000 dòng)
 - [x] iOS thiết bị thật: devicectl list, CoreMediaIO stream (chỉ xem), screenshot từ frame
+- [x] Agent: MCP `start_device` headless + `stream`/`cold_boot`, không mở cửa sổ emulator; CLI `bin/simdeck` + `AGENT.md`
+- [x] Tự khởi động SimDeck: `bin/simdeck` auto-launch, stdio bridge `bin/simdeck-mcp` cho OpenCode (app mở on demand)
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)

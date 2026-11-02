@@ -75,13 +75,52 @@ args_with_device() {
   python3 -c 'import json,sys; print(json.dumps({"device": sys.argv[1]}))' "$1"
 }
 
+server_up() {
+  curl -s -m 1 -o /dev/null -X POST "$URL" \
+    -H 'Content-Type: application/json' \
+    --data '{"jsonrpc":"2.0","id":0,"method":"tools/list"}' 2>/dev/null
+}
+
+# Launch SimDeck when the MCP server is not running, then wait for it. The
+# app window is where the headless emulator's screen appears.
+ensure_server() {
+  server_up && return 0
+  local here app=""
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  app="${SIMDECK_APP:-}"
+  if [[ -z "$app" ]]; then
+    for candidate in \
+      "/Applications/SimDeck.app" \
+      "$here/../build-release/Build/Products/Release/SimDeck.app" \
+      "$here/../build/Build/Products/Debug/SimDeck.app"; do
+      if [[ -d "$candidate" ]]; then app="$candidate"; break; fi
+    done
+  fi
+  if [[ -n "$app" && -d "$app" ]]; then
+    open "$app" >/dev/null 2>&1 || true
+  else
+    open -a SimDeck >/dev/null 2>&1 || true
+  fi
+  for _ in $(seq 1 100); do
+    server_up && return 0
+    sleep 0.25
+  done
+  echo "simdeck: SimDeck did not start. Open it once, or set SIMDECK_APP to its .app path." >&2
+  return 1
+}
+
 command="${1:-}"
 shift || true
 
+if [[ -z "$command" || "$command" == "-h" || "$command" == "--help" \
+  || "$command" == "help" ]]; then
+  usage
+  exit 0
+fi
+
+ensure_server || exit 2
+
 case "$command" in
-  ""|-h|--help|help)
-    usage
-    ;;
   list|devices|status)
     call_tool list_devices
     ;;

@@ -7,7 +7,9 @@ adopt. Start it through SimDeck instead, which always boots headless and shows
 the screen inside the app.
 
 MCP endpoint: `http://127.0.0.1:8765/mcp` (`SIMDECK_MCP_PORT` overrides it).
-If it is not reachable, launch SimDeck (`open -a SimDeck`) and retry.
+SimDeck does not need to be running first: `bin/simdeck` and the stdio bridge
+(`bin/simdeck-mcp`) start it on demand. If a remote client cannot connect,
+run `SimDeck/bin/simdeck list` once (it launches the app) and retry.
 
 ## Workflow
 

@@ -1,0 +1,89 @@
+#!/usr/bin/env python3
+"""stdio MCP bridge for SimDeck.
+
+MCP clients that only launch local servers (OpenCode, Claude Code, Codex…)
+run this script. It starts SimDeck in agent mode when needed (menu bar icon,
+no window) and forwards newline-delimited JSON-RPC to the app's HTTP MCP
+server on loopback.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+import urllib.request
+
+PORT = os.environ.get("SIMDECK_MCP_PORT", "8765")
+URL = f"http://127.0.0.1:{PORT}/mcp"
+HERE = os.path.dirname(os.path.abspath(__file__))
+CLI = os.path.join(HERE, "simdeck")
+
+
+def _post(body: bytes, timeout: float) -> bytes:
+    request = urllib.request.Request(
+        URL,
+        data=body,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/event-stream",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read()
+
+
+def server_up() -> bool:
+    try:
+        _post(b'{"jsonrpc":"2.0","id":0,"method":"tools/list"}', timeout=2)
+        return True
+    except Exception:
+        return False
+
+
+def ensure_server() -> bool:
+    if server_up():
+        return True
+    try:
+        subprocess.run(
+            [CLI, "list"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=90,
+        )
+    except Exception:
+        pass
+    for _ in range(120):
+        if server_up():
+            return True
+        time.sleep(0.25)
+    return False
+
+
+def main() -> None:
+    ensure_server()
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            body = _post(line.encode("utf-8"), timeout=600)
+        except Exception as error:
+            request_id = None
+            try:
+                request_id = json.loads(line).get("id")
+            except Exception:
+                pass
+            body = json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {"code": -32000, "message": str(error)},
+                }
+            ).encode("utf-8")
+        if body:
+            sys.stdout.write(body.decode("utf-8").strip() + "\n")
+            sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    main()

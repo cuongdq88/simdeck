@@ -97,6 +97,36 @@ Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
 `shutdown_device`, `delete_device`, `tap`, `swipe`, `type_text`,
 `press_button`, `screenshot`.
 
+## Agents
+
+Tell an agent to drive SimDeck, never `emulator`, `avdmanager`, Android
+Studio or `simctl boot`: those open a separate emulator window that SimDeck
+cannot adopt. `start_device` boots headless (`-no-window -no-boot-anim`) and
+the screen opens as a tile inside SimDeck. `stream: false` boots without the
+tile when only adb/simctl is needed.
+
+SimDeck does not have to be running first: `bin/simdeck` and the stdio bridge
+start it on demand (the app window opens; the emulator itself stays
+headless). This repo's `opencode.json` uses the bridge, so OpenCode launches
+SimDeck when its tools are first used.
+
+- Give the agent [AGENT.md](AGENT.md) as its instruction file (or paste it as
+  a system prompt).
+- Remote MCP clients: `{"mcp":{"simdeck":{"type":"remote","url":"http://127.0.0.1:8765/mcp"}}}`.
+- Local-only clients: `SimDeck/bin/simdeck-mcp` is a stdio bridge that starts
+  the app and forwards JSON-RPC to the same HTTP endpoint.
+- If a device already has a window, stop it and start it through SimDeck.
+- Shell-only agents: `bin/simdeck` wraps the same tools:
+
+```bash
+SimDeck/bin/simdeck list
+SimDeck/bin/simdeck boot "Pixel_9_API_36"    # headless, no tile
+SimDeck/bin/simdeck start "Pixel_9_API_36"   # headless + tile in SimDeck
+SimDeck/bin/simdeck tap "Pixel_9_API_36" 0.5 0.5
+SimDeck/bin/simdeck screenshot "Pixel_9_API_36"
+SimDeck/bin/simdeck stop "Pixel_9_API_36"
+```
+
 ## Not ported yet
 
 Emulator gRPC video (Android uses scrcpy, which works headless too), scenarios,

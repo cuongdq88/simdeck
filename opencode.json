@@ -2,8 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "simdeck": {
-      "type": "remote",
-      "url": "http://127.0.0.1:8765/mcp",
+      "type": "local",
+      "command": ["./SimDeck/bin/simdeck-mcp"],
       "enabled": true
     }
   },
