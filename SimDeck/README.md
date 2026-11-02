@@ -53,6 +53,7 @@ runtime for the simulator screen and input, so a signed build needs the
 | Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
 | SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
 | MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` (14 tools: list/create/start/stop/delete, tap, swipe, type, buttons, screenshot) |
+| Wi-Fi pairing | adb's mDNS pairing/connect services, or manual address and pairing code |
 | Layouts | adaptive grid, or a spotlight with the rest in a strip on the right / bottom; the choice and focus persist |
 | Reordering | drag a tile by its header onto another to move it in the grid |
 | Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |
@@ -76,6 +77,7 @@ runtime for the simulator screen and input, so a signed build needs the
 - `SIMDECK_OPEN_STREAMS=1` opens a stream for every running device at launch;
   `SIMDECK_OPEN_STREAMS=first` opens only the first one.
 - `SIMDECK_SHOW_SDK=1` opens the SDK Manager at launch.
+- `SIMDECK_SHOW_CONNECT=1` opens the Wi-Fi connect sheet at launch.
   Use `open --env KEY=VALUE SimDeck.app`.
 
 ## MCP

@@ -1,5 +1,18 @@
 import Foundation
 
+/// One wireless-debugging endpoint advertised over mDNS.
+struct AdbMdnsService: Identifiable, Hashable {
+  let name: String
+  /// `_adb-tls-pairing._tcp` or `_adb-tls-connect._tcp`.
+  let type: String
+  /// `host:port`.
+  let address: String
+
+  var id: String { "\(type):\(address)" }
+  var isPairing: Bool { type.contains("pairing") }
+  var kind: String { isPairing ? "Pairing" : "Connect" }
+}
+
 enum AdbService {
   struct Entry: Hashable {
     let serial: String
@@ -59,5 +72,41 @@ enum AdbService {
   ) async -> ProcessResult {
     await ProcessRunner.run(
       ShellEnv.adbPath, ["-s", serial, "shell"] + arguments, timeout: timeout)
+  }
+
+  // MARK: - Wireless debugging
+
+  static func pair(hostPort: String, code: String) async -> ProcessResult {
+    await ProcessRunner.run(
+      ShellEnv.adbPath, ["pair", hostPort, code], timeout: 45)
+  }
+
+  static func connect(hostPort: String) async -> ProcessResult {
+    await ProcessRunner.run(
+      ShellEnv.adbPath, ["connect", hostPort], timeout: 25)
+  }
+
+  static func disconnect(hostPort: String) async -> ProcessResult {
+    await ProcessRunner.run(
+      ShellEnv.adbPath, ["disconnect", hostPort], timeout: 15)
+  }
+
+  /// Adb's own mDNS browser; pairing and connect endpoints for devices that
+  /// have wireless debugging on.
+  static func mdnsServices() async -> [AdbMdnsService] {
+    let result = await ProcessRunner.run(
+      ShellEnv.adbPath, ["mdns", "services"], timeout: 15)
+    guard result.ok else { return [] }
+    var services: [AdbMdnsService] = []
+    for line in result.stdout.components(separatedBy: .newlines) {
+      let parts = line
+        .split(whereSeparator: { $0 == "\t" || $0 == " " })
+        .map(String.init)
+        .filter { !$0.isEmpty }
+      guard parts.count >= 3, parts[1].contains("_adb-tls-") else { continue }
+      services.append(
+        AdbMdnsService(name: parts[0], type: parts[1], address: parts[2]))
+    }
+    return services
   }
 }

@@ -32,6 +32,10 @@ struct ContentView: View {
       SdkManagerSheet()
         .environment(\.simu, tokens)
     }
+    .sheet(isPresented: $model.connectSheetShown) {
+      ConnectDeviceSheet()
+        .environment(\.simu, tokens)
+    }
     .overlay(alignment: .bottom) {
       if let notice = model.notice {
         NoticeCapsule(text: notice)

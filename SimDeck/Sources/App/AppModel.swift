@@ -26,7 +26,9 @@ final class AppModel: ObservableObject {
   @Published var notice: String?
   @Published var createSheetShown = false
   @Published var sdkSheetShown = false
+  @Published var connectSheetShown = false
   @Published var createPlatform = 0
+  @Published private(set) var discoveredServices: [AdbMdnsService] = []
 
   private let emulator = EmulatorController()
   let settingsStore = DeviceSettingsStore()
@@ -75,6 +77,9 @@ final class AppModel: ObservableObject {
     webcams = await EmulatorController.listWebcams()
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SDK"] == "1" {
       sdkSheetShown = true
+    }
+    if ProcessInfo.processInfo.environment["SIMDECK_SHOW_CONNECT"] == "1" {
+      connectSheetShown = true
     }
     loop = Task { [weak self] in
       var ticks = 0
@@ -438,6 +443,33 @@ final class AppModel: ObservableObject {
   func retry(_ device: Device) async {
     closeStream(device)
     await openStream(device)
+  }
+
+  // MARK: - Wireless
+
+  func refreshMdns() async {
+    discoveredServices = await AdbService.mdnsServices()
+  }
+
+  func pairDevice(hostPort: String, code: String) async -> String {
+    let result = await AdbService.pair(hostPort: hostPort, code: code)
+    if result.ok { await refreshMdns() }
+    if !result.combined.isEmpty { return result.combined }
+    return result.ok ? "Paired." : "Pairing failed."
+  }
+
+  func connectDevice(hostPort: String) async -> String {
+    let address = hostPort.contains(":") ? hostPort : "\(hostPort):5555"
+    let result = await AdbService.connect(hostPort: address)
+    if result.ok { await refresh() }
+    if !result.combined.isEmpty { return result.combined }
+    return result.ok ? "Connected." : "Connection failed."
+  }
+
+  func disconnectDevice(hostPort: String) async -> String {
+    let result = await AdbService.disconnect(hostPort: hostPort)
+    await refresh()
+    return result.combined.isEmpty ? "Disconnected." : result.combined
   }
 
   // MARK: - Capture

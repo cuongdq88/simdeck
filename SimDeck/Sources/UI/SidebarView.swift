@@ -94,6 +94,9 @@ struct SidebarView: View {
   private var searchRow: some View {
     HStack(spacing: 4) {
       SimuTextField(text: $query, hint: "Search devices", icon: "magnifyingglass")
+      SimuIconButton(icon: "wifi", help: "Connect a device over Wi-Fi", size: 15) {
+        model.connectSheetShown = true
+      }
       SimuIconButton(icon: "arrow.clockwise", help: "Refresh devices", size: 15) {
         Task { await model.refresh() }
       }
