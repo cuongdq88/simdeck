@@ -14,6 +14,9 @@ final class SimulatorSession: DeviceSession {
   private var capture: SimulatorCapture?
   private var hid: SimulatorHID?
 
+  /// Apple's own device frame, when Xcode ships one for this model.
+  private(set) var chrome: AppleChrome?
+
   init(deviceKey: String, udid: String) {
     self.deviceKey = deviceKey
     self.udid = udid
@@ -72,6 +75,11 @@ final class SimulatorSession: DeviceSession {
     let hid = try? SimulatorHID(device: device, udid: udid)
     lock.lock()
     self.hid = hid
+    lock.unlock()
+
+    let chrome = SimChromeLoader.load(device: device)
+    lock.lock()
+    self.chrome = chrome
     lock.unlock()
 
     if let native = SimFrameworks.mainScreenSize(device) {

@@ -44,6 +44,9 @@ runtime for the simulator screen and input, so a signed build needs the
 | iOS streaming | private `SimulatorKit` framebuffer callbacks → `AVSampleBufferDisplayLayer` |
 | iOS input | legacy Indigo HID client plus a GSEvent orientation message for rotate |
 | Create AVD | writes `config.ini` from a built-in hardware profile catalog |
+| Edit AVD | RAM, data size, back camera, orientation, keyboard and SD card; every other key and comment is preserved |
+| Launch options | per device: headless, cold boot (no snapshot), camera source (restarts the emulator), restart |
+| Settings | `~/Library/Application Support/SimDeck/settings.json` (headless, cold boot, camera, frame) |
 | Create simulator | `xcrun simctl create` |
 | Screenshots | `adb exec-out screencap` / `simctl io screenshot`, saved to `~/Pictures/SimDeck` |
 | Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
@@ -90,5 +93,4 @@ Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
 
 Emulator gRPC video (Android uses scrcpy, which works headless too), Wi-Fi
 pairing, logcat, scenarios, the plugin registry, physical iOS devices, grid
-recording, spotlight layouts with drag reordering, and Apple's DeviceKit
-chrome images (the bezel is drawn instead).
+recording, and spotlight layouts with drag reordering.

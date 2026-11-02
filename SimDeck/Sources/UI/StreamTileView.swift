@@ -151,13 +151,27 @@ struct StreamTileView: View {
     GeometryReader { geometry in
       ZStack {
         if let session, session.status.isLive {
-          DeviceFrameView(
-            formFactor: DeviceFormFactor.of(device),
-            screenSize: session.size,
-            maxHeight: geometry.size.height - 16,
-            enabled: model.showFrame(device),
-            onButton: { button in session.press(button) },
-            content: TouchSurface(session: session))
+          if model.showFrame(device),
+            let simulator = session as? SimulatorSession,
+            let chrome = simulator.chrome,
+            chrome.matches(videoSize: session.size)
+          {
+            AppleChromeFrame(
+              chrome: chrome,
+              maxHeight: geometry.size.height - 16,
+              onButton: { button in session.press(button) }
+            ) {
+              TouchSurface(session: session)
+            }
+          } else {
+            DeviceFrameView(
+              formFactor: DeviceFormFactor.of(device),
+              screenSize: session.size,
+              maxHeight: geometry.size.height - 16,
+              enabled: model.showFrame(device),
+              onButton: { button in session.press(button) },
+              content: TouchSurface(session: session))
+          }
         } else if let message = model.sessionErrors[device.key] ?? failedMessage(session) {
           failedState(message)
         } else {
