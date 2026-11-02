@@ -1,5 +1,29 @@
 import Foundation
 
+enum StreamLayout: String, CaseIterable, Identifiable {
+  case grid
+  case spotlightVertical
+  case spotlightHorizontal
+
+  var id: String { rawValue }
+
+  var label: String {
+    switch self {
+    case .grid: return "Grid"
+    case .spotlightVertical: return "Spotlight: large left, strip right"
+    case .spotlightHorizontal: return "Spotlight: large top, strip bottom"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .grid: return "square.grid.2x2"
+    case .spotlightVertical: return "rectangle.righthalf.inset.filled"
+    case .spotlightHorizontal: return "rectangle.bottomhalf.inset.filled"
+    }
+  }
+}
+
 struct DeviceSettings: Codable, Equatable {
   /// Overrides the global headless default for this device.
   var headless: Bool?
@@ -15,6 +39,8 @@ struct DeviceSettings: Codable, Equatable {
 final class DeviceSettingsStore: ObservableObject {
   @Published private(set) var devices: [String: DeviceSettings] = [:]
   @Published var headlessDefault = true
+  @Published private(set) var layout: StreamLayout = .grid
+  @Published private(set) var spotlightKey: String?
 
   private let url: URL
 
@@ -47,6 +73,16 @@ final class DeviceSettingsStore: ObservableObject {
     settings(for: device).headless ?? headlessDefault
   }
 
+  func setLayout(_ value: StreamLayout) {
+    layout = value
+    save()
+  }
+
+  func setSpotlight(_ key: String?) {
+    spotlightKey = key
+    save()
+  }
+
   func showFrame(_ device: Device) -> Bool {
     settings(for: device).showFrame ?? true
   }
@@ -57,10 +93,16 @@ final class DeviceSettingsStore: ObservableObject {
     else { return }
     devices = decoded.devices
     headlessDefault = decoded.headlessDefault
+    layout = StreamLayout(rawValue: decoded.layout ?? "") ?? .grid
+    spotlightKey = decoded.spotlightKey
   }
 
   private func save() {
-    let stored = Stored(devices: devices, headlessDefault: headlessDefault)
+    let stored = Stored(
+      devices: devices,
+      headlessDefault: headlessDefault,
+      layout: layout.rawValue,
+      spotlightKey: spotlightKey)
     guard let data = try? JSONEncoder().encode(stored) else { return }
     try? data.write(to: url, options: .atomic)
   }
@@ -68,5 +110,7 @@ final class DeviceSettingsStore: ObservableObject {
   private struct Stored: Codable {
     var devices: [String: DeviceSettings]
     var headlessDefault: Bool
+    var layout: String?
+    var spotlightKey: String?
   }
 }

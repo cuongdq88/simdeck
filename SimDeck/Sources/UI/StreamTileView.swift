@@ -30,11 +30,19 @@ struct TileAction: Identifiable {
   }
 }
 
+enum StreamTileMode {
+  case grid
+  case spotlight
+  case thumbnail
+}
+
 struct StreamTileView: View {
   @EnvironmentObject private var model: AppModel
   @Environment(\.simu) private var t
 
   let device: Device
+  var mode: StreamTileMode = .grid
+  var draggable = false
 
   @FocusState private var keyboardFocused: Bool
 
@@ -45,6 +53,7 @@ struct StreamTileView: View {
     VStack(spacing: 0) {
       header
       bodyContent
+        .allowsHitTesting(mode != .thumbnail)
     }
     .background(
       RoundedRectangle(cornerRadius: SimuTokens.radiusLarge)
@@ -56,8 +65,8 @@ struct StreamTileView: View {
     .padding(1.5)
     .background(
       RoundedRectangle(cornerRadius: SimuTokens.radiusLarge + 1.5)
-        .fill(keyboardFocused ? t.accent : .clear))
-    .focusable()
+        .fill(keyboardFocused && mode != .thumbnail ? t.accent : .clear))
+    .focusable(mode != .thumbnail)
     .focused($keyboardFocused)
     .focusEffectDisabled()
     .onKeyPress(phases: .down) { press in
@@ -70,7 +79,39 @@ struct StreamTileView: View {
 
   // MARK: - Header
 
+  @ViewBuilder
   private var header: some View {
+    if mode == .thumbnail {
+      thumbnailHeader
+    } else if draggable && mode == .grid {
+      fullHeader
+        .onDrag { NSItemProvider(object: device.key as NSString) }
+    } else {
+      fullHeader
+    }
+  }
+
+  private var thumbnailHeader: some View {
+    HStack(spacing: 7) {
+      SimuStatusDot(color: statusColor, size: 6)
+      Text(device.name)
+        .font(.system(size: 12, weight: .semibold))
+        .foregroundStyle(t.text)
+        .lineLimit(1)
+        .truncationMode(.tail)
+      if model.isRecording(device) {
+        Circle().fill(t.danger).frame(width: 6, height: 6)
+      }
+      Spacer(minLength: 0)
+    }
+    .padding(.horizontal, 10)
+    .frame(height: 32)
+    .overlay(alignment: .bottom) {
+      Rectangle().fill(t.border).frame(height: 1)
+    }
+  }
+
+  private var fullHeader: some View {
     GeometryReader { geometry in
       let actions = tileActions
       let kept = TileAction.fit(actions, budget: geometry.size.width - 16 - 90)
@@ -87,6 +128,12 @@ struct StreamTileView: View {
             .foregroundStyle(t.text)
             .lineLimit(1)
             .truncationMode(.tail)
+          if mode == .spotlight, let size = session?.size, size.width > 1 {
+            Text(verbatim: "\(Int(size.width))×\(Int(size.height))")
+              .font(t.monoSmall)
+              .foregroundStyle(t.textFaint)
+              .lineLimit(1)
+          }
           let fps = model.fps(for: device)
           if model.isRecording(device), let start = model.recordingStart(device) {
             HStack(spacing: 4) {

@@ -67,6 +67,11 @@ final class AppModel: ObservableObject {
     }
     guard loop == nil else { return }
     startMcp()
+    if let raw = ProcessInfo.processInfo.environment["SIMDECK_LAYOUT"],
+      let value = StreamLayout(rawValue: raw)
+    {
+      settingsStore.setLayout(value)
+    }
     webcams = await EmulatorController.listWebcams()
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SDK"] == "1" {
       sdkSheetShown = true
@@ -394,6 +399,33 @@ final class AppModel: ObservableObject {
   }
 
   func isHeadless(_ device: Device) -> Bool { settingsStore.isHeadless(device) }
+
+  var layout: StreamLayout { settingsStore.layout }
+  var spotlightKey: String? { settingsStore.spotlightKey }
+
+  func setLayout(_ value: StreamLayout) {
+    settingsStore.setLayout(value)
+    objectWillChange.send()
+  }
+
+  func spotlight(_ device: Device) {
+    settingsStore.setSpotlight(device.key)
+    objectWillChange.send()
+  }
+
+  /// Moves [key] in front of [target] in the grid order.
+  func moveStream(_ key: String, before target: String) {
+    guard key != target,
+      let from = openKeys.firstIndex(of: key),
+      let to = openKeys.firstIndex(of: target)
+    else { return }
+    var keys = openKeys
+    keys.remove(at: from)
+    let insert = keys.firstIndex(of: target) ?? min(to, keys.count)
+    keys.insert(key, at: insert)
+    openKeys = keys
+    objectWillChange.send()
+  }
 
   func setHeadless(_ device: Device, _ value: Bool) {
     settingsStore.update(device) { $0.headless = value }

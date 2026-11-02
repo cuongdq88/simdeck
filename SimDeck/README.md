@@ -42,6 +42,7 @@ runtime for the simulator screen and input, so a signed build needs the
 | Android streaming | own scrcpy client: pushes `scrcpy-server`, `adb forward`, parses the 4.x protocol, decodes H.264 with VideoToolbox |
 | Android input | scrcpy control socket (touch, keys, text, rotate) |
 | iOS streaming | private `SimulatorKit` framebuffer callbacks → `AVSampleBufferDisplayLayer` |
+| iOS device frame | Xcode's DeviceKit chrome (`chrome.json` + PDFs): composite or nine-slice bezel, framebuffer mask, clickable side buttons |
 | iOS input | legacy Indigo HID client plus a GSEvent orientation message for rotate |
 | Create AVD | writes `config.ini` from a built-in hardware profile catalog |
 | Edit AVD | RAM, data size, back camera, orientation, keyboard and SD card; every other key and comment is preserved |
@@ -52,6 +53,8 @@ runtime for the simulator screen and input, so a signed build needs the
 | Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
 | SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
 | MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` (14 tools: list/create/start/stop/delete, tap, swipe, type, buttons, screenshot) |
+| Layouts | adaptive grid, or a spotlight with the rest in a strip on the right / bottom; the choice and focus persist |
+| Reordering | drag a tile by its header onto another to move it in the grid |
 | Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |
 
 ## Layout

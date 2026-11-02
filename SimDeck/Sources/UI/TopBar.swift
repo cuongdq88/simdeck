@@ -30,6 +30,14 @@ struct TopBar: View {
           help: "Refresh devices",
           action: { Task { await model.refresh() } })
         SimuToolbarDivider()
+        ForEach(StreamLayout.allCases) { layout in
+          SimuIconButton(
+            icon: layout.symbol,
+            help: layout.label,
+            active: model.layout == layout,
+            action: { model.setLayout(layout) })
+        }
+        SimuToolbarDivider()
         SimuIconButton(
           icon: "externaldrive",
           help: "SDK Manager",
