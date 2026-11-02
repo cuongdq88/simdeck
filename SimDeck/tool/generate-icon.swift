@@ -163,4 +163,25 @@ if let mark = png(size: 512, transparent: true) {
   try mark.write(to: root.appendingPathComponent("Resources/logo.png"))
 }
 
-print("wrote icon set and logo")
+// Legacy .icns next to the asset catalog: Finder and Dock fall back to it in
+// some caches, and older macOS releases only read CFBundleIconFile.
+let temp = FileManager.default.temporaryDirectory
+  .appendingPathComponent("SimDeckAppIcon.iconset")
+try? FileManager.default.removeItem(at: temp)
+try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+for (name, _) in variants {
+  let source = iconset.appendingPathComponent("\(name).png")
+  try? FileManager.default.copyItem(
+    at: source, to: temp.appendingPathComponent("\(name).png"))
+}
+let iconutil = Process()
+iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+iconutil.arguments = [
+  "-c", "icns", temp.path,
+  "-o", root.appendingPathComponent("Resources/AppIcon.icns").path,
+]
+try? iconutil.run()
+iconutil.waitUntilExit()
+try? FileManager.default.removeItem(at: temp)
+
+print("wrote icon set, logo and AppIcon.icns")
