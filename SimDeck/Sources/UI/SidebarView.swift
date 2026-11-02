@@ -140,6 +140,7 @@ struct SidebarView: View {
         $0.os == .android && $0.kind == .simulator && !$0.isRunning
       },
       showWhenEmpty: true, addPlatform: 0)
+    add(id: "ios-devices", title: "iOS devices", devices: model.iosDevices)
     add(
       id: "ios-simulators", title: "iOS simulators",
       devices: model.iosSimulators.filter { !$0.isRunning },
@@ -289,8 +290,14 @@ struct SidebarDeviceRow: View {
         if device.os == .android {
           Button("Logcat…") { model.openLogcat(device) }
         }
-        Button("Restart") { Task { await model.restart(device) } }
-        Button("Shut down") { Task { await model.stop(device) } }
+        if device.isPhysical {
+          if model.isStreaming(device) {
+            Button("Close stream") { model.closeStream(device) }
+          }
+        } else {
+          Button("Restart") { Task { await model.restart(device) } }
+          Button("Shut down") { Task { await model.stop(device) } }
+        }
       }
       if device.os == .android && device.kind == .simulator {
         Menu("Camera source") {

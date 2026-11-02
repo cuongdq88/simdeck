@@ -36,6 +36,7 @@ targets:
         LSMinimumSystemVersion: "14.0"
         LSApplicationCategoryType: public.app-category.developer-tools
         NSHighResolutionCapable: true
+        NSCameraUsageDescription: SimDeck shows the screen of a USB-connected iPhone or iPad.
         NSPrincipalClass: NSApplication
     settings:
       base:

@@ -54,6 +54,7 @@ runtime for the simulator screen and input, so a signed build needs the
 | SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
 | MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` (14 tools: list/create/start/stop/delete, tap, swipe, type, buttons, screenshot) |
 | Wi-Fi pairing | adb's mDNS pairing/connect services, or manual address and pairing code |
+| Logcat | live `adb logcat -v time` with a text filter, V/D/I/W/E threshold, pause, clear and copy |
 | Layouts | adaptive grid, or a spotlight with the rest in a strip on the right / bottom; the choice and focus persist |
 | Reordering | drag a tile by its header onto another to move it in the grid |
 | Wipe / delete | file-level wipe, guard against shared AVD directories, running devices and in-use images |

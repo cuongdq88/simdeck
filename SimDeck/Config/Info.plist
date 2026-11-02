@@ -24,6 +24,8 @@
 	<string>public.app-category.developer-tools</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SimDeck shows the screen of a USB-connected iPhone or iPad.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSPrincipalClass</key>

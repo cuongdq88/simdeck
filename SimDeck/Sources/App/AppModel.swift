@@ -41,12 +41,21 @@ final class AppModel: ObservableObject {
   private var mcpServer: McpServer?
   private var logcatProcess: Process?
   private var logcatBuffer = ""
+  /// `devicectl` costs a second or two; the device list refreshes every
+  /// three, so physical iOS devices are re-read less often.
+  private var physicalIOSDevices: [Device] = []
+  private var physicalIOSCheckedAt = Date.distantPast
 
   var runningDevices: [Device] { devices.filter(\.isRunning) }
   var androidDevices: [Device] {
     devices.filter { $0.os == .android && $0.kind == .physical }
   }
-  var iosSimulators: [Device] { devices.filter { $0.os == .ios } }
+  var iosDevices: [Device] {
+    devices.filter { $0.os == .ios && $0.kind == .physical }
+  }
+  var iosSimulators: [Device] {
+    devices.filter { $0.os == .ios && $0.kind == .simulator }
+  }
 
   /// The devices whose streams are open, in grid order.
   var openDevices: [Device] {
@@ -129,9 +138,19 @@ final class AppModel: ObservableObject {
     async let simulators = Self.loadAndroidSimulators()
     async let android = Self.loadAndroidDevices()
     async let ios = SimctlService.listDevices()
-    devices = await (simulators + android + ios)
+    let physical = await loadPhysicalIOS()
+    devices = await (simulators + android + ios) + physical
     openKeys.removeAll { key in !devices.contains { $0.key == key } }
     pruneSessions()
+  }
+
+  private func loadPhysicalIOS() async -> [Device] {
+    if Date().timeIntervalSince(physicalIOSCheckedAt) < 15 {
+      return physicalIOSDevices
+    }
+    physicalIOSCheckedAt = Date()
+    physicalIOSDevices = await DevicectlService.listPhysicalDevices()
+    return physicalIOSDevices
   }
 
   private static func loadAndroidSimulators() async -> [Device] {
@@ -218,10 +237,14 @@ final class AppModel: ObservableObject {
           try await attachScrcpy(device: device, serial: serial)
         }
       case .ios:
-        guard await SimctlService.boot(udid: device.rawID) else {
-          throw SimulatorError("Could not boot \(device.name).")
+        if device.kind == .physical {
+          try await attachPhysical(device)
+        } else {
+          guard await SimctlService.boot(udid: device.rawID) else {
+            throw SimulatorError("Could not boot \(device.name).")
+          }
+          try await attachSimulator(device)
         }
-        try await attachSimulator(device)
       }
       if !openKeys.contains(device.key) { openKeys.append(device.key) }
       sessionErrors[device.key] = nil
@@ -278,10 +301,14 @@ final class AppModel: ObservableObject {
         }
         try await attachScrcpy(device: device, serial: serial)
       case .ios:
-        guard device.isRunning else {
-          throw SimulatorError("Boot the simulator before streaming it.")
+        if device.kind == .physical {
+          try await attachPhysical(device)
+        } else {
+          guard device.isRunning else {
+            throw SimulatorError("Boot the simulator before streaming it.")
+          }
+          try await attachSimulator(device)
         }
-        try await attachSimulator(device)
       }
       if !openKeys.contains(device.key) { openKeys.append(device.key) }
       sessionErrors[device.key] = nil
@@ -316,7 +343,9 @@ final class AppModel: ObservableObject {
         _ = await AdbService.kill(serial: serial)
       }
     case .ios:
-      _ = await SimctlService.shutdown(udid: device.rawID)
+      if device.kind == .simulator {
+        _ = await SimctlService.shutdown(udid: device.rawID)
+      }
     }
     await refresh()
     // The emulator needs a moment to drop off adb; refresh again so the row
@@ -344,6 +373,10 @@ final class AppModel: ObservableObject {
         }
         try AvdStore.delete(name: device.rawID)
       case .ios:
+        guard device.kind == .simulator else {
+          throw GuardIssue(
+            code: "unsupported", message: "A physical device is removed by unplugging it.")
+        }
         guard await SimctlService.delete(udid: device.rawID) else {
           throw SimulatorError("simctl delete failed for \(device.name).")
         }
@@ -369,6 +402,10 @@ final class AppModel: ObservableObject {
         }
         try AvdStore.wipe(name: device.rawID)
       case .ios:
+        guard device.kind == .simulator else {
+          throw GuardIssue(
+            code: "unsupported", message: "A physical device cannot be wiped from here.")
+        }
         if device.isRunning {
           closeStream(device)
           _ = await SimctlService.shutdown(udid: device.rawID)
@@ -529,6 +566,19 @@ final class AppModel: ObservableObject {
 
   func takeScreenshot(_ device: Device) async {
     do {
+      if device.os == .ios && device.kind == .physical {
+        guard let session = sessions[device.key] as? PhysicalDeviceSession,
+          let png = session.snapshotPNG()
+        else {
+          throw PhysicalCaptureError.message(
+            "Stream the device first; its screenshot comes from the live frames.")
+        }
+        let url = CaptureService.directory.appendingPathComponent(
+          "\(CaptureService.safeName(device.name))-\(CaptureService.stamp()).png")
+        try png.write(to: url, options: .atomic)
+        showNotice("Screenshot saved to \(url.lastPathComponent)")
+        return
+      }
       let url = try await CaptureService.screenshot(device)
       showNotice("Screenshot saved to \(url.lastPathComponent)")
     } catch {
@@ -541,6 +591,10 @@ final class AppModel: ObservableObject {
   func recordingStart(_ device: Device) -> Date? { recordingStarts[device.key] }
 
   func toggleRecording(_ device: Device) async {
+    if device.os == .ios && device.kind == .physical {
+      errorMessage = "Recording a USB iOS device is not supported yet."
+      return
+    }
     if let active = recordings.removeValue(forKey: device.key) {
       recordingStarts[device.key] = nil
       if let url = await CaptureService.stopRecording(device, recording: active) {
@@ -651,6 +705,23 @@ final class AppModel: ObservableObject {
 
   private func attachSimulator(_ device: Device) async throws {
     let session = SimulatorSession(deviceKey: device.key, udid: device.rawID)
+    session.onStatusChange = { [weak self] status in
+      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    }
+    sessions[device.key] = session
+    do {
+      try await session.start()
+    } catch {
+      sessions[device.key] = nil
+      sessionErrors[device.key] = error.localizedDescription
+      throw error
+    }
+  }
+
+  /// A USB iPhone / iPad; view only, no boot step.
+  private func attachPhysical(_ device: Device) async throws {
+    let session = PhysicalDeviceSession(
+      deviceKey: device.key, udid: device.rawID, name: device.name)
     session.onStatusChange = { [weak self] status in
       DispatchQueue.main.async { self?.apply(status, key: device.key) }
     }

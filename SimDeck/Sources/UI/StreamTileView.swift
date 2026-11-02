@@ -264,36 +264,40 @@ struct StreamTileView: View {
   private var tileActions: [TileAction] {
     var actions: [TileAction] = []
     let session = self.session
+    // A USB iPhone / iPad is view only: no navigation, keys or rotation.
+    let viewOnly = session is PhysicalDeviceSession
 
-    for button in [DeviceButton.back, .home, .recents] {
+    if !viewOnly {
+      for button in [DeviceButton.back, .home, .recents] {
+        actions.append(
+          TileAction(
+            id: button.rawValue,
+            icon: buttonSymbol(button),
+            label: buttonLabel(button),
+            priority: 1,
+            isNav: true,
+            action: live ? { session?.press(button) } : nil))
+      }
+
       actions.append(
         TileAction(
-          id: button.rawValue,
-          icon: buttonSymbol(button),
-          label: buttonLabel(button),
-          priority: 1,
-          isNav: true,
-          action: live ? { session?.press(button) } : nil))
+          id: "keyboard",
+          icon: keyboardFocused ? "keyboard" : "keyboard.badge.ellipsis",
+          label: keyboardFocused
+            ? "Keyboard goes to this device (click to stop)"
+            : "Send keyboard to this device",
+          priority: 4,
+          active: keyboardFocused,
+          action: live ? { keyboardFocused.toggle() } : nil))
+
+      actions.append(
+        TileAction(
+          id: "rotate",
+          icon: "rotate.right",
+          label: "Rotate screen",
+          priority: 4,
+          action: live ? { session?.rotate() } : nil))
     }
-
-    actions.append(
-      TileAction(
-        id: "keyboard",
-        icon: keyboardFocused ? "keyboard" : "keyboard.badge.ellipsis",
-        label: keyboardFocused
-          ? "Keyboard goes to this device (click to stop)"
-          : "Send keyboard to this device",
-        priority: 4,
-        active: keyboardFocused,
-        action: live ? { keyboardFocused.toggle() } : nil))
-
-    actions.append(
-      TileAction(
-        id: "rotate",
-        icon: "rotate.right",
-        label: "Rotate screen",
-        priority: 4,
-        action: live ? { session?.rotate() } : nil))
 
     actions.append(
       TileAction(
@@ -303,15 +307,17 @@ struct StreamTileView: View {
         priority: 4,
         action: live ? { Task { await model.takeScreenshot(device) } } : nil))
 
-    let recording = model.isRecording(device)
-    actions.append(
-      TileAction(
-        id: "record",
-        icon: recording ? "stop.circle" : "video",
-        label: recording ? "Stop recording" : "Record screen",
-        priority: 5,
-        color: recording ? t.danger : nil,
-        action: live ? { Task { await model.toggleRecording(device) } } : nil))
+    if !viewOnly {
+      let recording = model.isRecording(device)
+      actions.append(
+        TileAction(
+          id: "record",
+          icon: recording ? "stop.circle" : "video",
+          label: recording ? "Stop recording" : "Record screen",
+          priority: 5,
+          color: recording ? t.danger : nil,
+          action: live ? { Task { await model.toggleRecording(device) } } : nil))
+    }
 
     let framed = model.showFrame(device)
     actions.append(

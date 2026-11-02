@@ -10,11 +10,10 @@ nguyên, chưa thay thế).
 
 ## Đang làm
 
-- [ ] **Logcat viewer** cho thiết bị Android (adb logcat, lọc theo tag/level, tạm dừng)
+- [ ] **Scenarios**: YAML, editor, runner + panel bên phải
 
 ## Tiếp theo
 
-- [ ] **Scenarios**: YAML, editor, runner + panel bên phải
 - [ ] **Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
 - [ ] **iOS thiết bị thật**: liệt kê qua usbmux/devicectl, stream CoreMediaIO, chỉ xem
 - [ ] **Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu

@@ -115,6 +115,8 @@ enum CaptureService {
     return exists ? recording.localURL : nil
   }
 
+  static func safeName(_ name: String) -> String { safe(name) }
+
   private static func safe(_ name: String) -> String {
     let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_."))
     return name.unicodeScalars.map { allowed.contains($0) ? Character($0) : "_" }.reduce("")
