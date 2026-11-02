@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# simdeck — thin CLI over SimDeck's MCP server, for agents and scripts that
+# cannot speak MCP directly. Every device action goes through SimDeck, so the
+# emulator runs headless and its screen appears inside the app.
+set -euo pipefail
+
+PORT="${SIMDECK_MCP_PORT:-8765}"
+URL="http://127.0.0.1:${PORT}/mcp"
+
+usage() {
+  cat <<'EOF'
+simdeck <command> [args]
+
+  list                            List devices
+  catalogs                        Installed system images and hardware profiles
+  start <device> [--no-stream]    Boot headless; the tile opens in SimDeck
+  boot <device>                   Boot headless without opening a tile
+  stop <device>                   Shut the device down
+  delete <device>                 Delete an emulator or simulator
+  tap <device> <x> <y>            Tap at normalized coordinates (0..1)
+  swipe <device> <x1> <y1> <x2> <y2>
+  type <device> <text>            Type text on the device
+  screenshot <device>             Save a PNG and print its path
+  call <tool> [json]              Call any MCP tool
+
+Env: SIMDECK_MCP_PORT (default 8765), SIMDECK_TIMEOUT (seconds, default 240).
+EOF
+}
+
+rpc() {
+  curl -sS -m "${SIMDECK_TIMEOUT:-240}" -X POST "$URL" \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    --data-binary "$1"
+}
+
+call_tool() {
+  local name="$1"
+  local args="${2:-}"
+  [[ -n "$args" ]] || args='{}'
+  local payload response
+  payload="$(python3 - "$name" "$args" <<'PY'
+import json, sys
+print(json.dumps({
+    "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+    "params": {"name": sys.argv[1], "arguments": json.loads(sys.argv[2])},
+}))
+PY
+)"
+  if ! response="$(rpc "$payload")"; then
+    echo "simdeck: cannot reach $URL (is SimDeck running?)" >&2
+    exit 2
+  fi
+  python3 - "$response" <<'PY'
+import json, sys
+raw = sys.argv[1]
+try:
+    data = json.loads(raw)
+except Exception:
+    print(raw)
+    sys.exit(1)
+if "error" in data:
+    print(json.dumps(data["error"], ensure_ascii=False))
+    sys.exit(1)
+result = data.get("result", {})
+for item in result.get("content", []):
+    if item.get("type") == "text":
+        print(item.get("text", ""))
+if result.get("isError"):
+    sys.exit(1)
+PY
+}
+
+args_with_device() {
+  python3 -c 'import json,sys; print(json.dumps({"device": sys.argv[1]}))' "$1"
+}
+
+command="${1:-}"
+shift || true
+
+case "$command" in
+  ""|-h|--help|help)
+    usage
+    ;;
+  list|devices|status)
+    call_tool list_devices
+    ;;
+  catalogs)
+    call_tool get_device_catalogs
+    ;;
+  start)
+    device="${1:?usage: simdeck start <device> [--no-stream]}"
+    shift
+    stream="true"
+    if [[ "${1:-}" == "--no-stream" ]]; then stream="false"; fi
+    call_tool start_device "$(python3 -c '
+import json, sys
+print(json.dumps({"device": sys.argv[1], "headless": True,
+                  "stream": sys.argv[2] == "true"}))
+' "$device" "$stream")"
+    ;;
+  boot)
+    device="${1:?usage: simdeck boot <device>}"
+    call_tool start_device "$(python3 -c '
+import json, sys
+print(json.dumps({"device": sys.argv[1], "headless": True, "stream": False}))
+' "$device")"
+    ;;
+  stop|shutdown)
+    device="${1:?usage: simdeck stop <device>}"
+    call_tool stop_device "$(args_with_device "$device")"
+    ;;
+  delete)
+    device="${1:?usage: simdeck delete <device>}"
+    call_tool delete_device "$(args_with_device "$device")"
+    ;;
+  tap)
+    device="${1:?usage: simdeck tap <device> <x> <y>}"
+    call_tool tap "$(python3 -c '
+import json, sys
+print(json.dumps({"device": sys.argv[1], "x": float(sys.argv[2]),
+                  "y": float(sys.argv[3])}))
+' "$device" "${2:?x}" "${3:?y}")"
+    ;;
+  swipe)
+    device="${1:?usage: simdeck swipe <device> <x1> <y1> <x2> <y2>}"
+    call_tool swipe "$(python3 -c '
+import json, sys
+print(json.dumps({"device": sys.argv[1], "x1": float(sys.argv[2]),
+                  "y1": float(sys.argv[3]), "x2": float(sys.argv[4]),
+                  "y2": float(sys.argv[5])}))
+' "$device" "${2:?x1}" "${3:?y1}" "${4:?x2}" "${5:?y2}")"
+    ;;
+  type)
+    device="${1:?usage: simdeck type <device> <text>}"
+    shift
+    text="$*"
+    call_tool type_text "$(python3 -c '
+import json, sys
+print(json.dumps({"device": sys.argv[1], "text": sys.argv[2]}))
+' "$device" "$text")"
+    ;;
+  screenshot)
+    device="${1:?usage: simdeck screenshot <device>}"
+    call_tool screenshot "$(args_with_device "$device")"
+    ;;
+  call)
+    tool="${1:?usage: simdeck call <tool> [json]}"
+    args="${2:-}"
+    [[ -n "$args" ]] || args='{}'
+    call_tool "$tool" "$(python3 -c '
+import json, sys
+print(json.dumps(json.loads(sys.argv[1])))
+' "$args")"
+    ;;
+  *)
+    echo "simdeck: unknown command '$command'" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

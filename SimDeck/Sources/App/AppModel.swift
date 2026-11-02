@@ -213,7 +213,13 @@ final class AppModel: ObservableObject {
 
   // MARK: - Actions
 
-  func start(_ device: Device, coldBoot: Bool? = nil) async {
+  /// Boots [device]; [stream] opens its tile in the grid. Agents boot with
+  /// `stream: false` when they only need adb/simctl, and always headless so
+  /// no emulator window appears.
+  func start(
+    _ device: Device, coldBoot: Bool? = nil, headless: Bool? = nil,
+    stream: Bool = true
+  ) async {
     guard !busy.contains(device.key) else { return }
     busy.insert(device.key)
     defer { busy.remove(device.key) }
@@ -221,35 +227,45 @@ final class AppModel: ObservableObject {
       switch device.os {
       case .android:
         if device.kind == .simulator {
-          let name = device.avdName ?? device.rawID
-          let settings = settingsStore.settings(for: device)
-          try emulator.start(
-            name: name,
-            headless: settingsStore.isHeadless(device),
-            coldBoot: coldBoot ?? settings.coldBoot,
-            cameraBack: settings.cameraBack,
-            cameraFront: settings.cameraFront)
-          guard let serial = await emulator.waitForSerial(avdName: name) else {
-            throw EmulatorError.bootTimedOut(name)
+          if device.isRunning {
+            // Already booted (possibly by an earlier call): never start a
+            // second emulator for the same AVD.
+            if stream, let serial = device.serial {
+              try await attachScrcpy(device: device, serial: serial)
+            }
+          } else {
+            let name = device.avdName ?? device.rawID
+            let settings = settingsStore.settings(for: device)
+            try emulator.start(
+              name: name,
+              headless: headless ?? settingsStore.isHeadless(device),
+              coldBoot: coldBoot ?? settings.coldBoot,
+              cameraBack: settings.cameraBack,
+              cameraFront: settings.cameraFront)
+            guard let serial = await emulator.waitForSerial(avdName: name) else {
+              throw EmulatorError.bootTimedOut(name)
+            }
+            if stream {
+              try await attachScrcpy(device: device, serial: serial)
+            }
           }
-          try await attachScrcpy(device: device, serial: serial)
-        } else if let serial = device.serial {
+        } else if let serial = device.serial, stream {
           try await attachScrcpy(device: device, serial: serial)
         }
       case .ios:
         if device.kind == .physical {
-          try await attachPhysical(device)
+          if stream { try await attachPhysical(device) }
         } else {
           guard await SimctlService.boot(udid: device.rawID) else {
             throw SimulatorError("Could not boot \(device.name).")
           }
-          try await attachSimulator(device)
+          if stream { try await attachSimulator(device) }
         }
       }
-      if !openKeys.contains(device.key) { openKeys.append(device.key) }
+      if stream, !openKeys.contains(device.key) { openKeys.append(device.key) }
       sessionErrors[device.key] = nil
       await refresh()
-      showNotice("Started \(device.name)")
+      showNotice(stream ? "Started \(device.name)" : "Booted \(device.name)")
     } catch {
       sessionErrors[device.key] = error.localizedDescription
       errorMessage = error.localizedDescription

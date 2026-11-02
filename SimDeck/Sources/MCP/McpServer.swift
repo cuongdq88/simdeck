@@ -268,8 +268,24 @@ final class McpServer {
 
     case "start_device":
       let device = try findDevice(arguments, model: model)
-      await model.start(device)
-      return json(["started": device.name])
+      let headless = arguments["headless"] as? Bool ?? true
+      let stream = arguments["stream"] as? Bool ?? true
+      let coldBoot = arguments["cold_boot"] as? Bool
+      await model.start(
+        device, coldBoot: coldBoot, headless: headless, stream: stream)
+      await model.refresh()
+      guard model.devices.first(where: { $0.key == device.key })?.isRunning == true
+      else {
+        throw McpToolError.message(
+          model.errorMessage ?? "Could not start \(device.name).")
+      }
+      if stream, model.session(for: device) == nil {
+        throw McpToolError.message(
+          model.sessionErrors[device.key] ?? "The stream did not start.")
+      }
+      return json([
+        "started": device.name, "headless": headless, "stream": stream,
+      ])
 
     case "stream_device":
       let device = try findDevice(arguments, model: model)
@@ -431,7 +447,7 @@ final class McpServer {
       tool("list_devices", "List Android and iOS devices with their state."),
       tool("get_device_catalogs", "List installed system images and hardware profiles."),
       tool(
-        "create_avd", "Create an Android emulator.",
+        "create_avd", "Create an Android emulator managed by SimDeck. Prefer this over running avdmanager or the emulator binary.",
         properties: [
           "name": string,
           "image": ["type": "string", "description": "system-images;android-…;tag;abi"],
@@ -444,11 +460,22 @@ final class McpServer {
           "keyboard": ["type": "boolean"],
         ], required: ["name"]),
       tool(
-        "create_simulator", "Create an iOS simulator.",
+        "create_simulator", "Create an iOS simulator managed by SimDeck.",
         properties: ["name": string, "device_type": string, "runtime": string],
         required: ["name"]),
-      tool("start_device", "Boot a device and open its stream.", properties: ["device": string], required: ["device"]),
-      tool("stream_device", "Open the stream of a running device.", properties: ["device": string], required: ["device"]),
+      tool(
+        "start_device",
+        "Boot a device headlessly inside SimDeck: no emulator window is opened and the screen appears in SimDeck. Use this instead of running the emulator binary. headless defaults to true; stream:false boots without opening a tile.",
+        properties: [
+          "device": string,
+          "headless": ["type": "boolean", "default": true],
+          "stream": ["type": "boolean", "default": true],
+          "cold_boot": ["type": "boolean"],
+        ], required: ["device"]),
+      tool(
+        "stream_device",
+        "Open a running device's screen inside SimDeck before tapping or taking screenshots.",
+        properties: ["device": string], required: ["device"]),
       tool("stop_device", "Shut a device down.", properties: ["device": string], required: ["device"]),
       tool("shutdown_device", "Shut a device down.", properties: ["device": string], required: ["device"]),
       tool("delete_device", "Delete an emulator or simulator.", properties: ["device": string], required: ["device"]),
