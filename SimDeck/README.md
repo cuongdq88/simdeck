@@ -42,6 +42,7 @@ runtime for the simulator screen and input, so a signed build needs the
 | Android streaming | own scrcpy client: pushes `scrcpy-server`, `adb forward`, parses the 4.x protocol, decodes H.264 with VideoToolbox |
 | Android input | scrcpy control socket (touch, keys, text, rotate) |
 | iOS streaming | private `SimulatorKit` framebuffer callbacks → `AVSampleBufferDisplayLayer` |
+| iOS USB devices | `devicectl` listing, CoreMediaIO screen capture, view only, screenshots from the latest frame |
 | iOS device frame | Xcode's DeviceKit chrome (`chrome.json` + PDFs): composite or nine-slice bezel, framebuffer mask, clickable side buttons |
 | iOS input | legacy Indigo HID client plus a GSEvent orientation message for rotate |
 | Create AVD | writes `config.ini` from a built-in hardware profile catalog |
@@ -98,6 +99,5 @@ Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
 
 ## Not ported yet
 
-Emulator gRPC video (Android uses scrcpy, which works headless too), Wi-Fi
-pairing, logcat, scenarios, the plugin registry, physical iOS devices, and
-grid recording.
+Emulator gRPC video (Android uses scrcpy, which works headless too), scenarios,
+the plugin registry, grid recording, and MCP tool parity.

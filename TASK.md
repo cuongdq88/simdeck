@@ -8,14 +8,10 @@ nguyên, chưa thay thế).
 - [ ] **Notification Center trong app**: lịch sử thông báo (toast gần đây) trong một
       panel/popover, bấm để mở lại; hiện chỉ có toast thoáng qua.
 
-## Đang làm
-
-- [ ] **Scenarios**: YAML, editor, runner + panel bên phải
-
 ## Tiếp theo
 
+- [ ] **Scenarios**: YAML, editor, runner + panel bên phải
 - [ ] **Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
-- [ ] **iOS thiết bị thật**: liệt kê qua usbmux/devicectl, stream CoreMediaIO, chỉ xem
 - [ ] **Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
 - [ ] **Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
 - [ ] **MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
@@ -36,4 +32,5 @@ nguyên, chưa thay thế).
 - [x] Toast cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] Wi-Fi pairing: mDNS pairing/connect service, nhập tay IP:port + mã, `adb pair/connect`
 - [x] Logcat viewer: lọc text/level, tạm dừng, xoá, copy (giới hạn 3000 dòng)
+- [x] iOS thiết bị thật: devicectl list, CoreMediaIO stream (chỉ xem), screenshot từ frame
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)
