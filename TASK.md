@@ -28,20 +28,21 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Hoãn — làm sau
 
-- [ ] **Notification Center trong app**: lịch sử thông báo (toast gần đây) trong một
-      panel/popover, bấm để mở lại; hiện chỉ có toast thoáng qua.
+- [ ] **SD-009 — Notification Center trong app**: lịch sử thông báo (toast gần đây)
+      trong một panel/popover, bấm để mở lại; hiện chỉ có toast thoáng qua.
 
 ## Tiếp theo
 
-- [ ] **Scenarios**: YAML, editor, runner + panel bên phải
-- [ ] **Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
-- [ ] **Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
-- [ ] **Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
-- [ ] **MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
-- [ ] **Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
-- [ ] **Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
-- [ ] **Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
+- [ ] **SD-010 — Scenarios**: YAML, editor, runner + panel bên phải
+- [ ] **SD-011 — Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
+- [ ] **SD-012 — Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
+- [ ] **SD-013 — Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
+- [ ] **SD-014 — MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
+- [ ] **SD-015 — Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
+- [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
+- [ ] **SD-017 — Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
       Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew
+- [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
 
 ## Đã xong
 
@@ -63,3 +64,4 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Tự khởi động SimDeck: `bin/simdeck` auto-launch, stdio bridge `bin/simdeck-mcp` cho OpenCode (app mở on demand)
 - [x] Dọn repo: xoá `app/`, `packages/`, `art/`, `.github/`, `scripts/`, `packaging/`, `build/`, docs Flutter cũ; thêm README/TASK gốc
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)
+- [x] Fix app crash khi adb server/pipe đóng: `ProcessRunner.readAll` thay `readDataToEndOfFile()`; đã test `adb kill-server` khi đang stream

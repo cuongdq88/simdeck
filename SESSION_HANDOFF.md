@@ -1,0 +1,79 @@
+# Session Handoff
+
+Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
+
+## Điểm vào để tiếp tục
+- Hành động chính xác: **không có việc đang làm dở**. Không tự bắt đầu mục đã hoãn.
+  Khi người dùng yêu cầu tiếp, xác nhận chọn SD-009 (Notification Center trong app)
+  hoặc SD-017 (script DMG + ký/notarize).
+- Lý do: mọi yêu cầu trước đã xong và đã commit; các mục còn lại người dùng đã hoãn.
+
+## Trạng thái repo
+- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `6792765`.
+- Chưa commit: `AGENTS.md` (thay đổi của người dùng — không sửa/commit);
+  `PROJECT_STATE.md` và `SESSION_HANDOFF.md` (vừa tạo).
+- Commit liên quan: `6792765` (TASK/status), `6794601` (AppIcon.icns),
+  `1cb2237` (MIT license + third_party), `82f63f0` (icon).
+- Repo public: https://github.com/cuongdq88/simdeck.
+
+## Việc đã xác minh
+- Build Release **BUILD SUCCEEDED** 2026-11-02 15:19, arm64; app chạy từ
+  `SimDeck/build-release/Build/Products/Release/SimDeck.app`.
+- Crash report 16:23/20:10: `ProcessRunner.runSync` → `readDataToEndOfFile()`
+  ném ObjC exception khi pipe adb đóng → `SIGABRT`. Đã fix bằng `readAll`
+  (`read(upToCount:)` + catch); test `adb kill-server` khi đang stream, app sống.
+- MCP `POST /mcp` initialize → 200.
+- Task tracker: `TASK.md` (đã xong / hoãn / tiếp theo).
+
+## Task đang mở
+- Không có task in-progress.
+- **SD-009** Notification Center trong app — Pending (người dùng đã hoãn).
+- **SD-010** Scenarios (YAML, editor, runner) — Pending.
+- **SD-011** Plugin registry (`~/.simutil/settings.yaml`) — Pending.
+- **SD-012** Grid recording (ScreenCaptureKit) + thư viện recording — Pending.
+- **SD-013** Emulator gRPC video — Pending (tuỳ chọn; scrcpy đã phủ).
+- **SD-014** MCP parity đủ 27 tool — Pending.
+- **SD-015** Settings UI — Pending.
+- **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
+  `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
+- **SD-017** Đóng gói DMG + Developer ID/notarize + cask — Pending.
+- **SD-018** Tương tác iPhone thật (hiện view-only) — Blocked (chưa có thiết bị).
+- File cần xem: `TASK.md`, `PROJECT_STATE.md`, `SimDeck/Sources/App/AppModel.swift`,
+  `SimDeck/Sources/App/SimDeckApp.swift`, `SimDeck/Sources/MCP/McpServer.swift`,
+  `SimDeck/Sources/UI/`, `SimDeck/bin/`, `SimDeck/AGENT.md`.
+
+## Chặn / rủi ro
+- Ad-hoc signing → Gatekeeper; cần `xattr -dr com.apple.quarantine` hoặc notarize.
+- Build arm64-only; iOS cần Xcode, Android cần SDK/emulator trên máy người dùng.
+- Chưa test iPhone thật; Dock icon có thể cần xoá cache iconservices.
+- Lịch sử git còn commit bản Flutter cũ.
+
+## Lệnh an toàn để chạy lại
+```bash
+cd SimDeck
+xcodegen generate
+xcodebuild -project SimDeck.xcodeproj -scheme SimDeck \
+  -configuration Release -derivedDataPath build-release build
+open build-release/Build/Products/Release/SimDeck.app
+
+# MCP sống?
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"1"}}}' \
+  http://127.0.0.1:8765/mcp
+
+git status --short --branch
+```
+
+## Ngữ cảnh quan trọng
+- Thiết kế đã duyệt: SimUtil 1:1; không tự đổi UI nếu không có lý do/đồng ý.
+- Đã chốt: scrcpy thay gRPC; headless mặc định cho agent; không `-no-audio`; MCP + CLI
+  dùng chung hành vi; stop phải diệt qemu kể cả khi adb mất kết nối.
+- License MIT © 2026 cuongdq88; notices ở `third_party/` (SimUtil, emu, serve-sim,
+  scrcpy). `AGENTS.md` của người dùng không được sửa/commit khi chưa có yêu cầu.
+- adb: SimDeck dùng `~/Library/Android/sdk/platform-tools/adb` (37.0.1). Ngày
+  2026-11-02 đã kill adb server rác cổng 5047 và symlink `/opt/homebrew/bin/adb`
+  sang SDK 37. Nếu stream lại đứt hàng loạt, kiểm tra
+  `grep "killed by remote request" "$TMPDIR/adb.501.log"` trước — đó là dấu hiệu
+  một tool khác gọi kill-server, không phải lỗi scrcpy.
