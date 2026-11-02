@@ -39,5 +39,21 @@ SimDeck.
 | Path | Contents |
 | --- | --- |
 | `SimDeck/` | the app: SwiftUI sources, agent bridge, MCP server, resources |
-| `third_party/` | upstream MIT licence texts |
-| `LICENSE` | SimUtil's MIT licence, unchanged |
+| `third_party/` | third-party licences and notices |
+| `LICENSE` | SimDeck's MIT licence, © 2026 cuongdq88 |
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). You may use, modify and redistribute SimDeck,
+including commercially, as long as the copyright and permission notice stay
+with it.
+
+SimDeck was written as a fresh SwiftUI app, informed by
+[SimUtil](https://github.com/dungngminh/simutil) (MIT),
+[emu](https://github.com/wasabeef/emu) (MIT) and
+[serve-sim](https://github.com/EvanBacon/serve-sim) (Apache-2.0). The notices
+and the full Apache text are in [third_party/](third_party/); the bundled
+`scrcpy-server` keeps its own licence file next to it. Apple and Google tools
+are not redistributed: `adb`, `emulator`, `simctl` and Xcode's private
+frameworks are used from the user's own installation.
+

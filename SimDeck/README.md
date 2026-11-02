@@ -131,3 +131,9 @@ SimDeck/bin/simdeck stop "Pixel_9_API_36"
 
 Emulator gRPC video (Android uses scrcpy, which works headless too), scenarios,
 the plugin registry, grid recording, and MCP tool parity.
+
+## Licence
+
+MIT © 2026 cuongdq88 — see [../LICENSE](../LICENSE). Third-party notices are
+in [../third_party](../third_party); the bundled `scrcpy-server` keeps its own
+licence file beside it.

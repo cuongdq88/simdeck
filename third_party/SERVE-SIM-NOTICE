@@ -1,0 +1,9 @@
+serve-sim
+https://github.com/EvanBacon/serve-sim
+
+Copyright Evan Bacon
+Licensed under the Apache License, Version 2.0 (see APACHE-2.0.txt).
+
+SimDeck's simulator screen capture and HID input (SimFrameworks.swift,
+SimulatorCapture.swift, SimulatorHID.swift) are derived from serve-sim's
+FrameCapture, HIDInjector, SimFrameworks and PixelBufferUtils.
