@@ -22,6 +22,22 @@ enum ProcessRunner {
   private static let inputLock = NSLock()
   private static var openInputs: [Pipe] = []
 
+  /// `readDataToEndOfFile()` raises an Objective-C exception when the pipe's
+  /// descriptor is already closed (an adb server dying does exactly that),
+  /// which aborts the whole app. The throwing API degrades to a normal error.
+  private static func readAll(_ handle: FileHandle) -> Data {
+    var data = Data()
+    while true {
+      do {
+        guard let chunk = try handle.read(upToCount: 64 * 1024), !chunk.isEmpty else { break }
+        data.append(chunk)
+      } catch {
+        break
+      }
+    }
+    return data
+  }
+
   /// Runs to completion and collects stdout/stderr, off the caller's thread.
   static func run(
     _ executable: String,
@@ -87,7 +103,7 @@ enum ProcessRunner {
     var errData = Data()
     group.enter()
     DispatchQueue.global(qos: .userInitiated).async {
-      let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+      let data = readAll(outPipe.fileHandleForReading)
       lock.lock()
       outData = data
       lock.unlock()
@@ -95,7 +111,7 @@ enum ProcessRunner {
     }
     group.enter()
     DispatchQueue.global(qos: .userInitiated).async {
-      let data = errPipe.fileHandleForReading.readDataToEndOfFile()
+      let data = readAll(errPipe.fileHandleForReading)
       lock.lock()
       errData = data
       lock.unlock()
@@ -156,12 +172,12 @@ enum ProcessRunner {
         var errorData = Data()
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-          output = outPipe.fileHandleForReading.readDataToEndOfFile()
+          output = readAll(outPipe.fileHandleForReading)
           group.leave()
         }
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-          errorData = errPipe.fileHandleForReading.readDataToEndOfFile()
+          errorData = readAll(errPipe.fileHandleForReading)
           group.leave()
         }
         let deadline = DispatchWorkItem {
