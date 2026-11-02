@@ -1,7 +1,7 @@
 # TASK
 
-Việc còn lại của app SwiftUI trong `SimDeck/` (bản Flutter `app/` + `packages/` vẫn giữ
-nguyên, chưa thay thế).
+App SwiftUI trong `SimDeck/` **là toàn bộ app**; bản Flutter, `packages/` và các
+workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Hoãn — làm sau
 
@@ -36,4 +36,5 @@ nguyên, chưa thay thế).
 - [x] iOS thiết bị thật: devicectl list, CoreMediaIO stream (chỉ xem), screenshot từ frame
 - [x] Agent: MCP `start_device` headless + `stream`/`cold_boot`, không mở cửa sổ emulator; CLI `bin/simdeck` + `AGENT.md`
 - [x] Tự khởi động SimDeck: `bin/simdeck` auto-launch, stdio bridge `bin/simdeck-mcp` cho OpenCode (app mở on demand)
+- [x] Dọn repo: xoá `app/`, `packages/`, `art/`, `.github/`, `scripts/`, `packaging/`, `build/`, docs Flutter cũ; thêm README/TASK gốc
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)

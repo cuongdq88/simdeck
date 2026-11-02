@@ -1,11 +1,11 @@
-# https://dart.dev/guides/libraries/private-files
-# Created by `dart pub`
-.dart_tool/
-doc/api/
-**/doc/api/
-
-# macOS Finder metadata
 .DS_Store
 
-# release artifacts
+# build output
 build/
+SimDeck/build/
+SimDeck/build-release/
+SimDeck/*.xcodeproj
+
+# local agent/tool state
+.commandcode/
+.superpowers/
