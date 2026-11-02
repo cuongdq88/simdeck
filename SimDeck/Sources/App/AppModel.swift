@@ -11,7 +11,7 @@ final class AppModel: ObservableObject {
   @Published private(set) var sessionErrors: [String: String] = [:]
   @Published private(set) var images: [SystemImage] = []
   @Published private(set) var androidHome = ""
-  @Published private(set) var showFrames: [String: Bool] = [:]
+  @Published private(set) var webcams: [String] = []
   @Published private(set) var recordingStarts: [String: Date] = [:]
   @Published private(set) var remoteImages: [RemoteImage] = []
   @Published private(set) var installing: Set<String> = []
@@ -29,6 +29,7 @@ final class AppModel: ObservableObject {
   @Published var createPlatform = 0
 
   private let emulator = EmulatorController()
+  let settingsStore = DeviceSettingsStore()
   private var loop: Task<Void, Never>?
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
   private var misses: [String: Int] = [:]
@@ -66,6 +67,7 @@ final class AppModel: ObservableObject {
     }
     guard loop == nil else { return }
     startMcp()
+    webcams = await EmulatorController.listWebcams()
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SDK"] == "1" {
       sdkSheetShown = true
     }
@@ -173,7 +175,7 @@ final class AppModel: ObservableObject {
 
   // MARK: - Actions
 
-  func start(_ device: Device) async {
+  func start(_ device: Device, coldBoot: Bool? = nil) async {
     guard !busy.contains(device.key) else { return }
     busy.insert(device.key)
     defer { busy.remove(device.key) }
@@ -182,7 +184,13 @@ final class AppModel: ObservableObject {
       case .android:
         if device.kind == .simulator {
           let name = device.avdName ?? device.rawID
-          try emulator.start(name: name, headless: true)
+          let settings = settingsStore.settings(for: device)
+          try emulator.start(
+            name: name,
+            headless: settingsStore.isHeadless(device),
+            coldBoot: coldBoot ?? settings.coldBoot,
+            cameraBack: settings.cameraBack,
+            cameraFront: settings.cameraFront)
           guard let serial = await emulator.waitForSerial(avdName: name) else {
             throw EmulatorError.bootTimedOut(name)
           }
@@ -201,6 +209,39 @@ final class AppModel: ObservableObject {
       await refresh()
     } catch {
       sessionErrors[device.key] = error.localizedDescription
+      errorMessage = error.localizedDescription
+    }
+  }
+
+  func restart(_ device: Device) async {
+    guard !busy.contains(device.key) else { return }
+    await stop(device)
+    await start(device)
+  }
+
+  /// Stores the camera override and restarts a running emulator, since the
+  /// emulator only reads it at boot.
+  func setCameraBack(_ device: Device, source: String?) async {
+    settingsStore.update(device) { $0.cameraBack = source }
+    objectWillChange.send()
+    if device.isRunning { await restart(device) }
+  }
+
+  func updateAvd(_ avd: AvdInfo, form: AvdEditForm) async {
+    do {
+      let running = Set(await AdbService.runningAvds().keys)
+      if let issue = DeletionGuard.checkAvd(name: avd.name, running: running) {
+        throw issue
+      }
+      try AvdEditor.update(name: avd.name, form: form)
+      // The AVD's own camera applies again unless the user overrides it.
+      settingsStore.update(key: "android:\(avd.name)") {
+        $0.cameraBack = nil
+        $0.cameraFront = nil
+      }
+      showNotice("Saved \(avd.name)")
+      await refresh()
+    } catch {
       errorMessage = error.localizedDescription
     }
   }
@@ -340,10 +381,23 @@ final class AppModel: ObservableObject {
   func fps(for device: Device) -> Double { fps[device.key] ?? 0 }
   func isBusy(_ device: Device) -> Bool { busy.contains(device.key) }
   func isStreaming(_ device: Device) -> Bool { sessions[device.key] != nil }
-  func showFrame(_ device: Device) -> Bool { showFrames[device.key] ?? true }
+  func showFrame(_ device: Device) -> Bool { settingsStore.showFrame(device) }
 
   func toggleFrame(_ device: Device) {
-    showFrames[device.key] = !showFrame(device)
+    let current = showFrame(device)
+    settingsStore.update(device) { $0.showFrame = !current }
+    objectWillChange.send()
+  }
+
+  func deviceSettings(_ device: Device) -> DeviceSettings {
+    settingsStore.settings(for: device)
+  }
+
+  func isHeadless(_ device: Device) -> Bool { settingsStore.isHeadless(device) }
+
+  func setHeadless(_ device: Device, _ value: Bool) {
+    settingsStore.update(device) { $0.headless = value }
+    objectWillChange.send()
   }
 
   func retry(_ device: Device) async {

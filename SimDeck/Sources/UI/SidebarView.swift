@@ -201,6 +201,7 @@ struct SidebarDeviceRow: View {
   let onDelete: () -> Void
 
   @State private var hovered = false
+  @State private var editTarget: AvdInfo?
 
   private var streaming: Bool { model.sessions[device.key] != nil }
   private var busy: Bool { model.isBusy(device) }
@@ -249,6 +250,11 @@ struct SidebarDeviceRow: View {
             }
           }
           if !device.isPhysical && !device.isRunning {
+            if device.os == .android && device.kind == .simulator {
+              SimuIconButton(icon: "pencil", help: "Edit device", size: 14) {
+                beginEdit()
+              }
+            }
             SimuIconButton(icon: "eraser", help: "Wipe data", size: 14, action: onWipe)
             SimuIconButton(icon: "trash", help: "Delete device", size: 14, action: onDelete)
           }
@@ -262,16 +268,60 @@ struct SidebarDeviceRow: View {
       RoundedRectangle(cornerRadius: SimuTokens.radius)
         .fill(background))
     .onHover { hovered = $0 }
+    .sheet(item: $editTarget) { avd in
+      EditDeviceSheet(avd: avd)
+        .environment(\.simu, t)
+    }
     .contextMenu {
       if !device.isRunning {
         Button("Start") { Task { await model.start(device) } }
+        if device.os == .android && device.kind == .simulator {
+          Button("Start cold (no snapshot)") {
+            Task { await model.start(device, coldBoot: true) }
+          }
+          Button("Edit…") { beginEdit() }
+        }
       } else {
         Button("Stream") { Task { await model.openStream(device) } }
+        Button("Restart") { Task { await model.restart(device) } }
         Button("Shut down") { Task { await model.stop(device) } }
+      }
+      if device.os == .android && device.kind == .simulator {
+        Menu("Camera source") {
+          cameraItem("AVD default", nil)
+          cameraItem("Virtual scene", "virtualscene")
+          cameraItem("Emulated", "emulated")
+          cameraItem("None", "none")
+          if !model.webcams.isEmpty {
+            Divider()
+            ForEach(model.webcams, id: \.self) { webcam in
+              cameraItem(webcam, webcam)
+            }
+          }
+        }
       }
       Divider()
       Button("Wipe data…") { onWipe() }
       Button("Delete…", role: .destructive) { onDelete() }
+    }
+  }
+
+  private func beginEdit() {
+    if let avd = AvdStore.load(name: device.rawID) {
+      editTarget = avd
+    }
+  }
+
+  private func cameraItem(_ title: String, _ value: String?) -> some View {
+    Button {
+      Task { await model.setCameraBack(device, source: value) }
+    } label: {
+      HStack {
+        Text(title)
+        if model.deviceSettings(device).cameraBack == value {
+          Image(systemName: "checkmark")
+        }
+      }
     }
   }
 

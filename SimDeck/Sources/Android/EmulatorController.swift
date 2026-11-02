@@ -27,14 +27,28 @@ final class EmulatorController {
 
   var emulatorAvailable: Bool { ShellEnv.exists(ShellEnv.emulatorPath) }
 
-  /// Boots [name]; [headless] keeps the emulator window out of the way.
-  func start(name: String, headless: Bool) throws {
+  /// Boots [name]; [headless] keeps the emulator window out of the way,
+  /// [coldBoot] ignores a saved snapshot, and [cameraBack]/[cameraFront]
+  /// override the AVD's camera sources.
+  func start(
+    name: String, headless: Bool, coldBoot: Bool = false,
+    cameraBack: String? = nil, cameraFront: String? = nil
+  ) throws {
     guard emulatorAvailable else { throw EmulatorError.binaryMissing(ShellEnv.emulatorPath) }
     if processes[name]?.isRunning == true { throw EmulatorError.alreadyRunning }
 
     var arguments = ["@\(name)"]
     if headless {
       arguments += ["-no-window", "-no-boot-anim", "-gpu", "host"]
+    }
+    if coldBoot {
+      arguments.append("-no-snapshot-load")
+    }
+    if let cameraBack, !cameraBack.isEmpty {
+      arguments += ["-camera-back", cameraBack]
+    }
+    if let cameraFront, !cameraFront.isEmpty {
+      arguments += ["-camera-front", cameraFront]
     }
     let process = ProcessRunner.launch(
       ShellEnv.emulatorPath, arguments,
@@ -110,6 +124,21 @@ final class EmulatorController {
   nonisolated static func avdProcesses(name: String) async -> [Int32] {
     let all = await runningAVDProcesses()
     return all[name].map { [$0] } ?? []
+  }
+
+  /// Host cameras the emulator can use, from `emulator -webcam-list`.
+  nonisolated static func listWebcams() async -> [String] {
+    guard ShellEnv.exists(ShellEnv.emulatorPath) else { return [] }
+    let result = await ProcessRunner.run(
+      ShellEnv.emulatorPath, ["-webcam-list"], timeout: 20)
+    guard result.ok else { return [] }
+    let pattern = #"Camera '(webcam\d+)' is connected"#
+    guard let expression = try? NSRegularExpression(pattern: pattern) else { return [] }
+    let range = NSRange(result.stdout.startIndex..., in: result.stdout)
+    return expression.matches(in: result.stdout, range: range).compactMap { match in
+      guard let found = Range(match.range(at: 1), in: result.stdout) else { return nil }
+      return String(result.stdout[found])
+    }
   }
 
   /// Escalates TERM to KILL so a wedged qemu cannot keep running unseen.
