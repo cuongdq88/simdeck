@@ -95,5 +95,5 @@ Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
 ## Not ported yet
 
 Emulator gRPC video (Android uses scrcpy, which works headless too), Wi-Fi
-pairing, logcat, scenarios, the plugin registry, physical iOS devices, grid
-recording, and spotlight layouts with drag reordering.
+pairing, logcat, scenarios, the plugin registry, physical iOS devices, and
+grid recording.

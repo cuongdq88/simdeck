@@ -34,18 +34,7 @@ struct ContentView: View {
     }
     .overlay(alignment: .bottom) {
       if let notice = model.notice {
-        Text(notice)
-          .font(tokens.caption)
-          .foregroundStyle(tokens.text)
-          .padding(.horizontal, 14)
-          .padding(.vertical, 9)
-          .background(
-            RoundedRectangle(cornerRadius: SimuTokens.radius)
-              .fill(tokens.raised))
-          .overlay(
-            RoundedRectangle(cornerRadius: SimuTokens.radius)
-              .strokeBorder(tokens.border, lineWidth: 1))
-          .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+        NoticeCapsule(text: notice)
           .padding(.bottom, 22)
           .transition(.move(edge: .bottom).combined(with: .opacity))
       }

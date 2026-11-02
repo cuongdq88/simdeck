@@ -218,6 +218,27 @@ struct SimuTextField: View {
 
 // MARK: - Misc
 
+/// A floating status line at the bottom of a window, like SimUtil's toasts.
+struct NoticeCapsule: View {
+  let text: String
+  @Environment(\.simu) private var t
+
+  var body: some View {
+    Text(text)
+      .font(t.caption)
+      .foregroundStyle(t.text)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 9)
+      .background(
+        RoundedRectangle(cornerRadius: SimuTokens.radius)
+          .fill(t.raised))
+      .overlay(
+        RoundedRectangle(cornerRadius: SimuTokens.radius)
+          .strokeBorder(t.border, lineWidth: 1))
+      .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+  }
+}
+
 struct SimuBrandLogo: View {
   var size: CGFloat = 24
 

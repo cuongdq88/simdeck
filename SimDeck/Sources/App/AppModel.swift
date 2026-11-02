@@ -212,6 +212,7 @@ final class AppModel: ObservableObject {
       if !openKeys.contains(device.key) { openKeys.append(device.key) }
       sessionErrors[device.key] = nil
       await refresh()
+      showNotice("Started \(device.name)")
     } catch {
       sessionErrors[device.key] = error.localizedDescription
       errorMessage = error.localizedDescription
@@ -270,6 +271,7 @@ final class AppModel: ObservableObject {
       }
       if !openKeys.contains(device.key) { openKeys.append(device.key) }
       sessionErrors[device.key] = nil
+      showNotice("Streaming \(device.name)")
     } catch {
       sessionErrors[device.key] = error.localizedDescription
       errorMessage = error.localizedDescription
@@ -306,6 +308,7 @@ final class AppModel: ObservableObject {
     // does not linger in RUNNING.
     try? await Task.sleep(nanoseconds: 1_200_000_000)
     await refresh()
+    showNotice("Stopped \(device.name)")
   }
 
   func delete(_ device: Device) async {
