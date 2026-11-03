@@ -37,6 +37,7 @@ final class AppModel: ObservableObject {
   private var loop: Task<Void, Never>?
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
   private var misses: [String: Int] = [:]
+  private var streamRetries: [String: Int] = [:]
   private var recordings: [String: CaptureService.ActiveRecording] = [:]
   private var mcpServer: McpServer?
   private var logcatProcess: Process?
@@ -231,7 +232,7 @@ final class AppModel: ObservableObject {
             // Already booted (possibly by an earlier call): never start a
             // second emulator for the same AVD.
             if stream, let serial = device.serial {
-              try await attachScrcpy(device: device, serial: serial)
+              try await attachAndroid(device: device, serial: serial)
             }
           } else {
             let name = device.avdName ?? device.rawID
@@ -246,11 +247,11 @@ final class AppModel: ObservableObject {
               throw EmulatorError.bootTimedOut(name)
             }
             if stream {
-              try await attachScrcpy(device: device, serial: serial)
+              try await attachAndroid(device: device, serial: serial)
             }
           }
         } else if let serial = device.serial, stream {
-          try await attachScrcpy(device: device, serial: serial)
+          try await attachAndroid(device: device, serial: serial)
         }
       case .ios:
         if device.kind == .physical {
@@ -315,7 +316,7 @@ final class AppModel: ObservableObject {
         guard let serial = device.serial else {
           throw ScrcpyError.server("Start the device before streaming it.")
         }
-        try await attachScrcpy(device: device, serial: serial)
+        try await attachAndroid(device: device, serial: serial)
       case .ios:
         if device.kind == .physical {
           try await attachPhysical(device)
@@ -341,6 +342,7 @@ final class AppModel: ObservableObject {
     openKeys.removeAll { $0 == device.key }
     fps[device.key] = nil
     sessionErrors[device.key] = nil
+    streamRetries[device.key] = nil
   }
 
   func stop(_ device: Device) async {
@@ -702,6 +704,12 @@ final class AppModel: ObservableObject {
 
   // MARK: - Sessions
 
+  /// Android devices stream through scrcpy. If another adb client kills the
+  /// shared server, `apply` schedules an automatic reconnect.
+  private func attachAndroid(device: Device, serial: String) async throws {
+    try await attachScrcpy(device: device, serial: serial)
+  }
+
   private func attachScrcpy(device: Device, serial: String) async throws {
     let session = ScrcpySession(deviceKey: device.key, serial: serial)
     session.onStatusChange = { [weak self] status in
@@ -713,6 +721,7 @@ final class AppModel: ObservableObject {
         try await session.start()
       }.value
     } catch {
+      session.stop()
       sessions[device.key] = nil
       sessionErrors[device.key] = error.localizedDescription
       throw error
@@ -757,8 +766,36 @@ final class AppModel: ObservableObject {
       sessions[key]?.stop()
       sessions[key] = nil
       fps[key] = nil
+      scheduleReconnect(key)
+    } else if case .live = status {
+      streamRetries[key] = 0
     }
     objectWillChange.send()
+  }
+
+  /// scrcpy dies with the adb server, which other tools also kill. Reopen the
+  /// tile a few times with a backoff while the device itself is still running.
+  private func scheduleReconnect(_ key: String) {
+    guard openKeys.contains(key),
+      let device = devices.first(where: { $0.key == key }), device.isRunning
+    else { return }
+    let attempt = streamRetries[key, default: 0]
+    guard attempt < 3 else { return }
+    streamRetries[key] = attempt + 1
+    if attempt == 0 { showNotice("Reconnecting \(device.name)…") }
+    let delay = [1.0, 2.0, 4.0][min(attempt, 2)]
+    Task { @MainActor [weak self] in
+      try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+      guard let self, self.openKeys.contains(key), self.sessions[key] == nil else {
+        return
+      }
+      await self.refresh()
+      guard self.openKeys.contains(key),
+        let device = self.devices.first(where: { $0.key == key }), device.isRunning
+      else { return }
+      await self.openStream(device)
+      if self.sessions[key] == nil { self.scheduleReconnect(key) }
+    }
   }
 
   private func measureFPS() {
