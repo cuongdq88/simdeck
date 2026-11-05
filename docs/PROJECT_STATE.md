@@ -1,6 +1,6 @@
 # Project State
 
-Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
 
 ## Phạm vi & yêu cầu
 - Mục tiêu: **SimDeck** — app macOS native SwiftUI để tạo/chạy/stream/điều khiển
@@ -15,11 +15,11 @@ Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
   - MIT © 2026 cuongdq88; repo public.
 
 ## Trạng thái đã xác minh
-- Nhánh `simdeck/main` → `origin/main`; commit mới nhất `6792765`.
+- Nhánh `simdeck/main` → `origin/main`; commit mới nhất `5cbd839`.
 - Repo: https://github.com/cuongdq88/simdeck (public).
-- Working tree: `AGENTS.md` bị sửa bởi người dùng (chưa commit); ngoài ra sạch trước
-  khi thêm hai file state này.
-- App Release đang chạy từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`.
+- Working tree sạch.
+- App Release đang chạy từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`
+  (build 2026-11-05 16:05, PID mới sau khi restart).
 - MCP `initialize` trả HTTP 200.
 - Đã chạy được (kiểm tra thủ công):
   - Danh sách thiết bị gộp adb + qemu process + iOS simulator; stop diệt cả qemu khi
@@ -36,6 +36,13 @@ Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
   - Crash `SIGABRT` khi adb server chết (pipe stderr đóng) đã fix: `ProcessRunner`
     dùng `read(upToCount:)` thay `readDataToEndOfFile()`; đã test `adb kill-server`
     khi đang stream, app vẫn sống.
+  - Stream Android đứt lặp: `ScrcpySession.stop()` và reader cùng `close()` một fd
+    (double-close) → có thể đóng nhầm socket của tile khác khi fd được tái sử dụng.
+    Reader giờ giữ quyền close, `stop()` chỉ `shutdown` dưới lock; mỗi lần recv lỗi
+    ghi `errno`/`serverAlive`/`frames` vào `NSLog` (`SimDeck scrcpy end …`).
+  - Vòng reconnect: `AppModel` reset `streamRetries` ngay khi `.live` nên lặp vô hạn.
+    Giờ chỉ reset khi stream sống ≥ 30 s; status từ session đã bị thay thế bị bỏ qua.
+  - Đã build Release + restart app bản mới, mở lại 3 tile E1/E2/E3 (đều `streaming: true`).
 - Chưa xác minh: các mục pending trong `TASK.md`; iPhone thật; build universal
   (hiện chỉ arm64).
 
@@ -55,8 +62,9 @@ Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
 - App ad-hoc signed; entitlements có `disable-library-validation` để load private framework.
 
 ## Kiểm chứng
-- Build Release: 2026-11-02 15:19, `xcodebuild -project SimDeck.xcodeproj -scheme SimDeck
+- Build Release: 2026-11-05 16:05, `xcodebuild -project SimDeck.xcodeproj -scheme SimDeck
   -configuration Release -derivedDataPath build-release build` → **BUILD SUCCEEDED**, arm64.
+- Build Debug: 2026-11-05 15:48 → **BUILD SUCCEEDED**.
 - MCP `initialize`: 2026-11-02, HTTP 200.
 - Không có test target tự động; kiểm tra UI/stream thủ công.
 
@@ -68,13 +76,22 @@ Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
 - Dock icon có thể cần xoá cache iconservices; style macOS “Clear Dark” làm icon đơn sắc.
 - Chưa test iPhone thật.
 - Lịch sử git còn commit của bản Flutter cũ (code đã xoá nhưng history vẫn còn).
-- `AGENTS.md` đang có thay đổi chưa commit của người dùng.
-- adb server 5037 từng bị client adb khác gọi `kill-server` (log
-  `adb server killed by remote request`), làm đứt mọi stream scrcpy. Đã kill server
-  rác cổng 5047 và symlink `/opt/homebrew/bin/adb` → SDK 37.0.1 (2026-11-02). Nếu
+- adb server 5037 bị kill bởi **build Gradle của project khác** (2026-11-05 đã xác
+  minh): mỗi lần build xong thì `adb kill-server` chạy trong ~1 s, khớp 5/5 mốc:
+  15:14:45→:46.9, 15:19:55→:55.8, 15:28:09→:09.7, 15:31:50.1→:50.7, 15:32:24.5→:25.5.
+  Nguồn: Gradle daemon `rangbox` (Godot Android, Gradle 8.11.1) và
+  `mutil-languages/xiao-zhu/android` (Gradle 9.8.2). SimDeck không gọi `kill-server`
+  (binary không chứa chuỗi này). Một số cú kill lẻ (15:24:40/15:25:05/15:25:18/15:54:52)
+  chưa khớp build — nghi lệnh thủ công hoặc agent khác.
+- Hệ quả: build của các project Android khác sẽ luôn làm đứt mọi stream scrcpy. Bản mới
+  tự reconnect có giới hạn nên chịu được, nhưng muốn hết hẳn phải chặn `kill-server`
+  từ quy trình build đó. Đã kill server rác cổng 5047 và symlink
+  `/opt/homebrew/bin/adb` → SDK 37.0.1 (2026-11-02). Nếu
   `brew upgrade --cask android-platform-tools` chạy lại, symlink có thể bị ghi đè:
   `ln -sfn ~/Library/Android/sdk/platform-tools/adb /opt/homebrew/bin/adb`.
 
 ## Mốc tiếp theo
 - Không có việc đang dở. Chờ người dùng chọn: Notification Center trong app (SD-009)
   hoặc đóng gói DMG/notarize (SD-017). Không tự bắt đầu mục đã hoãn.
+- Việc nên làm khi có thời gian: chặn `adb kill-server` trong quy trình build của
+  `rangbox` / `xiao-zhu` (hoặc tách adb server) để stream không bị đứt định kỳ.

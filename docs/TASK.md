@@ -3,7 +3,7 @@
 App SwiftUI trong `SimDeck/` **là toàn bộ app**; bản Flutter, `packages/` và các
 workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
-## Trạng thái hiện tại (2026-11-02)
+## Trạng thái hiện tại (2026-11-05)
 
 - **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `main`.
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
@@ -65,3 +65,5 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Dọn repo: xoá `app/`, `packages/`, `art/`, `.github/`, `scripts/`, `packaging/`, `build/`, docs Flutter cũ; thêm README/TASK gốc
 - [x] Giao diện theo design system SimUtil (tokens, sidebar, top bar, panel)
 - [x] Fix app crash khi adb server/pipe đóng: `ProcessRunner.readAll` thay `readDataToEndOfFile()`; đã test `adb kill-server` khi đang stream
+- [x] Fix stream Android đứt lặp: double-close video fd (reader giữ quyền close), log `errno`/`serverAlive` khi recv lỗi, chặn reconnect vô hạn (chỉ reset sau ≥30 s live), bỏ status từ session cũ — commit `5cbd839`
+- [x] Xác minh nguyên nhân adb server bị kill: build Gradle của `rangbox` (Godot Android) và `xiao-zhu/android` gọi `adb kill-server` sau mỗi build (5/5 mốc khớp trong ~1 s)

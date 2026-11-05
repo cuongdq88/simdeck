@@ -1,6 +1,6 @@
 # Session Handoff
 
-Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
 
 ## Điểm vào để tiếp tục
 - Hành động chính xác: **không có việc đang làm dở**. Không tự bắt đầu mục đã hoãn.
@@ -9,19 +9,25 @@ Cập nhật: 2026-11-02 15:55 (Asia/Ho_Chi_Minh)
 - Lý do: mọi yêu cầu trước đã xong và đã commit; các mục còn lại người dùng đã hoãn.
 
 ## Trạng thái repo
-- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `6792765`.
-- Chưa commit: `AGENTS.md` (thay đổi của người dùng — không sửa/commit);
-  `PROJECT_STATE.md` và `SESSION_HANDOFF.md` (vừa tạo).
-- Commit liên quan: `6792765` (TASK/status), `6794601` (AppIcon.icns),
-  `1cb2237` (MIT license + third_party), `82f63f0` (icon).
+- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `5cbd839`.
+- Working tree: sạch trước khi cập nhật `docs/` (state docs chưa commit).
+- Commit gần đây: `5cbd839` (fix double-close + reconnect loop), `0013de0`
+  (docs → `docs/`, `CLAUDE.md`, `AGENTS.md` gọn), `4928067` (reconnect khi adb
+  restart), `8591523` (ghi nhận fix adb crash).
 - Repo public: https://github.com/cuongdq88/simdeck.
 
 ## Việc đã xác minh
-- Build Release **BUILD SUCCEEDED** 2026-11-02 15:19, arm64; app chạy từ
-  `SimDeck/build-release/Build/Products/Release/SimDeck.app`.
+- Build Release **BUILD SUCCEEDED** 2026-11-05 16:05, arm64; app đã restart và chạy
+  từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`; 3 tile E1/E2/E3
+  (Android 16) đều `streaming: true`.
 - Crash report 16:23/20:10: `ProcessRunner.runSync` → `readDataToEndOfFile()`
   ném ObjC exception khi pipe adb đóng → `SIGABRT`. Đã fix bằng `readAll`
   (`read(upToCount:)` + catch); test `adb kill-server` khi đang stream, app sống.
+- Stream đứt lặp (2026-11-05): fixed double-close video fd (`ScrcpySession.stop()`
+  không còn `close`, reader tự close sau khi clear `videoFD` dưới lock), thêm log
+  `SimDeck scrcpy end serial=… count=… errno=… serverAlive=… frames=…`, và chặn
+  reconnect vô hạn (`streamLiveSince` ≥30 s mới reset retry; bỏ status từ session
+  đã bị thay thế). Verify: `xcodebuild` Debug + Release đều BUILD SUCCEEDED.
 - MCP `POST /mcp` initialize → 200.
 - Task tracker: `TASK.md` (đã xong / hoãn / tiếp theo).
 
@@ -77,3 +83,11 @@ git status --short --branch
   sang SDK 37. Nếu stream lại đứt hàng loạt, kiểm tra
   `grep "killed by remote request" "$TMPDIR/adb.501.log"` trước — đó là dấu hiệu
   một tool khác gọi kill-server, không phải lỗi scrcpy.
+- **Nguyên nhân gốc đã xác minh (2026-11-05)**: `adb kill-server` chạy ngay sau khi
+  Gradle build của project Android khác kết thúc. 5/5 mốc khớp trong ~1 s
+  (15:14:45→:46.9, 15:19:55→:55.8, 15:28:09→:09.7, 15:31:50.1→:50.7,
+  15:32:24.5→:25.5). Nguồn: `rangbox` (Godot Android, Gradle 8.11.1 daemon) và
+  `mutil-languages/xiao-zhu/android` (Gradle 9.8.2). SimDeck không chứa chuỗi
+  `kill-server` trong binary. Các cú lẻ 15:24:40/15:25:05/15:25:18/15:54:52 chưa
+  khớp build. Muốn hết đứt: chặn `kill-server` trong chain build/deploy đó, hoặc
+  build các project ấy với adb server riêng; bản SimDeck mới chỉ chống chịu.
