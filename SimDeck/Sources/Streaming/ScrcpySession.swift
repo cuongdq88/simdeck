@@ -111,20 +111,22 @@ final class ScrcpySession: DeviceSession {
     lock.lock()
     let wasActive = running || videoFD >= 0 || controlFD >= 0
     running = false
-    let video = videoFD
-    let control = controlFD
-    let port = forwardPort
+    // The video reader owns its descriptor and closes it. Shutting it down
+    // here, under the lock, wakes the reader before the number is reused.
+    if videoFD >= 0 { shutdown(videoFD, SHUT_RDWR) }
     videoFD = -1
+    let control = controlFD
     controlFD = -1
+    let port = forwardPort
+    let process = serverProcess
+    serverProcess = nil
     pendingKeyFrame?.cancel()
     pendingKeyFrame = nil
     lock.unlock()
 
     guard wasActive else { return }
-    if video >= 0 { shutdown(video, SHUT_RDWR); close(video) }
     if control >= 0 { shutdown(control, SHUT_RDWR); close(control) }
-    serverProcess?.terminate()
-    serverProcess = nil
+    process?.terminate()
     decoder.stop()
     if port != 0 {
       let serial = self.serial
@@ -287,12 +289,23 @@ final class ScrcpySession: DeviceSession {
       var buffer = [UInt8](repeating: 0, count: 1 << 16)
       while self.isRunning {
         let count = recv(fd, &buffer, buffer.count, 0)
-        if count <= 0 { break }
+        if count <= 0 {
+          let error = errno
+          NSLog(
+            "SimDeck scrcpy end serial=%@ count=%ld errno=%ld serverAlive=%ld frames=%ld",
+            self.serial, count, Int(error), self.isServerRunning ? 1 : 0,
+            self.framesShown)
+          break
+        }
         let data = Data(bytes: buffer, count: count)
         for item in parser.add(data) { self.handle(item) }
       }
+      self.lock.lock()
+      if self.videoFD == fd { self.videoFD = -1 }
+      self.lock.unlock()
       close(fd)
       if self.isRunning {
+        usleep(300_000)
         let log = self.diagnosticLog
         self.emit(
           .failed(

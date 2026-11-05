@@ -38,6 +38,7 @@ final class AppModel: ObservableObject {
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
   private var misses: [String: Int] = [:]
   private var streamRetries: [String: Int] = [:]
+  private var streamLiveSince: [String: Date] = [:]
   private var recordings: [String: CaptureService.ActiveRecording] = [:]
   private var mcpServer: McpServer?
   private var logcatProcess: Process?
@@ -343,6 +344,7 @@ final class AppModel: ObservableObject {
     fps[device.key] = nil
     sessionErrors[device.key] = nil
     streamRetries[device.key] = nil
+    streamLiveSince[device.key] = nil
   }
 
   func stop(_ device: Device) async {
@@ -712,8 +714,11 @@ final class AppModel: ObservableObject {
 
   private func attachScrcpy(device: Device, serial: String) async throws {
     let session = ScrcpySession(deviceKey: device.key, serial: serial)
-    session.onStatusChange = { [weak self] status in
-      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    session.onStatusChange = { [weak self, weak session] status in
+      DispatchQueue.main.async {
+        guard let self, let session, self.sessions[device.key] === session else { return }
+        self.apply(status, key: device.key)
+      }
     }
     sessions[device.key] = session
     do {
@@ -730,8 +735,11 @@ final class AppModel: ObservableObject {
 
   private func attachSimulator(_ device: Device) async throws {
     let session = SimulatorSession(deviceKey: device.key, udid: device.rawID)
-    session.onStatusChange = { [weak self] status in
-      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    session.onStatusChange = { [weak self, weak session] status in
+      DispatchQueue.main.async {
+        guard let self, let session, self.sessions[device.key] === session else { return }
+        self.apply(status, key: device.key)
+      }
     }
     sessions[device.key] = session
     do {
@@ -747,8 +755,11 @@ final class AppModel: ObservableObject {
   private func attachPhysical(_ device: Device) async throws {
     let session = PhysicalDeviceSession(
       deviceKey: device.key, udid: device.rawID, name: device.name)
-    session.onStatusChange = { [weak self] status in
-      DispatchQueue.main.async { self?.apply(status, key: device.key) }
+    session.onStatusChange = { [weak self, weak session] status in
+      DispatchQueue.main.async {
+        guard let self, let session, self.sessions[device.key] === session else { return }
+        self.apply(status, key: device.key)
+      }
     }
     sessions[device.key] = session
     do {
@@ -762,13 +773,20 @@ final class AppModel: ObservableObject {
 
   private func apply(_ status: SessionStatus, key: String) {
     if case .failed(let message) = status {
+      // A stream that dies right after going live is not healthy: only a
+      // stretch of real frames earns a fresh set of reconnect attempts.
+      if let since = streamLiveSince.removeValue(forKey: key),
+        Date().timeIntervalSince(since) >= 30
+      {
+        streamRetries[key] = 0
+      }
       sessionErrors[key] = message
       sessions[key]?.stop()
       sessions[key] = nil
       fps[key] = nil
       scheduleReconnect(key)
     } else if case .live = status {
-      streamRetries[key] = 0
+      streamLiveSince[key] = Date()
     }
     objectWillChange.send()
   }
