@@ -63,4 +63,18 @@ SimDeck.
 
 ## Licence
 
-MIT — see [LICENSE](../LICENSE). © 2026 cuongdq88.
+MIT — see [LICENSE](../LICENSE). You may use, modify and redistribute SimDeck,
+including commercially, as long as the copyright and permission notice stay
+with it. © 2026 cuongdq88.
+
+### Third-Party Notices
+
+SimDeck was written as a fresh SwiftUI app, informed by:
+- [SimUtil](https://github.com/dungngminh/simutil) (MIT)
+- [emu](https://github.com/wasabeef/emu) (MIT)
+- [serve-sim](https://github.com/EvanBacon/serve-sim) (Apache-2.0)
+
+The notices and the full Apache text are in [third_party/](../third_party/); the bundled
+`scrcpy-server` keeps its own licence file next to it. Apple and Google tools
+are not redistributed: `adb`, `emulator`, `simctl` and Xcode's private
+frameworks are used from the user's own installation.
