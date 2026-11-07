@@ -1,17 +1,44 @@
 # SimDeck
 
-A native macOS app for creating, running, streaming and deleting Android
-emulators and iOS simulators, without Android Studio. Built with SwiftUI; the
-Flutter project and the `simutil_*` packages it started from have been removed.
+<p align="center">
+  <img src="../SimDeck/Resources/logo.png" alt="SimDeck Logo" width="96" height="96" />
+</p>
 
-- **[SimDeck/README.md](SimDeck/README.md)** — features, architecture, build, MCP
-- **[SimDeck/AGENT.md](SimDeck/AGENT.md)** — how agents drive devices through SimDeck
-- **[TASK.md](TASK.md)** — remaining work
+<p align="center">
+  <strong>Native macOS manager and multi-device streamer for Android emulators and iOS simulators.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-macOS%2014+-blue" alt="Platform" />
+  <img src="https://img.shields.io/badge/Swift-5.10%20%7C%20SwiftUI-orange" alt="Swift" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/MCP-Ready-purple" alt="MCP Ready" />
+</p>
+
+---
+
+<p align="center">
+  <img src="assets/simdeck-demo.gif" alt="SimDeck Live Demo" width="100%" />
+</p>
+
+- **[SimDeck/README.md](../SimDeck/README.md)** — features, architecture, build, MCP details
+- **[SimDeck/AGENT.md](../SimDeck/AGENT.md)** — how agents drive devices through SimDeck
+- **[PROJECT_STATE.md](PROJECT_STATE.md)** — verification status and architecture notes
+- **[TASK.md](TASK.md)** — roadmap and remaining work
+
+## Screenshots
+
+| Multi-Device Streaming Dashboard |
+|:---:|
+| ![SimDeck Hero](assets/simdeck-hero.png) |
+
+| Fast Device Creation | Android SDK Manager |
+|:---:|:---:|
+| ![Create Device](assets/simdeck-new-device.png) | ![SDK Manager](assets/simdeck-sdk-manager.png) |
 
 ## Requirements
 
-macOS 14 or newer, Xcode 27 with a simulator runtime, and an Android SDK with
-`platform-tools` and `emulator`. Creating AVDs needs no Java.
+macOS 14 or newer, Xcode with a simulator runtime, and an Android SDK with `platform-tools` and `emulator`. Creating AVDs needs no Java.
 
 ## Build
 
@@ -34,26 +61,6 @@ SimDeck.
   starts SimDeck on demand.
 - Shell-only agents: `SimDeck/bin/simdeck list|start|boot|tap|type|screenshot|stop`.
 
-## Layout
-
-| Path | Contents |
-| --- | --- |
-| `SimDeck/` | the app: SwiftUI sources, agent bridge, MCP server, resources |
-| `third_party/` | third-party licences and notices |
-| `LICENSE` | SimDeck's MIT licence, © 2026 cuongdq88 |
-
 ## Licence
 
-MIT — see [LICENSE](LICENSE). You may use, modify and redistribute SimDeck,
-including commercially, as long as the copyright and permission notice stay
-with it.
-
-SimDeck was written as a fresh SwiftUI app, informed by
-[SimUtil](https://github.com/dungngminh/simutil) (MIT),
-[emu](https://github.com/wasabeef/emu) (MIT) and
-[serve-sim](https://github.com/EvanBacon/serve-sim) (Apache-2.0). The notices
-and the full Apache text are in [third_party/](third_party/); the bundled
-`scrcpy-server` keeps its own licence file next to it. Apple and Google tools
-are not redistributed: `adb`, `emulator`, `simctl` and Xcode's private
-frameworks are used from the user's own installation.
-
+MIT — see [LICENSE](../LICENSE). © 2026 cuongdq88.
