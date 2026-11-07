@@ -1,6 +1,6 @@
 # Project State
 
-Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 
 ## Phạm vi & yêu cầu
 - Mục tiêu: **SimDeck** — app macOS native SwiftUI để tạo/chạy/stream/điều khiển
@@ -15,7 +15,7 @@ Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
   - MIT © 2026 cuongdq88; repo public.
 
 ## Trạng thái đã xác minh
-- Nhánh `simdeck/main` → `origin/main`; commit mới nhất `5cbd839`.
+- Nhánh `simdeck/main` → `origin/main`; commit mới nhất `f2fd300`.
 - Repo: https://github.com/cuongdq88/simdeck (public).
 - Working tree sạch.
 - App Release đang chạy từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`
@@ -64,6 +64,11 @@ Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
 ## Kiểm chứng
 - Build Release: 2026-11-05 16:05, `xcodebuild -project SimDeck.xcodeproj -scheme SimDeck
   -configuration Release -derivedDataPath build-release build` → **BUILD SUCCEEDED**, arm64.
+- Build Release 2026-11-07 → **BUILD SUCCEEDED**, arm64. Verified DMG:
+  `SimDeck/build-release/SimDeck-1.0.0-macos-arm64.dmg`, with app, `LICENSE`,
+  `third_party/`, and Applications link. SHA-256:
+  `48f85721575ec3b53d5443bd2da1f3d7604fdf13e775ed12e001c39efb82bf33`.
+  DMG checksum, contents, and ad-hoc app signature verified.
 - Build Debug: 2026-11-05 15:48 → **BUILD SUCCEEDED**.
 - MCP `initialize`: 2026-11-02, HTTP 200.
 - Không có test target tự động; kiểm tra UI/stream thủ công.
@@ -91,7 +96,8 @@ Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
   `ln -sfn ~/Library/Android/sdk/platform-tools/adb /opt/homebrew/bin/adb`.
 
 ## Mốc tiếp theo
-- Không có việc đang dở. Chờ người dùng chọn: Notification Center trong app (SD-009)
-  hoặc đóng gói DMG/notarize (SD-017). Không tự bắt đầu mục đã hoãn.
+- DMG is available for upload if the user accepts ad-hoc signing. No Developer ID
+  identity is installed, so notarization and Gatekeeper validation remain pending
+  for a public end-user release.
 - Việc nên làm khi có thời gian: chặn `adb kill-server` trong quy trình build của
   `rangbox` / `xiao-zhu` (hoặc tách adb server) để stream không bị đứt định kỳ.

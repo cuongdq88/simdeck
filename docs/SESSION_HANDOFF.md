@@ -1,16 +1,16 @@
 # Session Handoff
 
-Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 
 ## Điểm vào để tiếp tục
-- Hành động chính xác: **không có việc đang làm dở**. Không tự bắt đầu mục đã hoãn.
-  Khi người dùng yêu cầu tiếp, xác nhận chọn SD-009 (Notification Center trong app)
-  hoặc SD-017 (script DMG + ký/notarize).
-- Lý do: mọi yêu cầu trước đã xong và đã commit; các mục còn lại người dùng đã hoãn.
+- Hành động chính xác tiếp theo: nếu được yêu cầu, upload
+  `SimDeck/build-release/SimDeck-1.0.0-macos-arm64.dmg` to a GitHub Release.
+  Do not claim it is notarized; no Developer ID identity is installed.
 
 ## Trạng thái repo
-- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `5cbd839`.
-- Working tree: sạch trước khi cập nhật `docs/` (state docs chưa commit).
+- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `f2fd300`.
+- DMG ignored by Git under `SimDeck/build-release/`; checkpoint edits in `docs/`
+  are uncommitted.
 - Commit gần đây: `5cbd839` (fix double-close + reconnect loop), `0013de0`
   (docs → `docs/`, `CLAUDE.md`, `AGENTS.md` gọn), `4928067` (reconnect khi adb
   restart), `8591523` (ghi nhận fix adb crash).
@@ -20,6 +20,9 @@ Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
 - Build Release **BUILD SUCCEEDED** 2026-11-05 16:05, arm64; app đã restart và chạy
   từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`; 3 tile E1/E2/E3
   (Android 16) đều `streaming: true`.
+- Build Release **BUILD SUCCEEDED** 2026-11-07, arm64. DMG checksum/content and
+  ad-hoc app signature verified; SHA-256
+  `48f85721575ec3b53d5443bd2da1f3d7604fdf13e775ed12e001c39efb82bf33`.
 - Crash report 16:23/20:10: `ProcessRunner.runSync` → `readDataToEndOfFile()`
   ném ObjC exception khi pipe adb đóng → `SIGABRT`. Đã fix bằng `readAll`
   (`read(upToCount:)` + catch); test `adb kill-server` khi đang stream, app sống.
@@ -42,7 +45,8 @@ Cập nhật: 2026-11-05 16:10 (Asia/Ho_Chi_Minh)
 - **SD-015** Settings UI — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
-- **SD-017** Đóng gói DMG + Developer ID/notarize + cask — Pending.
+- **SD-017** Packaging script + Developer ID/notarize + cask — Pending. One-off
+  ad-hoc DMG built for upload; not suitable as a Gatekeeper-ready public release.
 - **SD-018** Tương tác iPhone thật (hiện view-only) — Blocked (chưa có thiết bị).
 - File cần xem: `TASK.md`, `PROJECT_STATE.md`, `SimDeck/Sources/App/AppModel.swift`,
   `SimDeck/Sources/App/SimDeckApp.swift`, `SimDeck/Sources/MCP/McpServer.swift`,

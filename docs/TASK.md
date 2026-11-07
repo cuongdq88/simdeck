@@ -41,7 +41,9 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [ ] **SD-015 — Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
 - [ ] **SD-017 — Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
-      Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew
+      Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew.
+      DMG arm64 ad-hoc đã build ngày 2026-11-07 để upload thử nghiệm; mục này vẫn pending
+      Developer ID/notarization, script phát hành và cask.
 - [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
 
 ## Đã xong
