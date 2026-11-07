@@ -27,10 +27,20 @@ final class AppModel: ObservableObject {
   @Published var createSheetShown = false
   @Published var sdkSheetShown = false
   @Published var connectSheetShown = false
+  @Published var settingsSheetShown = false
   @Published var createPlatform = 0
   @Published private(set) var discoveredServices: [AdbMdnsService] = []
   @Published var logcatDevice: Device?
   @Published private(set) var logcatLines: [String] = []
+  /// Recent toasts, newest first; the bell keeps them after the capsule fades.
+  @Published private(set) var notices: [NoticeEntry] = []
+  @Published private(set) var unreadNotices = 0
+
+  struct NoticeEntry: Identifiable {
+    let id = UUID()
+    let text: String
+    let date: Date
+  }
 
   private let emulator = EmulatorController()
   let settingsStore = DeviceSettingsStore()
@@ -71,6 +81,7 @@ final class AppModel: ObservableObject {
 
   func start() async {
     androidHome = ShellEnv.androidHome
+    CaptureService.folderOverride = settingsStore.recordingDirectory
     await reloadImages()
     await refresh()
     if let flag = ProcessInfo.processInfo.environment["SIMDECK_OPEN_STREAMS"],
@@ -95,6 +106,9 @@ final class AppModel: ObservableObject {
     }
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_CONNECT"] == "1" {
       connectSheetShown = true
+    }
+    if ProcessInfo.processInfo.environment["SIMDECK_SHOW_SETTINGS"] == "1" {
+      settingsSheetShown = true
     }
     if ProcessInfo.processInfo.environment["SIMDECK_SHOW_LOGCAT"] == "1",
       let device = devices.first(where: { $0.os == .android && $0.isRunning })
@@ -475,6 +489,26 @@ final class AppModel: ObservableObject {
 
   func isHeadless(_ device: Device) -> Bool { settingsStore.isHeadless(device) }
 
+  var headlessDefault: Bool { settingsStore.headlessDefault }
+  var frameDefault: Bool { settingsStore.frameDefault }
+  var recordingDirectory: URL { CaptureService.directory }
+
+  func setHeadlessDefault(_ value: Bool) {
+    settingsStore.setHeadlessDefault(value)
+    objectWillChange.send()
+  }
+
+  func setFrameDefault(_ value: Bool) {
+    settingsStore.setFrameDefault(value)
+    objectWillChange.send()
+  }
+
+  func setRecordingFolder(_ path: String) {
+    settingsStore.setRecordingFolder(path)
+    CaptureService.folderOverride = settingsStore.recordingDirectory
+    objectWillChange.send()
+  }
+
   var layout: StreamLayout { settingsStore.layout }
   var spotlightKey: String? { settingsStore.spotlightKey }
 
@@ -633,6 +667,23 @@ final class AppModel: ObservableObject {
   }
 
   func showNotice(_ text: String) {
+    notices.insert(NoticeEntry(text: text, date: Date()), at: 0)
+    if notices.count > 50 { notices.removeLast(notices.count - 50) }
+    unreadNotices += 1
+    showToast(text)
+  }
+
+  /// Shows an old notice again without adding a second history entry.
+  func replayNotice(_ entry: NoticeEntry) { showToast(entry.text) }
+
+  func markNoticesRead() { unreadNotices = 0 }
+
+  func clearNotices() {
+    notices = []
+    unreadNotices = 0
+  }
+
+  private func showToast(_ text: String) {
     notice = text
     Task { [weak self] in
       try? await Task.sleep(nanoseconds: 2_600_000_000)

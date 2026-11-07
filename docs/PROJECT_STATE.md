@@ -33,6 +33,12 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
     máy thật để test).
   - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 14 tool, CLI, bridge
     OpenCode.
+  - SD-009 Notification Center: `AppModel.notices` (50 toast gần nhất, chỉ trong
+    phiên) + chuông có badge chưa đọc trên top bar; popover có Clear, bấm dòng để
+    hiện lại toast. SD-015 Settings sheet (gear/⌘,): headless mặc định,
+    `frameDefault`, layout mặc định, `recordingFolder` — lưu trong `settings.json`;
+    `CaptureService.directory` dùng `folderOverride` (đã xác minh bằng screenshot
+    E1 ghi vào thư mục tuỳ chọn).
   - Crash `SIGABRT` khi adb server chết (pipe stderr đóng) đã fix: `ProcessRunner`
     dùng `read(upToCount:)` thay `readDataToEndOfFile()`; đã test `adb kill-server`
     khi đang stream, app vẫn sống.
@@ -70,6 +76,7 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   `48f85721575ec3b53d5443bd2da1f3d7604fdf13e775ed12e001c39efb82bf33`.
   DMG checksum, contents, and ad-hoc app signature verified.
 - Build Debug: 2026-11-05 15:48 → **BUILD SUCCEEDED**.
+- Build Release 2026-11-08 (SD-009/SD-015) → **BUILD SUCCEEDED**, arm64, không warning.
 - MCP `initialize`: 2026-11-02, HTTP 200.
 - Không có test target tự động; kiểm tra UI/stream thủ công.
 

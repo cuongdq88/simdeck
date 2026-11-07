@@ -38,9 +38,12 @@ struct DeviceSettings: Codable, Equatable {
 @MainActor
 final class DeviceSettingsStore: ObservableObject {
   @Published private(set) var devices: [String: DeviceSettings] = [:]
-  @Published var headlessDefault = true
+  @Published private(set) var headlessDefault = true
+  @Published private(set) var frameDefault = true
   @Published private(set) var layout: StreamLayout = .grid
   @Published private(set) var spotlightKey: String?
+  /// Empty keeps `CaptureService`'s default, `~/Pictures/SimDeck`.
+  @Published private(set) var recordingFolder = ""
 
   private let url: URL
 
@@ -78,13 +81,34 @@ final class DeviceSettingsStore: ObservableObject {
     save()
   }
 
+  func setHeadlessDefault(_ value: Bool) {
+    headlessDefault = value
+    save()
+  }
+
+  func setFrameDefault(_ value: Bool) {
+    frameDefault = value
+    save()
+  }
+
+  /// An empty path resets to `~/Pictures/SimDeck`.
+  func setRecordingFolder(_ path: String) {
+    recordingFolder = path
+    save()
+  }
+
+  var recordingDirectory: URL? {
+    recordingFolder.isEmpty
+      ? nil : URL(fileURLWithPath: recordingFolder, isDirectory: true)
+  }
+
   func setSpotlight(_ key: String?) {
     spotlightKey = key
     save()
   }
 
   func showFrame(_ device: Device) -> Bool {
-    settings(for: device).showFrame ?? true
+    settings(for: device).showFrame ?? frameDefault
   }
 
   private func load() {
@@ -93,6 +117,8 @@ final class DeviceSettingsStore: ObservableObject {
     else { return }
     devices = decoded.devices
     headlessDefault = decoded.headlessDefault
+    frameDefault = decoded.frameDefault ?? true
+    recordingFolder = decoded.recordingFolder ?? ""
     layout = StreamLayout(rawValue: decoded.layout ?? "") ?? .grid
     spotlightKey = decoded.spotlightKey
   }
@@ -101,6 +127,8 @@ final class DeviceSettingsStore: ObservableObject {
     let stored = Stored(
       devices: devices,
       headlessDefault: headlessDefault,
+      frameDefault: frameDefault,
+      recordingFolder: recordingFolder,
       layout: layout.rawValue,
       spotlightKey: spotlightKey)
     guard let data = try? JSONEncoder().encode(stored) else { return }
@@ -110,6 +138,8 @@ final class DeviceSettingsStore: ObservableObject {
   private struct Stored: Codable {
     var devices: [String: DeviceSettings]
     var headlessDefault: Bool
+    var frameDefault: Bool?
+    var recordingFolder: String?
     var layout: String?
     var spotlightKey: String?
   }

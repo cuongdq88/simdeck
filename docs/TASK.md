@@ -26,11 +26,6 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
   `~/Library/Caches/com.apple.iconservices.store` + `killall Dock`; macOS icon
   style “Clear Dark” làm icon hiển thị đơn sắc (đổi sang Default để thấy màu).
 
-## Hoãn — làm sau
-
-- [ ] **SD-009 — Notification Center trong app**: lịch sử thông báo (toast gần đây)
-      trong một panel/popover, bấm để mở lại; hiện chỉ có toast thoáng qua.
-
 ## Tiếp theo
 
 - [ ] **SD-010 — Scenarios**: YAML, editor, runner + panel bên phải
@@ -38,7 +33,6 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [ ] **SD-012 — Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
 - [ ] **SD-013 — Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
 - [ ] **SD-014 — MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
-- [ ] **SD-015 — Settings UI**: headless mặc định, thư mục recording, thứ tự/khung mặc định
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
 - [ ] **SD-017 — Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
       Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew.
@@ -59,6 +53,11 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] MCP server loopback (14 tool)
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Toast cho start/stop/stream/capture/SDK, có cả trên sheet
+- [x] **SD-009** Notification Center: chuông trên top bar + badge chưa đọc, popover 50
+      toast gần nhất (giờ), bấm dòng để hiện lại toast, Clear; lịch sử chỉ trong phiên
+- [x] **SD-015** Settings UI (gear + ⌘,): headless mặc định, thư mục recording (chọn
+      bằng NSOpenPanel, mặc định `~/Pictures/SimDeck`), layout mặc định, khung thiết bị
+      mặc định; lưu trong `~/Library/Application Support/SimDeck/settings.json`
 - [x] Wi-Fi pairing: mDNS pairing/connect service, nhập tay IP:port + mã, `adb pair/connect`
 - [x] Logcat viewer: lọc text/level, tạm dừng, xoá, copy (giới hạn 3000 dòng)
 - [x] iOS thiết bị thật: devicectl list, CoreMediaIO stream (chỉ xem), screenshot từ frame

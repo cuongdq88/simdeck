@@ -10,6 +10,7 @@ struct TopBar: View {
 
   @State private var environmentShown = false
   @State private var mcpShown = false
+  @State private var noticesShown = false
 
   var body: some View {
     HStack {
@@ -57,6 +58,28 @@ struct TopBar: View {
           .popover(isPresented: $mcpShown, arrowEdge: .bottom) {
             mcp
           }
+        SimuToolbarDivider()
+        SimuIconButton(
+          icon: "bell",
+          help: "Recent notifications",
+          active: noticesShown,
+          action: { noticesShown.toggle() })
+          .overlay(alignment: .topTrailing) {
+            if model.unreadNotices > 0 {
+              Circle()
+                .fill(t.danger)
+                .frame(width: 6, height: 6)
+                .padding(.top, 3)
+                .padding(.trailing, 3)
+            }
+          }
+          .popover(isPresented: $noticesShown, arrowEdge: .bottom) {
+            notifications
+          }
+        SimuIconButton(
+          icon: "gearshape",
+          help: "Settings",
+          action: { model.settingsSheetShown = true })
       }
     }
     .padding(.leading, sidebarOpen ? 10 : 78)
@@ -139,5 +162,55 @@ struct TopBar: View {
     }
     .padding(14)
     .frame(width: 400)
+  }
+
+  private var notifications: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      HStack(spacing: 8) {
+        Text("Notifications")
+          .font(.system(size: 13, weight: .semibold))
+        Spacer()
+        if !model.notices.isEmpty {
+          Button("Clear") { model.clearNotices() }
+            .controlSize(.small)
+        }
+      }
+
+      if model.notices.isEmpty {
+        Text("Nothing yet. Starts, streams and captures show up here.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      } else {
+        ScrollView {
+          VStack(spacing: 0) {
+            ForEach(model.notices) { entry in
+              Button {
+                model.replayNotice(entry)
+              } label: {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                  Text(entry.text)
+                    .font(.system(size: 12))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                  Spacer(minLength: 6)
+                  Text(entry.date, format: .dateTime.hour().minute())
+                    .font(.custom("Menlo", size: 10))
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 5)
+                .padding(.horizontal, 6)
+                .contentShape(Rectangle())
+              }
+              .buttonStyle(.plain)
+            }
+          }
+        }
+        .frame(maxHeight: 260)
+      }
+    }
+    .padding(14)
+    .frame(width: 380)
+    .onAppear { model.markNoticesRead() }
+    .onChange(of: model.notices.count) { _, _ in model.markNoticesRead() }
   }
 }

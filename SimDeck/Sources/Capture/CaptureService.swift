@@ -18,13 +18,20 @@ enum CaptureService {
     let process: Process?
   }
 
+  /// Set from Settings; nil uses `defaultDirectory`.
+  static var folderOverride: URL?
+
   static var directory: URL {
-    let base = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
-      ?? URL(fileURLWithPath: NSHomeDirectory())
-    let folder = base.appendingPathComponent("SimDeck", isDirectory: true)
+    let folder = folderOverride ?? defaultDirectory
     try? FileManager.default.createDirectory(
       at: folder, withIntermediateDirectories: true)
     return folder
+  }
+
+  private static var defaultDirectory: URL {
+    let base = FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
+      ?? URL(fileURLWithPath: NSHomeDirectory())
+    return base.appendingPathComponent("SimDeck", isDirectory: true)
   }
 
   static func stamp() -> String {

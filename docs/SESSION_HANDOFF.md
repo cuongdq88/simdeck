@@ -33,16 +33,21 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   đã bị thay thế). Verify: `xcodebuild` Debug + Release đều BUILD SUCCEEDED.
 - MCP `POST /mcp` initialize → 200.
 - Task tracker: `TASK.md` (đã xong / hoãn / tiếp theo).
+- SD-009 + SD-015 (2026-11-08): build Release **BUILD SUCCEEDED**, không warning;
+  chạy app thật và chụp màn hình xác minh: Settings sheet render đủ 3 nhóm, toggle
+  headless/frame đọc đúng `settings.json`, badge chuông + popover Notifications
+  (thứ tự mới→cũ, Clear, empty state), bấm 1 dòng hiện lại toast; đặt
+  `recordingFolder` = `/tmp/simdeck-shots` → `simdeck screenshot E1` ghi PNG đúng
+  thư mục đó. Chưa test đường record video vào thư mục tuỳ chọn (dùng chung
+  `CaptureService.directory`) và nút `Choose…` (NSOpenPanel chuẩn).
 
 ## Task đang mở
 - Không có task in-progress.
-- **SD-009** Notification Center trong app — Pending (người dùng đã hoãn).
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
 - **SD-011** Plugin registry (`~/.simutil/settings.yaml`) — Pending.
 - **SD-012** Grid recording (ScreenCaptureKit) + thư viện recording — Pending.
 - **SD-013** Emulator gRPC video — Pending (tuỳ chọn; scrcpy đã phủ).
 - **SD-014** MCP parity đủ 27 tool — Pending.
-- **SD-015** Settings UI — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
 - **SD-017** Packaging script + Developer ID/notarize + cask — Pending. One-off

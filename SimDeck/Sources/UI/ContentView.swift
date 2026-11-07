@@ -36,6 +36,10 @@ struct ContentView: View {
       ConnectDeviceSheet()
         .environment(\.simu, tokens)
     }
+    .sheet(isPresented: $model.settingsSheetShown) {
+      SettingsSheet()
+        .environment(\.simu, tokens)
+    }
     .sheet(
       isPresented: Binding(
         get: { model.logcatDevice != nil },
