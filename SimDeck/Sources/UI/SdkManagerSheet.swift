@@ -25,11 +25,9 @@ struct SdkManagerSheet: View {
     .frame(width: 660, height: 580)
     .background(t.panel)
     .task { await model.loadRemoteImages() }
-    .overlay(alignment: .bottom) {
-      if let notice = model.notice {
-        NoticeCapsule(text: notice)
-          .padding(.bottom, 16)
-      }
+    .overlay(alignment: .topTrailing) {
+      NoticePanel(items: model.banners, onDismiss: { model.dismissBanner($0) })
+        .padding(14)
     }
   }
 

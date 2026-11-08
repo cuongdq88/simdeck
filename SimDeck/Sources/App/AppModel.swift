@@ -23,7 +23,6 @@ final class AppModel: ObservableObject {
   @Published private(set) var mcpError: String?
   @Published private(set) var mcpURL = ""
   @Published var errorMessage: String?
-  @Published var notice: String?
   @Published var createSheetShown = false
   @Published var sdkSheetShown = false
   @Published var connectSheetShown = false
@@ -32,11 +31,14 @@ final class AppModel: ObservableObject {
   @Published private(set) var discoveredServices: [AdbMdnsService] = []
   @Published var logcatDevice: Device?
   @Published private(set) var logcatLines: [String] = []
-  /// Recent toasts, newest first; the bell keeps them after the capsule fades.
+  /// Recent notices, newest first; the bell keeps them after the panel clears.
   @Published private(set) var notices: [NoticeEntry] = []
+  /// Notices currently on screen, newest first; they stack instead of
+  /// covering each other.
+  @Published private(set) var banners: [NoticeEntry] = []
   @Published private(set) var unreadNotices = 0
 
-  struct NoticeEntry: Identifiable {
+  struct NoticeEntry: Identifiable, Equatable {
     let id = UUID()
     let text: String
     let date: Date
@@ -667,14 +669,15 @@ final class AppModel: ObservableObject {
   }
 
   func showNotice(_ text: String) {
-    notices.insert(NoticeEntry(text: text, date: Date()), at: 0)
+    let entry = NoticeEntry(text: text, date: Date())
+    notices.insert(entry, at: 0)
     if notices.count > 50 { notices.removeLast(notices.count - 50) }
     unreadNotices += 1
-    showToast(text)
+    showBanner(text, at: entry.date)
   }
 
   /// Shows an old notice again without adding a second history entry.
-  func replayNotice(_ entry: NoticeEntry) { showToast(entry.text) }
+  func replayNotice(_ entry: NoticeEntry) { showBanner(entry.text, at: entry.date) }
 
   func markNoticesRead() { unreadNotices = 0 }
 
@@ -683,12 +686,18 @@ final class AppModel: ObservableObject {
     unreadNotices = 0
   }
 
-  private func showToast(_ text: String) {
-    notice = text
+  func dismissBanner(_ id: UUID) {
+    banners.removeAll { $0.id == id }
+  }
+
+  /// The on-screen stack keeps the newest five; each one clears itself.
+  private func showBanner(_ text: String, at date: Date) {
+    let banner = NoticeEntry(text: text, date: date)
+    banners.insert(banner, at: 0)
+    if banners.count > 5 { banners.removeLast(banners.count - 5) }
     Task { [weak self] in
-      try? await Task.sleep(nanoseconds: 2_600_000_000)
-      guard let self else { return }
-      if self.notice == text { self.notice = nil }
+      try? await Task.sleep(nanoseconds: 6_000_000_000)
+      self?.dismissBanner(banner.id)
     }
   }
 

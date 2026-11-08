@@ -218,24 +218,56 @@ struct SimuTextField: View {
 
 // MARK: - Misc
 
-/// A floating status line at the bottom of a window, like SimUtil's toasts.
-struct NoticeCapsule: View {
-  let text: String
+/// Notices in the top-right of a window. Each one keeps its own row so a burst
+/// of them stacks downwards instead of covering each other.
+struct NoticePanel: View {
+  let items: [AppModel.NoticeEntry]
+  let onDismiss: (UUID) -> Void
+
   @Environment(\.simu) private var t
 
   var body: some View {
-    Text(text)
-      .font(t.caption)
-      .foregroundStyle(t.text)
-      .padding(.horizontal, 14)
-      .padding(.vertical, 9)
-      .background(
-        RoundedRectangle(cornerRadius: SimuTokens.radius)
-          .fill(t.raised))
-      .overlay(
-        RoundedRectangle(cornerRadius: SimuTokens.radius)
-          .strokeBorder(t.border, lineWidth: 1))
-      .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+    VStack(alignment: .trailing, spacing: 8) {
+      ForEach(items) { entry in
+        HStack(alignment: .top, spacing: 10) {
+          Image(systemName: "bell")
+            .font(.system(size: 12))
+            .foregroundStyle(t.textMuted)
+            .padding(.top, 2)
+          VStack(alignment: .leading, spacing: 2) {
+            Text(entry.text)
+              .font(t.caption)
+              .foregroundStyle(t.text)
+              .fixedSize(horizontal: false, vertical: true)
+            Text(entry.date, format: .dateTime.hour().minute())
+              .font(t.monoLabel)
+              .foregroundStyle(t.textFaint)
+          }
+          Spacer(minLength: 4)
+          Button {
+            onDismiss(entry.id)
+          } label: {
+            Image(systemName: "xmark")
+              .font(.system(size: 10))
+              .foregroundStyle(t.textFaint)
+          }
+          .buttonStyle(.plain)
+          .help("Dismiss")
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(width: 320, alignment: .leading)
+        .background(
+          RoundedRectangle(cornerRadius: SimuTokens.radius)
+            .fill(t.raised))
+        .overlay(
+          RoundedRectangle(cornerRadius: SimuTokens.radius)
+            .strokeBorder(t.border, lineWidth: 1))
+        .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
+        .transition(.move(edge: .top).combined(with: .opacity))
+      }
+    }
+    .animation(.easeOut(duration: 0.18), value: items)
   }
 }
 

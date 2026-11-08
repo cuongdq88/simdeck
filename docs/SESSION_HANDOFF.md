@@ -36,7 +36,7 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 - SD-009 + SD-015 (2026-11-08): build Release **BUILD SUCCEEDED**, không warning;
   chạy app thật và chụp màn hình xác minh: Settings sheet render đủ 3 nhóm, toggle
   headless/frame đọc đúng `settings.json`, badge chuông + popover Notifications
-  (thứ tự mới→cũ, Clear, empty state), bấm 1 dòng hiện lại toast; đặt
+  (thứ tự mới→cũ, Clear, empty state), bấm 1 dòng hiện lại thông báo; đặt
   `recordingFolder` = `/tmp/simdeck-shots` → `simdeck screenshot E1` ghi PNG đúng
   thư mục đó. Chưa test đường record video vào thư mục tuỳ chọn (dùng chung
   `CaptureService.directory`) và nút `Choose…` (NSOpenPanel chuẩn).

@@ -50,14 +50,11 @@ struct ContentView: View {
           .environment(\.simu, tokens)
       }
     }
-    .overlay(alignment: .bottom) {
-      if let notice = model.notice {
-        NoticeCapsule(text: notice)
-          .padding(.bottom, 22)
-          .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
+    .overlay(alignment: .topTrailing) {
+      NoticePanel(items: model.banners, onDismiss: { model.dismissBanner($0) })
+        .padding(.top, 62)
+        .padding(.trailing, 16)
     }
-    .animation(.easeOut(duration: 0.18), value: model.notice)
     .alert(
       "SimDeck",
       isPresented: Binding(

@@ -36,6 +36,10 @@ struct LogcatSheet: View {
     }
     .frame(width: 860, height: 580)
     .background(t.panel)
+    .overlay(alignment: .topTrailing) {
+      NoticePanel(items: model.banners, onDismiss: { model.dismissBanner($0) })
+        .padding(14)
+    }
   }
 
   private var header: some View {
