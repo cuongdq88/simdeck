@@ -218,8 +218,8 @@ struct SimuTextField: View {
 
 // MARK: - Misc
 
-/// Notices in the top-right of a window. Each one keeps its own row so a burst
-/// of them stacks downwards instead of covering each other.
+/// Notices in the bottom-right of a window, newest on top. Each one keeps its
+/// own row so a burst stacks instead of covering itself.
 struct NoticePanel: View {
   let items: [AppModel.NoticeEntry]
   let onDismiss: (UUID) -> Void
@@ -228,7 +228,7 @@ struct NoticePanel: View {
 
   var body: some View {
     VStack(alignment: .trailing, spacing: 8) {
-      ForEach(items.reversed()) { entry in
+      ForEach(items) { entry in
         HStack(alignment: .top, spacing: 10) {
           Image(systemName: "bell")
             .font(.system(size: 12))
@@ -264,7 +264,7 @@ struct NoticePanel: View {
           RoundedRectangle(cornerRadius: SimuTokens.radius)
             .strokeBorder(t.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(.move(edge: .trailing).combined(with: .opacity))
       }
     }
     .animation(.easeOut(duration: 0.18), value: items)

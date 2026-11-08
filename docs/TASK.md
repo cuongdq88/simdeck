@@ -54,9 +54,9 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Toast cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] **SD-009** Notification Center: panel thông báo ở góc dưới phải cửa sổ, các mục
-      xếp chồng từ trên xuống (mới nhất sát góc; tự ẩn sau 6 s, tối đa 5, có nút đóng);
-      chuông trên top bar + badge chưa đọc, popover 50 thông báo gần nhất, bấm dòng để
-      hiện lại, Clear; lịch sử chỉ trong phiên
+      xếp chồng từ trên xuống, mới nhất ở trên, trượt vào từ mép phải (tự ẩn sau 6 s,
+      tối đa 5, có nút đóng); chuông trên top bar + badge chưa đọc, popover 50 thông
+      báo gần nhất, bấm dòng để hiện lại, Clear; lịch sử chỉ trong phiên
 - [x] **SD-015** Settings UI (gear + ⌘,): headless mặc định, thư mục recording (chọn
       bằng NSOpenPanel, mặc định `~/Pictures/SimDeck`), layout mặc định, khung thiết bị
       mặc định; lưu trong `~/Library/Application Support/SimDeck/settings.json`
