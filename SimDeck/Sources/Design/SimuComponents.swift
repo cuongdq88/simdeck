@@ -228,7 +228,7 @@ struct NoticePanel: View {
 
   var body: some View {
     VStack(alignment: .trailing, spacing: 8) {
-      ForEach(items) { entry in
+      ForEach(items.reversed()) { entry in
         HStack(alignment: .top, spacing: 10) {
           Image(systemName: "bell")
             .font(.system(size: 12))
@@ -264,7 +264,7 @@ struct NoticePanel: View {
           RoundedRectangle(cornerRadius: SimuTokens.radius)
             .strokeBorder(t.border, lineWidth: 1))
         .shadow(color: .black.opacity(0.35), radius: 18, y: 6)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
     .animation(.easeOut(duration: 0.18), value: items)

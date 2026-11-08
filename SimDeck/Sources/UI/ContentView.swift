@@ -50,9 +50,9 @@ struct ContentView: View {
           .environment(\.simu, tokens)
       }
     }
-    .overlay(alignment: .topTrailing) {
+    .overlay(alignment: .bottomTrailing) {
       NoticePanel(items: model.banners, onDismiss: { model.dismissBanner($0) })
-        .padding(.top, 62)
+        .padding(.bottom, 22)
         .padding(.trailing, 16)
     }
     .alert(
