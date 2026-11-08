@@ -115,6 +115,14 @@ enum SimctlService {
     (await run(["delete", udid], timeout: 60)).ok
   }
 
+  static func install(udid: String, path: String) async -> ProcessResult {
+    await run(["install", udid, path], timeout: 300)
+  }
+
+  static func launch(udid: String, app: String) async -> ProcessResult {
+    await run(["launch", "--terminate-running-process", udid, app], timeout: 60)
+  }
+
   static func openSimulatorApp() async {
     _ = await ProcessRunner.run("/usr/bin/open", ["-a", "Simulator"], timeout: 15)
   }

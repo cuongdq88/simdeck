@@ -74,6 +74,27 @@ enum AdbService {
       ShellEnv.adbPath, ["-s", serial, "shell"] + arguments, timeout: timeout)
   }
 
+  // MARK: - Apps
+
+  static func install(serial: String, path: String) async -> ProcessResult {
+    await ProcessRunner.run(
+      ShellEnv.adbPath, ["-s", serial, "install", "-r", path], timeout: 300)
+  }
+
+  /// `monkey` starts the launcher activity without naming it first. Its exit
+  /// status stays 0 when nothing matches, so look for the error text too.
+  static func launch(
+    serial: String, app: String, clearState: Bool
+  ) async -> ProcessResult {
+    if clearState {
+      _ = await shell(serial: serial, ["pm", "clear", app], timeout: 60)
+    }
+    return await shell(
+      serial: serial,
+      ["monkey", "-p", app, "-c", "android.intent.category.LAUNCHER", "1"],
+      timeout: 60)
+  }
+
   // MARK: - Wireless debugging
 
   static func pair(hostPort: String, code: String) async -> ProcessResult {

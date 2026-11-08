@@ -292,6 +292,70 @@ final class McpServer {
       await model.openStream(device)
       return json(["streaming": device.name])
 
+    case "get_spotlight":
+      let focus = model.layout == .grid ? nil : model.spotlightKey
+      var focusValue: Any = NSNull()
+      if let key = focus, let device = model.devices.first(where: { $0.key == key }) {
+        focusValue = ["id": device.key, "name": device.name]
+      }
+      let streams = model.openDevices.map { device -> [String: Any] in
+        [
+          "id": device.key,
+          "name": device.name,
+          "fps": (model.fps(for: device) * 10).rounded() / 10,
+          "recording_seconds": Int(
+            model.recordingStart(device).map { Date().timeIntervalSince($0) } ?? 0),
+        ]
+      }
+      return json([
+        "layout": model.layout.rawValue,
+        "device": focusValue,
+        "streams": streams,
+      ])
+
+    case "connect_device":
+      let host = try required("host_port", arguments)
+      let address = host.contains(":") ? host : "\(host):5555"
+      let result = await AdbService.connect(hostPort: address)
+      await model.refresh()
+      // adb exits 0 even when the connection is refused, so read the message.
+      let connected = result.combined.lowercased().contains("connected to")
+      return json(["connected": connected, "address": address, "output": result.combined])
+
+    case "pair_device":
+      let host = try required("host_port", arguments)
+      let code = try required("code", arguments)
+      let result = await AdbService.pair(hostPort: host, code: code)
+      if result.ok { await model.refreshMdns() }
+      return json(["paired": result.ok, "output": result.combined])
+
+    case "disconnect_device":
+      let host = try required("host_port", arguments)
+      let result = await AdbService.disconnect(hostPort: host)
+      await model.refresh()
+      return json(["disconnected": result.ok, "output": result.combined])
+
+    case "install_app":
+      let device = try findDevice(arguments, model: model)
+      let path = try required("path", arguments)
+      try await model.installApp(device, path: path)
+      return json(["installed": path, "device": device.name])
+
+    case "launch_app":
+      let device = try findDevice(arguments, model: model)
+      let app = try required("app", arguments)
+      try await model.launchApp(
+        device, app: app, clearState: arguments["clear_state"] as? Bool ?? false)
+      return json(["launched": app, "device": device.name])
+
+    case "record_device":
+      let device = try findDevice(arguments, model: model)
+      let url = await model.toggleRecording(device)
+      if model.isRecording(device) { return json(["recording": device.name]) }
+      if let url { return json(["saved": url.path]) }
+      throw McpToolError.message(
+        model.errorMessage ?? "Could not record \(device.name).")
+
     case "stop_device", "shutdown_device":
       let device = try findDevice(arguments, model: model)
       await model.stop(device)
@@ -497,6 +561,41 @@ final class McpServer {
         "press_button", "Press back, home, recents, lock or a volume button.",
         properties: ["device": string, "button": string], required: ["device", "button"]),
       tool("screenshot", "Take a device screenshot and return its path.", properties: ["device": string], required: ["device"]),
+      tool(
+        "record_device",
+        "Toggle recording a running device. Returns the saved file when stopping.",
+        properties: ["device": string], required: ["device"]),
+      tool(
+        "get_spotlight",
+        "The stream layout, the device shown large in the spotlight (null in the grid layout or with no streams) and each open stream with its fps and how long it has been recording."),
+      tool(
+        "connect_device",
+        "Connect a wireless device; host_port is host:port or a bare host (port 5555).",
+        properties: ["host_port": string], required: ["host_port"]),
+      tool(
+        "pair_device",
+        "Pair a device with wireless debugging using its mDNS host:port and the pairing code.",
+        properties: ["host_port": string, "code": string],
+        required: ["host_port", "code"]),
+      tool(
+        "disconnect_device",
+        "Disconnect a wireless device.",
+        properties: ["host_port": string], required: ["host_port"]),
+      tool(
+        "install_app",
+        "Install an app from this computer, replacing an installed copy: an .apk on Android or a simulator .app on iOS.",
+        properties: [
+          "device": string,
+          "path": ["type": "string", "description": "Absolute path to the .apk or .app"],
+        ], required: ["device", "path"]),
+      tool(
+        "launch_app",
+        "Launch an app by Android package name or iOS simulator bundle id. clear_state also wipes its data (Android only).",
+        properties: [
+          "device": string,
+          "app": string,
+          "clear_state": ["type": "boolean", "default": false],
+        ], required: ["device", "app"]),
     ]
   }
 }

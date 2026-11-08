@@ -32,7 +32,6 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [ ] **SD-011 — Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
 - [ ] **SD-012 — Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
 - [ ] **SD-013 — Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
-- [ ] **SD-014 — MCP tool parity**: bổ sung các tool còn thiếu của bản Flutter (27 tool)
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI
 - [ ] **SD-017 — Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
       Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew.
@@ -50,7 +49,12 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Chrome thật DeviceKit cho iOS (bezel, mask, nút cạnh)
 - [x] Screenshot, quay màn hình (REC clock), xoá/wipe an toàn
 - [x] SDK Manager: image đã cài, tải về, licence, chặn xoá image đang dùng
-- [x] MCP server loopback (14 tool)
+- [x] MCP server loopback (21 tool)
+- [x] **SD-014** MCP tool parity (21/27 tool): thêm `get_spotlight`, `connect_device`,
+      `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`.
+      Chưa làm (cần task khác hoặc chưa chốt): `run_scenario`/`stop_scenario` (chờ
+      SD-010), `record_grid` (chờ SD-012), `find_elements` + `tap {label}`
+      (uiautomator dump), `set_slim`/`set_slim_mode`, `repair_input` (iOS simulator)
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Toast cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] **SD-009** Notification Center: panel thông báo ở góc dưới phải cửa sổ, các mục

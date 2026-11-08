@@ -646,15 +646,17 @@ final class AppModel: ObservableObject {
 
   func recordingStart(_ device: Device) -> Date? { recordingStarts[device.key] }
 
-  func toggleRecording(_ device: Device) async {
+  @discardableResult
+  func toggleRecording(_ device: Device) async -> URL? {
     if device.os == .ios && device.kind == .physical {
       errorMessage = "Recording a USB iOS device is not supported yet."
-      return
+      return nil
     }
     if let active = recordings.removeValue(forKey: device.key) {
       recordingStarts[device.key] = nil
       if let url = await CaptureService.stopRecording(device, recording: active) {
         showNotice("Recording saved to \(url.lastPathComponent)")
+        return url
       }
     } else {
       do {
@@ -666,6 +668,7 @@ final class AppModel: ObservableObject {
         errorMessage = error.localizedDescription
       }
     }
+    return nil
   }
 
   func showNotice(_ text: String) {
@@ -699,6 +702,61 @@ final class AppModel: ObservableObject {
       try? await Task.sleep(nanoseconds: 6_000_000_000)
       self?.dismissBanner(banner.id)
     }
+  }
+
+  // MARK: - Apps
+
+  func installApp(_ device: Device, path: String) async throws {
+    let result: ProcessResult
+    switch device.os {
+    case .android:
+      guard let serial = device.serial else {
+        throw GuardIssue(code: "device_stopped", message: "Start \(device.name) first.")
+      }
+      result = await AdbService.install(serial: serial, path: path)
+    case .ios:
+      guard device.kind == .simulator else {
+        throw GuardIssue(
+          code: "unsupported", message: "Installing on a USB iOS device is not supported.")
+      }
+      result = await SimctlService.install(udid: device.rawID, path: path)
+    }
+    guard result.ok else {
+      throw GuardIssue(
+        code: "install_failed",
+        message: result.combined.isEmpty ? "Could not install \(path)." : result.combined)
+    }
+    showNotice("Installed \((path as NSString).lastPathComponent)")
+  }
+
+  func launchApp(_ device: Device, app: String, clearState: Bool) async throws {
+    let result: ProcessResult
+    switch device.os {
+    case .android:
+      guard let serial = device.serial else {
+        throw GuardIssue(code: "device_stopped", message: "Start \(device.name) first.")
+      }
+      result = await AdbService.launch(serial: serial, app: app, clearState: clearState)
+      if result.combined.contains("No activities found") {
+        throw GuardIssue(code: "app_not_found", message: "No launchable activity for \(app).")
+      }
+    case .ios:
+      guard device.kind == .simulator else {
+        throw GuardIssue(
+          code: "unsupported", message: "Launching on a USB iOS device is not supported.")
+      }
+      guard !clearState else {
+        throw GuardIssue(
+          code: "unsupported", message: "clear_state is not supported on iOS simulators.")
+      }
+      result = await SimctlService.launch(udid: device.rawID, app: app)
+    }
+    guard result.ok else {
+      throw GuardIssue(
+        code: "launch_failed",
+        message: result.combined.isEmpty ? "Could not launch \(app)." : result.combined)
+    }
+    showNotice("Launched \(app)")
   }
 
   // MARK: - SDK Manager

@@ -40,6 +40,12 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   `recordingFolder` = `/tmp/simdeck-shots` → `simdeck screenshot E1` ghi PNG đúng
   thư mục đó. Chưa test đường record video vào thư mục tuỳ chọn (dùng chung
   `CaptureService.directory`) và nút `Choose…` (NSOpenPanel chuẩn).
+- SD-014 (2026-11-08): `tools/list` trả 21 tool; chạy thật trên E1: `launch_app`
+  mở Settings, `launch_app` sai package trả lỗi rõ, `install_app` sai đường dẫn trả
+  lỗi adb, `record_device` start/stop ghi MP4 44 KB, `get_spotlight` trả layout +
+  stream; `connect_device`/`disconnect_device` trả `connected: false` khi cổng từ chối.
+  Chưa test `pair_device` (cần thiết bị Wi-Fi thật) và `install_app` thành công bằng
+  file APK thật.
 
 ## Task đang mở
 - Không có task in-progress.
@@ -47,7 +53,11 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 - **SD-011** Plugin registry (`~/.simutil/settings.yaml`) — Pending.
 - **SD-012** Grid recording (ScreenCaptureKit) + thư viện recording — Pending.
 - **SD-013** Emulator gRPC video — Pending (tuỳ chọn; scrcpy đã phủ).
-- **SD-014** MCP parity đủ 27 tool — Pending.
+- **SD-014** MCP parity: 21/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
+  `connect_device`, `pair_device`, `disconnect_device`, `record_device`, `install_app`,
+  `launch_app`); còn `run_scenario`/`stop_scenario` (chờ SD-010), `record_grid`
+  (chờ SD-012), `find_elements` + `tap {label}`, `set_slim`/`set_slim_mode`,
+  `repair_input` (iOS simulator) — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
 - **SD-017** Packaging script + Developer ID/notarize + cask — Pending. One-off
