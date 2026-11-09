@@ -31,7 +31,7 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
     drag-reorder, spotlight.
   - iOS thật: `devicectl` + CoreMediaIO view-only (parser kiểm bằng JSON mẫu; chưa có
     máy thật để test).
-  - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 21 tool, CLI, bridge
+  - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 22 tool, CLI, bridge
     OpenCode.
   - SD-009 Notification Center: `AppModel.notices` (50 toast gần nhất, chỉ trong
     phiên) + chuông có badge chưa đọc trên top bar; popover có Clear, bấm dòng để

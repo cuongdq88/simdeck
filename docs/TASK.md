@@ -8,7 +8,7 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `main`.
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
   (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
-- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (21 tool), CLI
+- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (22 tool), CLI
   `SimDeck/bin/simdeck`, bridge stdio `SimDeck/bin/simdeck-mcp` (OpenCode dùng bridge,
   tự bật app). `start_device` luôn boot headless — không có cửa sổ emulator riêng.
 - **License**: MIT © 2026 cuongdq88 (`LICENSE`), notices third-party trong
@@ -28,22 +28,14 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Tiếp theo
 
-- [ ] **SD-019 — MCP parity, phần còn lại (6 tool)** sau SD-014:
-      - `find_elements` + `tap {label, timeout_ms}` — cần `uiautomator dump` (Android)
-        và accessibility tree (iOS simulator); là nền để agent tap theo nhãn
+- [ ] **SD-019 — MCP parity, phần còn lại (4 tool)** sau SD-014:
       - `run_scenario` / `stop_scenario` — **chờ SD-010**
       - `record_grid` — **chờ SD-012**
       - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; chưa chốt
         có giữ hay bỏ (bản Swift chưa có slim mode)
 - [ ] **SD-010 — Scenarios**: YAML, editor, runner + panel bên phải
-- [ ] **SD-011 — Plugin registry** (`~/.simutil/settings.yaml`) + chạy lệnh ngoài
 - [ ] **SD-012 — Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
-- [ ] **SD-013 — Emulator gRPC video** (tuỳ chọn; scrcpy hiện đã phủ, chạy cả headless)
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI — hiện blocked vì SwiftUI `WindowGroup` luôn mở cửa sổ
-- [ ] **SD-017 — Đóng gói phát hành**: script tạo DMG (kèm `LICENSE` + `third_party/`), ký
-      Developer ID + notarize để người khác cài không bị Gatekeeper chặn; cask Homebrew.
-      DMG arm64 ad-hoc đã build ngày 2026-11-07 để upload thử nghiệm; mục này vẫn pending
-      Developer ID/notarization, script phát hành và cask.
 - [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
       (blocked: chưa có máy)
 
@@ -57,10 +49,12 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Chrome thật DeviceKit cho iOS (bezel, mask, nút cạnh)
 - [x] Screenshot, quay màn hình (REC clock), xoá/wipe an toàn
 - [x] SDK Manager: image đã cài, tải về, licence, chặn xoá image đang dùng
-- [x] MCP server loopback (21 tool)
-- [x] **SD-014** MCP tool parity (21/27 tool): thêm `get_spotlight`, `connect_device`,
-      `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`.
-      6 tool còn lại theo dõi ở **SD-019**
+- [x] MCP server loopback (22 tool)
+- [x] **SD-014** MCP tool parity (22/27 tool): thêm `get_spotlight`, `connect_device`,
+      `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
+      `find_elements` và `tap {label}` (đọc cây `uiautomator dump`, tap theo nhãn/id/value).
+      `find_elements`/`tap {label}` chỉ chạy trên Android; iOS simulator trả lỗi rõ.
+      4 tool còn lại theo dõi ở **SD-019**
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Thông báo in-app (panel góc dưới phải) cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] **SD-009** Notification Center: panel thông báo ở góc dưới phải cửa sổ, các mục

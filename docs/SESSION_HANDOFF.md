@@ -46,22 +46,23 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   stream; `connect_device`/`disconnect_device` trả `connected: false` khi cổng từ chối.
   Chưa test `pair_device` (cần thiết bị Wi-Fi thật) và `install_app` thành công bằng
   file APK thật.
+- SD-014 `find_elements` + `tap {label}` (2026-11-09): `tools/list` = 22 tool; trên E1
+  `find_elements` trả 14 phần tử Settings (label/role/center/frame chuẩn hoá),
+  `tap {"label":"Network & internet"}` mở đúng màn Network & internet (screenshot),
+  nhãn không tồn tại với `timeout_ms:1200` trả `No element matches …` sau ~2 s;
+  `tap {x,y}` vẫn chạy; iOS simulator trả lỗi "supports Android devices only".
 
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
-- **SD-011** Plugin registry (`~/.simutil/settings.yaml`) — Pending.
 - **SD-012** Grid recording (ScreenCaptureKit) + thư viện recording — Pending.
-- **SD-013** Emulator gRPC video — Pending (tuỳ chọn; scrcpy đã phủ).
-- **SD-014** MCP parity: 21/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
+- **SD-014** MCP parity: 22/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
   `connect_device`, `pair_device`, `disconnect_device`, `record_device`, `install_app`,
-  `launch_app`); còn `run_scenario`/`stop_scenario` (chờ SD-010), `record_grid`
-  (chờ SD-012), `find_elements` + `tap {label}`, `set_slim`/`set_slim_mode`,
-  `repair_input` (iOS simulator) — Pending.
+  `launch_app`, `find_elements`, `tap {label}`); còn `run_scenario`/`stop_scenario`
+  (chờ SD-010), `record_grid` (chờ SD-012), `set_slim`/`set_slim_mode`, `repair_input`
+  (iOS simulator) — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
-- **SD-017** Packaging script + Developer ID/notarize + cask — Pending. One-off
-  ad-hoc DMG built for upload; not suitable as a Gatekeeper-ready public release.
 - **SD-018** Tương tác iPhone thật (hiện view-only) — Blocked (chưa có thiết bị).
 - File cần xem: `TASK.md`, `PROJECT_STATE.md`, `SimDeck/Sources/App/AppModel.swift`,
   `SimDeck/Sources/App/SimDeckApp.swift`, `SimDeck/Sources/MCP/McpServer.swift`,

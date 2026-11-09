@@ -367,11 +367,62 @@ final class McpServer {
       return json(["deleted": device.name])
 
     case "tap":
+      let device = try findDevice(arguments, model: model)
+      if let label = arguments["label"] as? String, !label.isEmpty {
+        guard device.os == .android else {
+          throw McpToolError.message(
+            "Tapping by label supports Android devices only; pass x and y on iOS.")
+        }
+        guard let serial = device.serial else {
+          throw McpToolError.message("Start \(device.name) first.")
+        }
+        let session = try await liveSession(arguments, model: model)
+        let timeout = min(max(arguments["timeout_ms"] as? Int ?? 5000, 0), 60000)
+        let index = arguments["index"] as? Int ?? 0
+        let deadline = Date().addingTimeInterval(Double(timeout) / 1000)
+        while true {
+          let elements = await UiAutomation.elements(serial: serial)
+          if let element = UiAutomation.locate(
+            label: label, index: index, in: elements)
+          {
+            session.touch(.down, x: element.center.x, y: element.center.y)
+            try? await Task.sleep(nanoseconds: 60_000_000)
+            session.touch(.up, x: element.center.x, y: element.center.y)
+            return json([
+              "tapped": ["x": element.center.x, "y": element.center.y],
+              "label": element.label,
+            ])
+          }
+          if Date() >= deadline {
+            throw McpToolError.message("No element matches \(label).")
+          }
+          try? await Task.sleep(nanoseconds: 400_000_000)
+        }
+      }
+      guard arguments["x"] != nil, arguments["y"] != nil else {
+        throw McpToolError.message("Pass x and y, or a label.")
+      }
       let session = try await liveSession(arguments, model: model)
       let x = number(arguments["x"]), y = number(arguments["y"])
       session.touch(.down, x: x, y: y)
       session.touch(.up, x: x, y: y)
       return json(["tapped": ["x": x, "y": y]])
+
+    case "find_elements":
+      let device = try findDevice(arguments, model: model)
+      guard device.os == .android, let serial = device.serial else {
+        throw McpToolError.message(
+          "find_elements supports Android devices only.")
+      }
+      let all = await UiAutomation.elements(serial: serial)
+      let query = (arguments["label"] as? String ?? "")
+        .trimmingCharacters(in: .whitespaces)
+      let shown = all.filter { element in
+        query.isEmpty
+          ? !element.label.isEmpty || !element.value.isEmpty
+          : UiElement.contains(element, query)
+      }
+      return json(["elements": shown.map(\.json)])
 
     case "swipe":
       let session = try await liveSession(arguments, model: model)
@@ -544,9 +595,22 @@ final class McpServer {
       tool("shutdown_device", "Shut a device down.", properties: ["device": string], required: ["device"]),
       tool("delete_device", "Delete an emulator or simulator.", properties: ["device": string], required: ["device"]),
       tool(
-        "tap", "Tap at normalized coordinates (0…1).",
-        properties: ["device": string, "x": number, "y": number],
-        required: ["device", "x", "y"]),
+        "tap",
+        "Tap at x,y normalized to 0..1, or on the element whose label, id or value matches label (exact, else contains; case-insensitive), waiting up to timeout_ms for it. Labels come from find_elements and work across screen sizes.",
+        properties: [
+          "device": string, "x": number, "y": number, "label": string,
+          "timeout_ms": ["type": "integer", "default": 5000],
+          "index": [
+            "type": "integer", "default": 0,
+            "description": "Which match when several share the label, in screen order; -1 is the last",
+          ],
+        ],
+        required: ["device"]),
+      tool(
+        "find_elements",
+        "Elements on screen from the Android accessibility tree: label, id, value, role, center x/y and frame [left, top, right, bottom], all normalized 0..1. Pass label to keep only matching ones; unfiltered, id-only containers are left out. Use these labels with tap {label}.",
+        properties: ["device": string, "label": string],
+        required: ["device"]),
       tool(
         "swipe", "Swipe between normalized coordinates.",
         properties: [
