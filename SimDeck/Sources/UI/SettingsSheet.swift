@@ -78,6 +78,17 @@ struct SettingsSheet: View {
       Text("Screenshots and screen recordings are saved here.")
         .font(t.caption)
         .foregroundStyle(t.textMuted)
+      Picker(
+        "Grid recording quality",
+        selection: Binding(
+          get: { model.gridQuality },
+          set: { model.setGridQuality($0) })
+      ) {
+        ForEach(GridRecordQuality.allCases) { quality in
+          Text(quality.label).tag(quality)
+        }
+      }
+      .pickerStyle(.menu)
     }
   }
 

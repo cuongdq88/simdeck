@@ -292,6 +292,24 @@ final class McpServer {
       await model.openStream(device)
       return json(["streaming": device.name])
 
+    case "record_grid":
+      let quality = GridRecordQuality(
+        rawValue: arguments["quality"] as? String ?? "") ?? model.gridQuality
+      let wasRecording = model.isGridRecording
+      let saved = await model.toggleGridRecording(quality: quality)
+      if wasRecording {
+        guard let saved else {
+          throw McpToolError.message(
+            model.errorMessage ?? "Could not finish the grid recording.")
+        }
+        return json(["saved": saved.path])
+      }
+      guard model.isGridRecording, let url = model.gridRecordingURL else {
+        throw McpToolError.message(
+          model.errorMessage ?? "Could not record the grid.")
+      }
+      return json(["recording": "grid", "quality": quality.rawValue, "path": url.path])
+
     case "get_spotlight":
       let focus = model.layout == .grid ? nil : model.spotlightKey
       var focusValue: Any = NSNull()
@@ -629,6 +647,15 @@ final class McpServer {
         "record_device",
         "Toggle recording a running device. Returns the saved file when stopping.",
         properties: ["device": string], required: ["device"]),
+      tool(
+        "record_grid",
+        "Toggle recording the whole SimDeck grid (all tiles) to an MP4; grid and device recordings do not run together. quality: low (15 fps, 720p), standard (24 fps, 1280 px), high (30 fps, full size) or smooth (60 fps, full size); defaults to the app's setting.",
+        properties: [
+          "quality": [
+            "type": "string",
+            "enum": GridRecordQuality.allCases.map(\.rawValue),
+          ]
+        ]),
       tool(
         "get_spotlight",
         "The stream layout, the device shown large in the spotlight (null in the grid layout or with no streams) and each open stream with its fps and how long it has been recording."),

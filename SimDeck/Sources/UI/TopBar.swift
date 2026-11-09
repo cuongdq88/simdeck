@@ -11,6 +11,7 @@ struct TopBar: View {
   @State private var environmentShown = false
   @State private var mcpShown = false
   @State private var noticesShown = false
+  @State private var recordingsShown = false
 
   var body: some View {
     HStack {
@@ -59,6 +60,17 @@ struct TopBar: View {
             mcp
           }
         SimuToolbarDivider()
+        gridRecordingControl
+        SimuIconButton(
+          icon: "film",
+          help: "Recordings",
+          active: recordingsShown,
+          action: { recordingsShown.toggle() })
+          .sheet(isPresented: $recordingsShown) {
+            RecordingsList()
+              .environment(\.simu, t)
+          }
+        SimuToolbarDivider()
         SimuIconButton(
           icon: "bell",
           help: "Recent notifications",
@@ -86,6 +98,45 @@ struct TopBar: View {
     .padding(.trailing, 16)
     .frame(height: 52)
     .background(t.page)
+  }
+
+  private var gridRecordingControl: some View {
+    Group {
+      if let start = model.gridRecordingStart {
+        HStack(spacing: 6) {
+          Circle().fill(t.danger).frame(width: 6, height: 6)
+          Text(elapsed(since: start))
+            .font(t.monoSmall)
+            .foregroundStyle(t.danger)
+          SimuIconButton(icon: "stop.fill", help: "Stop grid recording", color: t.danger) {
+            Task { await model.toggleGridRecording() }
+          }
+        }
+      } else {
+        Menu {
+          ForEach(GridRecordQuality.allCases) { quality in
+            Button("Record — \(quality.label)") {
+              Task { await model.toggleGridRecording(quality: quality) }
+            }
+          }
+        } label: {
+          Image(systemName: "record.circle")
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(t.textMuted)
+            .frame(width: 26, height: 26)
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help("Record the grid")
+      }
+    }
+  }
+
+  private func elapsed(since start: Date) -> String {
+    let seconds = max(0, Int(Date().timeIntervalSince(start)))
+    return String(format: "%d:%02d", seconds / 60, seconds % 60)
   }
 
   private var environment: some View {
@@ -212,5 +263,100 @@ struct TopBar: View {
     .frame(width: 380)
     .onAppear { model.markNoticesRead() }
     .onChange(of: model.notices.count) { _, _ in model.markNoticesRead() }
+  }
+}
+
+/// Saved screen recordings from the capture folder.
+struct RecordingsList: View {
+  @EnvironmentObject private var model: AppModel
+  @Environment(\.dismiss) private var dismiss
+  @Environment(\.simu) private var t
+
+  @State private var files: [URL] = []
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(alignment: .top) {
+        VStack(alignment: .leading, spacing: 3) {
+          Text("Recordings")
+            .font(.system(size: 17, weight: .semibold))
+            .foregroundStyle(t.text)
+          Text(model.recordingDirectory.path)
+            .font(t.monoSmall)
+            .foregroundStyle(t.textMuted)
+            .lineLimit(1)
+            .truncationMode(.middle)
+        }
+        Spacer(minLength: 12)
+        SimuButton(label: "Open folder", icon: "folder") {
+          NSWorkspace.shared.open(model.recordingDirectory)
+        }
+        SimuIconButton(icon: "xmark", help: "Close", size: 14) { dismiss() }
+      }
+      .padding(20)
+      Divider()
+      if files.isEmpty {
+        VStack(spacing: 8) {
+          Text("No recordings yet")
+            .font(t.body)
+            .foregroundStyle(t.text)
+          Text("Record a device from its tile, or the grid from the top bar.")
+            .font(t.caption)
+            .foregroundStyle(t.textMuted)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else {
+        ScrollView {
+          VStack(spacing: 0) {
+            ForEach(files, id: \.self) { file in
+              row(file)
+              Divider()
+            }
+          }
+        }
+        .padding(.horizontal, 16)
+      }
+    }
+    .frame(width: 560, height: 420)
+    .background(t.panel)
+    .onAppear { files = model.savedRecordings() }
+  }
+
+  private func row(_ url: URL) -> some View {
+    HStack(spacing: 8) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(url.deletingPathExtension().lastPathComponent)
+          .font(.system(size: 12))
+          .foregroundStyle(t.text)
+          .lineLimit(1)
+          .truncationMode(.middle)
+        Text(meta(url))
+          .font(t.monoSmall)
+          .foregroundStyle(t.textMuted)
+      }
+      Spacer(minLength: 6)
+      SimuIconButton(icon: "play.rectangle", help: "Open", size: 13) {
+        NSWorkspace.shared.open(url)
+      }
+      SimuIconButton(icon: "folder", help: "Reveal in Finder", size: 13) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+      }
+      SimuIconButton(icon: "trash", help: "Move to Trash", size: 13) {
+        try? FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        files = model.savedRecordings()
+      }
+    }
+    .padding(.vertical, 8)
+  }
+
+  private func meta(_ url: URL) -> String {
+    let values = try? url.resourceValues(
+      forKeys: [.fileSizeKey, .contentModificationDateKey])
+    let size = values?.fileSize.map {
+      ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .file)
+    } ?? ""
+    let date = values?.contentModificationDate?.formatted(
+      date: .abbreviated, time: .shortened) ?? ""
+    return [date, size].filter { !$0.isEmpty }.joined(separator: " · ")
   }
 }

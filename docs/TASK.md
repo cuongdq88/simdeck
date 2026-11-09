@@ -8,7 +8,7 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `main`.
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
   (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
-- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (22 tool), CLI
+- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (23 tool), CLI
   `SimDeck/bin/simdeck`, bridge stdio `SimDeck/bin/simdeck-mcp` (OpenCode dùng bridge,
   tự bật app). `start_device` luôn boot headless — không có cửa sổ emulator riêng.
 - **License**: MIT © 2026 cuongdq88 (`LICENSE`), notices third-party trong
@@ -28,13 +28,11 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Tiếp theo
 
-- [ ] **SD-019 — MCP parity, phần còn lại (4 tool)** sau SD-014:
+- [ ] **SD-019 — MCP parity, phần còn lại (3 tool)** sau SD-014:
       - `run_scenario` / `stop_scenario` — **chờ SD-010**
-      - `record_grid` — **chờ SD-012**
       - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; chưa chốt
         có giữ hay bỏ (bản Swift chưa có slim mode)
 - [ ] **SD-010 — Scenarios**: YAML, editor, runner + panel bên phải
-- [ ] **SD-012 — Grid recording**: ScreenCaptureKit + chọn chất lượng + danh sách recording đã lưu
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI — hiện blocked vì SwiftUI `WindowGroup` luôn mở cửa sổ
 - [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
       (blocked: chưa có máy)
@@ -49,12 +47,17 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Chrome thật DeviceKit cho iOS (bezel, mask, nút cạnh)
 - [x] Screenshot, quay màn hình (REC clock), xoá/wipe an toàn
 - [x] SDK Manager: image đã cài, tải về, licence, chặn xoá image đang dùng
-- [x] MCP server loopback (22 tool)
-- [x] **SD-014** MCP tool parity (22/27 tool): thêm `get_spotlight`, `connect_device`,
+- [x] MCP server loopback (23 tool)
+- [x] **SD-014** MCP tool parity (23/27 tool): thêm `get_spotlight`, `connect_device`,
       `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
-      `find_elements` và `tap {label}` (đọc cây `uiautomator dump`, tap theo nhãn/id/value).
-      `find_elements`/`tap {label}` chỉ chạy trên Android; iOS simulator trả lỗi rõ.
-      4 tool còn lại theo dõi ở **SD-019**
+      `find_elements`, `tap {label}` (đọc cây `uiautomator dump`, tap theo nhãn/id/value)
+      và `record_grid`. `find_elements`/`tap {label}` chỉ chạy trên Android; iOS
+      simulator trả lỗi rõ. 3 tool còn lại theo dõi ở **SD-019**
+- [x] **SD-012** Grid recording: quay toàn bộ cửa sổ SimDeck bằng ScreenCaptureKit ra
+      H.264 MP4, 4 mức chất lượng low/standard/high/smooth (15/24/30/60 fps,
+      720p/1280 px/full size) chọn trong Settings và lưu vào `settings.json`; top bar
+      có REC + đồng hồ và nút dừng; cửa sổ Recordings liệt kê file trong thư mục capture
+      (mở / Reveal in Finder / xoá). Chỉ một recording (lưới hoặc thiết bị) chạy một lúc
 - [x] Layout grid + spotlight dọc/ngang, kéo-thả đổi thứ tự tile
 - [x] Thông báo in-app (panel góc dưới phải) cho start/stop/stream/capture/SDK, có cả trên sheet
 - [x] **SD-009** Notification Center: panel thông báo ở góc dưới phải cửa sổ, các mục

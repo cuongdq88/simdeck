@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 @MainActor
@@ -13,6 +14,8 @@ final class AppModel: ObservableObject {
   @Published private(set) var androidHome = ""
   @Published private(set) var webcams: [String] = []
   @Published private(set) var recordingStarts: [String: Date] = [:]
+  @Published private(set) var gridRecordingStart: Date?
+  @Published private(set) var gridRecordingURL: URL?
   @Published private(set) var remoteImages: [RemoteImage] = []
   @Published private(set) var installing: Set<String> = []
   @Published private(set) var installProgress: [String: Double] = [:]
@@ -45,6 +48,7 @@ final class AppModel: ObservableObject {
   }
 
   private let emulator = EmulatorController()
+  private let gridRecorder = GridRecorder()
   let settingsStore = DeviceSettingsStore()
   private var loop: Task<Void, Never>?
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
@@ -648,6 +652,10 @@ final class AppModel: ObservableObject {
 
   @discardableResult
   func toggleRecording(_ device: Device) async -> URL? {
+    if isGridRecording {
+      errorMessage = "Stop the grid recording before recording one device."
+      return nil
+    }
     if device.os == .ios && device.kind == .physical {
       errorMessage = "Recording a USB iOS device is not supported yet."
       return nil
@@ -669,6 +677,76 @@ final class AppModel: ObservableObject {
       }
     }
     return nil
+  }
+
+  // MARK: - Grid recording
+
+  var isGridRecording: Bool { gridRecordingStart != nil }
+  var gridQuality: GridRecordQuality { settingsStore.gridQuality }
+
+  func setGridQuality(_ value: GridRecordQuality) {
+    settingsStore.setGridQuality(value)
+    objectWillChange.send()
+  }
+
+  /// `nil` goes back to the saved quality. Returns the file when stopping.
+  @discardableResult
+  func toggleGridRecording(quality: GridRecordQuality? = nil) async -> URL? {
+    if gridRecordingStart != nil {
+      let url = await gridRecorder.stop()
+      gridRecordingStart = nil
+      gridRecordingURL = nil
+      guard let url else {
+        errorMessage = "Could not finish the grid recording."
+        return nil
+      }
+      showNotice("Recording saved to \(url.lastPathComponent)")
+      return url
+    }
+    guard recordings.isEmpty else {
+      errorMessage = "Stop the device recordings before recording the grid."
+      return nil
+    }
+    guard let window = mainWindow() else {
+      errorMessage = "Show the SimDeck window before recording the grid."
+      return nil
+    }
+    do {
+      let url = try await gridRecorder.start(
+        quality: quality ?? settingsStore.gridQuality,
+        windowNumber: window.windowNumber)
+      gridRecordingStart = gridRecorder.startDate ?? Date()
+      gridRecordingURL = url
+      showNotice("Recording the grid…")
+    } catch {
+      errorMessage = error.localizedDescription
+    }
+    return nil
+  }
+
+  /// Recordings in the capture folder, newest first.
+  func savedRecordings() -> [URL] {
+    let keys: [URLResourceKey] = [.contentModificationDateKey, .fileSizeKey]
+    let files =
+      (try? FileManager.default.contentsOfDirectory(
+        at: CaptureService.directory, includingPropertiesForKeys: keys,
+        options: [.skipsHiddenFiles])) ?? []
+    return files
+      .filter { ["mp4", "mov"].contains($0.pathExtension.lowercased()) }
+      .sorted { modified($0) > modified($1) }
+  }
+
+  private func modified(_ url: URL) -> Date {
+    (try? url.resourceValues(forKeys: [.contentModificationDateKey])
+      .contentModificationDate) ?? .distantPast
+  }
+
+  /// The main SwiftUI window; sheets, panels and popovers are excluded.
+  private func mainWindow() -> NSWindow? {
+    NSApp.windows.first {
+      $0.isVisible && $0.sheetParent == nil && $0.styleMask.contains(.titled)
+        && !($0 is NSPanel)
+    }
   }
 
   func showNotice(_ text: String) {

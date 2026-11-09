@@ -51,15 +51,21 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   `tap {"label":"Network & internet"}` mở đúng màn Network & internet (screenshot),
   nhãn không tồn tại với `timeout_ms:1200` trả `No element matches …` sau ~2 s;
   `tap {x,y}` vẫn chạy; iOS simulator trả lỗi "supports Android devices only".
+- SD-012 grid recording (2026-11-09): Release **BUILD SUCCEEDED**; `record_grid` qua MCP
+  ghi MP4 H.264: low → 720×440, 15 fps, 7.7 s; high → 2844×1742 (2× cửa sổ), ~30 fps.
+  Frame trích ra cho thấy đúng cả cửa sổ (sidebar, top bar, panel thông báo, đồng hồ
+  REC). Settings đổi quality → `gridQuality: high` trong `settings.json`, lần record
+  sau dùng đúng high. Guard: đang record E1 thì `record_grid` trả "Stop the device
+  recordings before recording the grid." Cửa sổ Recordings (film icon) liệt kê file với
+  ngày + dung lượng và nút mở/Reveal/xoá. Đã trả quality về `standard`, xoá file test.
 
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
-- **SD-012** Grid recording (ScreenCaptureKit) + thư viện recording — Pending.
-- **SD-014** MCP parity: 22/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
+- **SD-014** MCP parity: 23/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
   `connect_device`, `pair_device`, `disconnect_device`, `record_device`, `install_app`,
-  `launch_app`, `find_elements`, `tap {label}`); còn `run_scenario`/`stop_scenario`
-  (chờ SD-010), `record_grid` (chờ SD-012), `set_slim`/`set_slim_mode`, `repair_input`
+  `launch_app`, `find_elements`, `tap {label}`, `record_grid`); còn `run_scenario`/
+  `stop_scenario` (chờ SD-010), `set_slim`/`set_slim_mode`, `repair_input`
   (iOS simulator) — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).

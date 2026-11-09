@@ -44,6 +44,7 @@ final class DeviceSettingsStore: ObservableObject {
   @Published private(set) var spotlightKey: String?
   /// Empty keeps `CaptureService`'s default, `~/Pictures/SimDeck`.
   @Published private(set) var recordingFolder = ""
+  @Published private(set) var gridQuality: GridRecordQuality = .standard
 
   private let url: URL
 
@@ -97,6 +98,11 @@ final class DeviceSettingsStore: ObservableObject {
     save()
   }
 
+  func setGridQuality(_ value: GridRecordQuality) {
+    gridQuality = value
+    save()
+  }
+
   var recordingDirectory: URL? {
     recordingFolder.isEmpty
       ? nil : URL(fileURLWithPath: recordingFolder, isDirectory: true)
@@ -121,6 +127,7 @@ final class DeviceSettingsStore: ObservableObject {
     recordingFolder = decoded.recordingFolder ?? ""
     layout = StreamLayout(rawValue: decoded.layout ?? "") ?? .grid
     spotlightKey = decoded.spotlightKey
+    gridQuality = GridRecordQuality(rawValue: decoded.gridQuality ?? "") ?? .standard
   }
 
   private func save() {
@@ -130,7 +137,8 @@ final class DeviceSettingsStore: ObservableObject {
       frameDefault: frameDefault,
       recordingFolder: recordingFolder,
       layout: layout.rawValue,
-      spotlightKey: spotlightKey)
+      spotlightKey: spotlightKey,
+      gridQuality: gridQuality.rawValue)
     guard let data = try? JSONEncoder().encode(stored) else { return }
     try? data.write(to: url, options: .atomic)
   }
@@ -142,5 +150,6 @@ final class DeviceSettingsStore: ObservableObject {
     var recordingFolder: String?
     var layout: String?
     var spotlightKey: String?
+    var gridQuality: String?
   }
 }
