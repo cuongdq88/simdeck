@@ -8,7 +8,7 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   Do not claim it is notarized; no Developer ID identity is installed.
 
 ## Trạng thái repo
-- Nhánh: `simdeck/main` → `origin/main`; commit mới nhất `f2fd300`.
+- Nhánh: `master` → `origin/master`; commit mới nhất `5dcca85`.
 - DMG ignored by Git under `SimDeck/build-release/`; checkpoint edits in `docs/`
   are uncommitted.
 - Commit gần đây: `5cbd839` (fix double-close + reconnect loop), `0013de0`

@@ -15,7 +15,7 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   - MIT © 2026 cuongdq88; repo public.
 
 ## Trạng thái đã xác minh
-- Nhánh `simdeck/main` → `origin/main`; commit mới nhất `f2fd300`.
+- Nhánh `master` → `origin/master`; commit mới nhất `5dcca85`.
 - Repo: https://github.com/cuongdq88/simdeck (public).
 - Working tree sạch.
 - App Release đang chạy từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`

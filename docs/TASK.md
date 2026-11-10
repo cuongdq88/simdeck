@@ -5,7 +5,7 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Trạng thái hiện tại (2026-11-08)
 
-- **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `main`.
+- **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `master`.
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
   (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
 - **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (23 tool), CLI
