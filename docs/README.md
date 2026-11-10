@@ -25,6 +25,13 @@
 - **[SimDeck/AGENT.md](../SimDeck/AGENT.md)** — how agents drive devices through SimDeck
 - **[PROJECT_STATE.md](PROJECT_STATE.md)** — verification status and architecture notes
 - **[TASK.md](TASK.md)** — roadmap and remaining work
+- **[SESSION_HANDOFF.md](SESSION_HANDOFF.md)** — where the last session stopped and what to run
+
+## Download
+
+[SimDeck 1.0.0](https://github.com/cuongdq88/simdeck/releases/tag/simdeck-v1.0.0)
+(`SimDeck-1.0.0-macos-arm64.dmg`). Ad-hoc signed: after copying it to
+Applications run `xattr -dr com.apple.quarantine /Applications/SimDeck.app`.
 
 ## Screenshots
 

@@ -26,6 +26,18 @@ SimDeck is a native macOS application built with SwiftUI to create, boot, stream
 
 ---
 
+## ⬇️ Download
+
+[**SimDeck 1.0.0**](https://github.com/cuongdq88/simdeck/releases/tag/simdeck-v1.0.0) — `SimDeck-1.0.0-macos-arm64.dmg` (macOS 14+, Apple silicon). The build is ad-hoc signed, so clear the quarantine flag once after copying it to Applications:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/SimDeck.app
+```
+
+It still needs Xcode (for `simctl` and the simulator runtimes it links against) and the Android SDK (`adb`, `emulator`) on the Mac.
+
+---
+
 ## ✨ Features
 
 - **Multi-Device Unified Streaming**: Stream multiple Android emulators and iOS simulators concurrently in responsive adaptive grid or spotlight layouts.
@@ -34,7 +46,9 @@ SimDeck is a native macOS application built with SwiftUI to create, boot, stream
 - **Realistic Device Frames**: Native Xcode DeviceKit bezels, dynamic island/notch cutouts, and clickable hardware buttons.
 - **No Heavy IDE Dependencies**: Create and edit Android Virtual Devices (AVDs) directly through `config.ini` templates — no Java runtime or `avdmanager` required.
 - **Built-in Android SDK Manager**: Discover, inspect, and install Android SDK system images directly within the app.
-- **AI Agent & MCP Ready**: Serves a loopback Model Context Protocol (MCP) HTTP endpoint (`http://127.0.0.1:8765/mcp`) with 14 tools for automated headless device control (boot, tap, swipe, type, screenshot, terminate).
+- **AI Agent & MCP Ready**: Serves a loopback Model Context Protocol (MCP) HTTP endpoint (`http://127.0.0.1:8765/mcp`) with 23 tools for automated headless device control, plus the `SimDeck/bin/simdeck` CLI and a stdio bridge (`SimDeck/bin/simdeck-mcp`) for agents that cannot speak HTTP.
+- **Whole-Grid Recording**: Records the whole SimDeck window with ScreenCaptureKit to an H.264 MP4 at four quality levels (15/24/30/60 fps, 720p, 1280 px or full size), with a recordings browser that opens, reveals or trashes the files.
+- **Notifications & Settings**: In-app notification panel with a 50-item history, and a Settings sheet (⌘,) for the default headless mode, recording folder, layout, device frame and grid-recording quality.
 - **Developer Tools**: Live Logcat viewer with severity filters, ADB Wi-Fi pairing (mDNS / manual code), and one-click screenshots/screen recordings saved to disk.
 
 ---
@@ -103,17 +117,16 @@ Add SimDeck to your agent configuration:
 }
 ```
 
-### Supported MCP Tools
+### Supported MCP Tools (23)
 
-- `list_devices`: List all local emulators, simulators, and physical devices.
-- `start_device`: Boot a device headless and immediately stream its UI inside SimDeck.
-- `stop_device`: Gracefully shut down an emulator or simulator.
-- `tap`: Send tap at normalized coordinates `(x, y)` from `0.0` to `1.0`.
-- `swipe`: Smooth swipe gesture between `(x1, y1)` and `(x2, y2)`.
-- `type_text`: Type text input into the focused element.
-- `press_button`: Trigger hardware keys (`home`, `back`, `volume_up`, `volume_down`, `power`).
-- `screenshot`: Capture a high-res PNG frame of the device screen.
-- `create_avd` / `create_simulator`: Programmatically provision virtual devices.
+- `list_devices`, `get_device_catalogs` — devices, images and hardware profiles.
+- `create_avd`, `create_simulator`, `delete_device` — provision and remove devices.
+- `start_device`, `stream_device`, `stop_device`, `shutdown_device` — boot headless, open a tile, shut down.
+- `connect_device`, `pair_device`, `disconnect_device` — ADB over Wi-Fi.
+- `tap` (normalized point or accessibility label), `swipe`, `type_text`, `press_button`, `find_elements` — input and lookup. `find_elements` and `tap {label}` read the Android accessibility tree and return an explicit error on iOS simulators.
+- `install_app`, `launch_app` — install an APK or simulator `.app`, then launch it.
+- `screenshot`, `record_device`, `record_grid` — capture a frame, one device or the whole grid.
+- `get_spotlight` — current layout, focus and open streams.
 
 For shell-only workflows, use the bundled CLI bridge:
 
@@ -138,6 +151,7 @@ simdeck/
 ├── docs/                 # Documentation & media assets
 │   ├── assets/           # Screenshots, demo video, and GIF
 │   ├── PROJECT_STATE.md  # Engineering state and verification log
+│   ├── SESSION_HANDOFF.md # Where the last session stopped
 │   └── TASK.md           # Roadmap and ongoing tasks
 ├── third_party/          # Third-party notices and licenses
 └── LICENSE               # MIT License

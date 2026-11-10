@@ -3,9 +3,15 @@
 App SwiftUI trong `SimDeck/` **là toàn bộ app**; bản Flutter, `packages/` và các
 workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
-## Trạng thái hiện tại (2026-11-08)
+## Trạng thái hiện tại (2026-11-10)
 
-- **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**, nhánh `master`.
+- **Repo**: https://github.com/cuongdq88/simdeck — **PUBLIC**. Remote chỉ còn
+  `master` và đó là default branch; commit mới nhất `9951c97`.
+- **Release**: tag `simdeck-v1.0.0` (trỏ `5dcca85`), DMG
+  `SimDeck-1.0.0-macos-arm64.dmg` — 4,534,797 bytes, SHA-256
+  `11021a3d971a86c796279e9fd133584b472aa4aec2a5202a8fe32ffc67376885`,
+  ad-hoc signed:
+  https://github.com/cuongdq88/simdeck/releases/tag/simdeck-v1.0.0
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
   (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
 - **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (23 tool), CLI
@@ -28,11 +34,12 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Tiếp theo
 
-- [ ] **SD-019 — MCP parity, phần còn lại (3 tool)** sau SD-014:
+- [ ] **SD-019 — MCP parity, phần còn lại (5 tool của bản cũ 27 tool)** sau SD-014:
       - `run_scenario` / `stop_scenario` — **chờ SD-010**
-      - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; chưa chốt
-        có giữ hay bỏ (bản Swift chưa có slim mode)
-- [ ] **SD-010 — Scenarios**: YAML, editor, runner + panel bên phải
+      - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; bản Swift
+        không có slim mode nên nhiều khả năng bỏ, chưa chốt
+- [ ] **SD-010 — Scenarios**: YAML (đúng format cũ), editor, runner chạy song song
+      nhiều máy + panel bên phải hiện tiến trình; mở khoá `run_scenario`/`stop_scenario`
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI — hiện blocked vì SwiftUI `WindowGroup` luôn mở cửa sổ
 - [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
       (blocked: chưa có máy)
@@ -48,11 +55,16 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Screenshot, quay màn hình (REC clock), xoá/wipe an toàn
 - [x] SDK Manager: image đã cài, tải về, licence, chặn xoá image đang dùng
 - [x] MCP server loopback (23 tool)
-- [x] **SD-014** MCP tool parity (23/27 tool): thêm `get_spotlight`, `connect_device`,
-      `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
-      `find_elements`, `tap {label}` (đọc cây `uiautomator dump`, tap theo nhãn/id/value)
-      và `record_grid`. `find_elements`/`tap {label}` chỉ chạy trên Android; iOS
-      simulator trả lỗi rõ. 3 tool còn lại theo dõi ở **SD-019**
+- [x] **SD-014** MCP tool parity: bản cũ 27 tool, bản Swift 23 tool — thêm
+      `get_spotlight`, `connect_device`, `pair_device`, `disconnect_device`,
+      `record_device`, `install_app`, `launch_app`, `find_elements`, `tap {label}`
+      (đọc cây `uiautomator dump`, tap theo nhãn/id/value) và `record_grid`, cộng thêm
+      `stop_device` mà bản cũ không có. `find_elements`/`tap {label}` chỉ chạy trên
+      Android; iOS simulator trả lỗi rõ. 5 tool còn thiếu theo dõi ở **SD-019**
+- [x] **Release 1.0.0** (2026-11-09): build Release từ `5dcca85`, DMG `UDZO` có app +
+      link Applications + `LICENSE` + `third_party/`, `hdiutil verify` VALID, mount thử
+      OK; tag + GitHub Release `simdeck-v1.0.0` kèm asset DMG. GitHub sau đó đổi
+      `main` → `master` (default branch) và docs trỏ theo `master`.
 - [x] **SD-012** Grid recording: quay toàn bộ cửa sổ SimDeck bằng ScreenCaptureKit ra
       H.264 MP4, 4 mức chất lượng low/standard/high/smooth (15/24/30/60 fps,
       720p/1280 px/full size) chọn trong Settings và lưu vào `settings.json`; top bar

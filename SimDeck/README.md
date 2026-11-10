@@ -1,13 +1,13 @@
 # SimDeck (SwiftUI)
 
-A native macOS rewrite of SimDeck: create, run, stream and delete Android
-emulators and iOS simulators. It shares **no code** with the Flutter app in
-`app/`, the `packages/simutil_*` libraries or the Rust `emu` helper — the only
-external pieces are the platform tools themselves (`adb`, `emulator`,
-`xcrun simctl`) and the bundled `scrcpy-server`.
+A native macOS app: create, run, stream and delete Android emulators and iOS
+simulators. The Flutter predecessor, its `packages/simutil_*` libraries and the
+Rust `emu` helper are gone from the repo; the only external pieces are the
+platform tools themselves (`adb`, `emulator`, `xcrun simctl`) and the bundled
+`scrcpy-server`.
 
-The UI is a one-to-one port of SimUtil's design system (tokens, sidebar, top
-bar, stream tiles), so both shells look the same.
+The UI follows SimUtil's design system one-to-one (tokens, sidebar, top bar,
+stream tiles).
 
 ## Requirements
 
@@ -25,9 +25,13 @@ bar, stream tiles), so both shells look the same.
 cd SimDeck
 xcodegen generate                # project.yml -> SimDeck.xcodeproj
 xcodebuild -project SimDeck.xcodeproj -scheme SimDeck \
-  -configuration Debug -derivedDataPath build build
-open build/Build/Products/Debug/SimDeck.app
+  -configuration Release -derivedDataPath build-release build
+open build-release/Build/Products/Release/SimDeck.app
 ```
+
+A universal build needs `ARCHS="arm64 x86_64"`; the released DMG is arm64 only
+and ad-hoc signed (`xattr -dr com.apple.quarantine SimDeck.app` after copying
+it to Applications).
 
 The app loads Xcode's private `CoreSimulator` / `SimulatorKit` frameworks at
 runtime for the simulator screen and input, so a signed build needs the
@@ -48,12 +52,14 @@ runtime for the simulator screen and input, so a signed build needs the
 | Create AVD | writes `config.ini` from a built-in hardware profile catalog |
 | Edit AVD | RAM, data size, back camera, orientation, keyboard and SD card; every other key and comment is preserved |
 | Launch options | per device: headless, cold boot (no snapshot), camera source (restarts the emulator), restart |
-| Settings | `~/Library/Application Support/SimDeck/settings.json` (headless, cold boot, camera, frame) |
+| Settings | `~/Library/Application Support/SimDeck/settings.json`: default headless, recording folder, default layout, default device frame and grid-recording quality. Sheet opens from the gear or ⌘, |
+| Notifications | Stacked panel at the window's bottom-right (newest first, auto-dismiss, per-card close) and a bell with a 50-item session history that can replay a notice |
+| Grid recording | ScreenCaptureKit records the whole window to an H.264 MP4 in the capture folder; four qualities; the recordings sheet lists MP4/MOV files with open, reveal and trash |
 | Create simulator | `xcrun simctl create` |
 | Screenshots | `adb exec-out screencap` / `simctl io screenshot`, saved to `~/Pictures/SimDeck` |
 | Recording | `adb shell screenrecord` (pulled back) / `simctl io recordVideo`, with a REC clock in the tile |
 | SDK Manager | installed images by scanning the SDK; downloads and licence acceptance through `sdkmanager` |
-| MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` (14 tools: list/create/start/stop/delete, tap, swipe, type, buttons, screenshot) |
+| MCP server | loopback Streamable HTTP at `http://127.0.0.1:8765/mcp` with 23 tools (see below) |
 | Wi-Fi pairing | adb's mDNS pairing/connect services, or manual address and pairing code |
 | Logcat | live `adb logcat -v time` with a text filter, V/D/I/W/E threshold, pause, clear and copy |
 | Layouts | adaptive grid, or a spotlight with the rest in a strip on the right / bottom; the choice and focus persist |
@@ -69,7 +75,8 @@ runtime for the simulator screen and input, so a signed build needs the
 | `Sources/UI` | sidebar, top bar, grid, tiles, device frame, create sheet |
 | `Sources/Android` | SDK paths, AVD store/creator, images, profiles, adb, emulator control, deletion guard, SDK Manager |
 | `Sources/Apple` | `simctl` service |
-| `Sources/Capture` | screenshots and screen recordings |
+| `Sources/Capture` | screenshots, device recordings, the grid recorder |
+| `Sources/Settings` | persisted `settings.json` store |
 | `Sources/MCP` | loopback MCP server and tools |
 | `Sources/Streaming` | scrcpy protocol/session, H.264 decoder, simulator capture and HID, video sink/layer |
 | `Resources` | bundled `scrcpy-server` (Genymobile/scrcpy, Apache-2.0) and the logo |
@@ -92,10 +99,21 @@ The app serves MCP over HTTP on loopback while it runs
 { "mcp": { "simdeck": { "type": "remote", "url": "http://127.0.0.1:8765/mcp" } } }
 ```
 
-Tools: `list_devices`, `get_device_catalogs`, `create_avd`,
-`create_simulator`, `start_device`, `stream_device`, `stop_device`,
-`shutdown_device`, `delete_device`, `tap`, `swipe`, `type_text`,
-`press_button`, `screenshot`.
+`tools/list` returns 23 tools:
+
+- Devices: `list_devices`, `get_device_catalogs`, `create_avd`,
+  `create_simulator`, `delete_device`, `start_device`, `stream_device`,
+  `stop_device`, `shutdown_device`.
+- Wireless: `connect_device`, `pair_device`, `disconnect_device`.
+- Input: `tap` (point or accessibility label), `swipe`, `type_text`,
+  `press_button`, `find_elements` (Android only).
+- Apps: `install_app`, `launch_app`.
+- Capture: `screenshot`, `record_device`, `record_grid`.
+- View: `get_spotlight`.
+
+Not implemented, from the old 27-tool surface: `run_scenario`,
+`stop_scenario` (waiting on scenarios), `set_slim`, `set_slim_mode` and
+`repair_input` (iOS simulator slim mode, which this app does not have).
 
 ## Agents
 
@@ -129,8 +147,9 @@ SimDeck/bin/simdeck stop "Pixel_9_API_36"
 
 ## Not ported yet
 
-Emulator gRPC video (Android uses scrcpy, which works headless too), scenarios,
-the plugin registry, grid recording, and MCP tool parity.
+Emulator gRPC video (Android uses scrcpy, which works headless too), scenarios
+and their `run_scenario` / `stop_scenario` tools, the plugin registry, and the
+iOS-simulator slim mode (`set_slim`, `set_slim_mode`, `repair_input`).
 
 ## Licence
 

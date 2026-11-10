@@ -1,6 +1,6 @@
 # Project State
 
-Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 
 ## Phạm vi & yêu cầu
 - Mục tiêu: **SimDeck** — app macOS native SwiftUI để tạo/chạy/stream/điều khiển
@@ -15,11 +15,17 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   - MIT © 2026 cuongdq88; repo public.
 
 ## Trạng thái đã xác minh
-- Nhánh `master` → `origin/master`; commit mới nhất `5dcca85`.
+- Nhánh `master` → `origin/master`; commit mới nhất `9951c97`. Remote chỉ còn
+  `master` và đó là default branch (đã đổi tên từ `main`).
 - Repo: https://github.com/cuongdq88/simdeck (public).
-- Working tree sạch.
+- Working tree **không** sạch: `AGENTS.md` bị environment sửa và `third_party/*`
+  đang ở trạng thái deleted — cả hai không phải thay đổi của dự án, không stage.
+- Release `simdeck-v1.0.0` (tag trỏ `5dcca85`) đã publish kèm
+  `SimDeck-1.0.0-macos-arm64.dmg`, 4,534,797 bytes, ad-hoc signed, SHA-256
+  `11021a3d971a86c796279e9fd133584b472aa4aec2a5202a8fe32ffc67376885`:
+  https://github.com/cuongdq88/simdeck/releases/tag/simdeck-v1.0.0
 - App Release đang chạy từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`
-  (build 2026-11-05 16:05, PID mới sau khi restart).
+  (build 2026-11-09 18:34 từ `5dcca85`).
 - MCP `initialize` trả HTTP 200.
 - Đã chạy được (kiểm tra thủ công):
   - Danh sách thiết bị gộp adb + qemu process + iOS simulator; stop diệt cả qemu khi
@@ -52,8 +58,8 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   - Vòng reconnect: `AppModel` reset `streamRetries` ngay khi `.live` nên lặp vô hạn.
     Giờ chỉ reset khi stream sống ≥ 30 s; status từ session đã bị thay thế bị bỏ qua.
   - Đã build Release + restart app bản mới, mở lại 3 tile E1/E2/E3 (đều `streaming: true`).
-- Chưa xác minh: các mục pending trong `TASK.md`; iPhone thật; build universal
-  (hiện chỉ arm64).
+- Chưa xác minh: các mục pending trong `TASK.md` (scenarios); iPhone thật; build
+  universal (hiện chỉ arm64).
 
 ## Quyết định kiến trúc
 - SwiftUI thuần + XcodeGen (`SimDeck/project.yml`), không phụ thuộc package ngoài.
@@ -73,11 +79,17 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 ## Kiểm chứng
 - Build Release: 2026-11-05 16:05, `xcodebuild -project SimDeck.xcodeproj -scheme SimDeck
   -configuration Release -derivedDataPath build-release build` → **BUILD SUCCEEDED**, arm64.
-- Build Release 2026-11-07 → **BUILD SUCCEEDED**, arm64. Verified DMG:
-  `SimDeck/build-release/SimDeck-1.0.0-macos-arm64.dmg`, with app, `LICENSE`,
-  `third_party/`, and Applications link. SHA-256:
-  `48f85721575ec3b53d5443bd2da1f3d7604fdf13e775ed12e001c39efb82bf33`.
-  DMG checksum, contents, and ad-hoc app signature verified.
+- Build Release 2026-11-07 → **BUILD SUCCEEDED**, arm64. DMG tạo ngày đó (SHA-256
+  `48f85721…bf33`) chỉ là bản thử, **không** phải bản phát hành.
+- Build Release 2026-11-09 (SD-012) → **BUILD SUCCEEDED**, arm64. DMG phát hành:
+  `SimDeck/build-release/SimDeck-1.0.0-macos-arm64.dmg` gồm `SimDeck.app`,
+  `LICENSE`, `third_party/` (5 file) và link Applications; `hdiutil verify` VALID,
+  mount thử liệt kê đúng, app ký ad-hoc. SHA-256
+  `11021a3d971a86c796279e9fd133584b472aa4aec2a5202a8fe32ffc67376885`.
+- GitHub Release `simdeck-v1.0.0` (2026-11-09): asset
+  `SimDeck-1.0.0-macos-arm64.dmg` state `uploaded`; sau đó branch `main` đổi tên
+  thành `master` và thành default branch.
+- MCP `tools/list` (2026-11-09): 23 tool.
 - Build Debug: 2026-11-05 15:48 → **BUILD SUCCEEDED**.
 - Build Release 2026-11-08 (SD-009/SD-015) → **BUILD SUCCEEDED**, arm64, không warning.
 - MCP `initialize`: 2026-11-02, HTTP 200.
@@ -106,8 +118,9 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   `ln -sfn ~/Library/Android/sdk/platform-tools/adb /opt/homebrew/bin/adb`.
 
 ## Mốc tiếp theo
-- DMG is available for upload if the user accepts ad-hoc signing. No Developer ID
-  identity is installed, so notarization and Gatekeeper validation remain pending
-  for a public end-user release.
+- **SD-010 Scenarios**: YAML đúng format bản cũ, editor, runner song song nhiều máy,
+  panel bên phải; sau đó mở khoá `run_scenario` / `stop_scenario` (SD-019).
+- Notarize: chưa có Developer ID, nên bản phát hành vẫn ad-hoc và cần
+  `xattr -dr com.apple.quarantine`.
 - Việc nên làm khi có thời gian: chặn `adb kill-server` trong quy trình build của
   `rangbox` / `xiao-zhu` (hoặc tách adb server) để stream không bị đứt định kỳ.

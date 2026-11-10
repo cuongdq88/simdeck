@@ -1,27 +1,32 @@
 # Session Handoff
 
-Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
+Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 
 ## Điểm vào để tiếp tục
-- Hành động chính xác tiếp theo: nếu được yêu cầu, upload
-  `SimDeck/build-release/SimDeck-1.0.0-macos-arm64.dmg` to a GitHub Release.
-  Do not claim it is notarized; no Developer ID identity is installed.
+- Hành động chính xác tiếp theo: **SD-010 Scenarios** — YAML đúng format bản cũ,
+  editor, runner song song nhiều máy, panel bên phải; sau đó thêm
+  `run_scenario` / `stop_scenario` cho SD-019.
+- Release 1.0.0 đã publish (tag `simdeck-v1.0.0` + DMG). Đừng nói bản này đã
+  notarize: chỉ ad-hoc signed, chưa có Developer ID.
 
 ## Trạng thái repo
-- Nhánh: `master` → `origin/master`; commit mới nhất `5dcca85`.
-- DMG ignored by Git under `SimDeck/build-release/`; checkpoint edits in `docs/`
-  are uncommitted.
-- Commit gần đây: `5cbd839` (fix double-close + reconnect loop), `0013de0`
-  (docs → `docs/`, `CLAUDE.md`, `AGENTS.md` gọn), `4928067` (reconnect khi adb
-  restart), `8591523` (ghi nhận fix adb crash).
+- Nhánh: `master` → `origin/master`; commit mới nhất `9951c97`. Remote chỉ còn
+  `master` và đó là default branch.
+- DMG ignored by Git under `SimDeck/build-release/`; docs đã commit và push.
+- Commit gần đây: `9951c97` (docs trỏ `master`), `5dcca85` (grid recording),
+  `f8bd512` (`find_elements`, `tap {label}`), `fa99b6a` (wireless/install/launch/
+  record tool), `1c116c1` + `783158e` + `9a69444` (notification panel),
+  `a8b44b8` (notifications + Settings).
 - Repo public: https://github.com/cuongdq88/simdeck.
+- Working tree: `AGENTS.md` bị environment sửa và `third_party/*` deleted — không
+  phải việc của dự án, không stage.
 
 ## Việc đã xác minh
 - Build Release **BUILD SUCCEEDED** 2026-11-05 16:05, arm64; app đã restart và chạy
   từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`; 3 tile E1/E2/E3
   (Android 16) đều `streaming: true`.
-- Build Release **BUILD SUCCEEDED** 2026-11-07, arm64. DMG checksum/content and
-  ad-hoc app signature verified; SHA-256
+- Build Release **BUILD SUCCEEDED** 2026-11-07, arm64. DMG của ngày đó chỉ là bản
+  thử (không phải bản phát hành); checksum/content và chữ ký ad-hoc đã kiểm, SHA-256
   `48f85721575ec3b53d5443bd2da1f3d7604fdf13e775ed12e001c39efb82bf33`.
 - Crash report 16:23/20:10: `ProcessRunner.runSync` → `readDataToEndOfFile()`
   ném ObjC exception khi pipe adb đóng → `SIGABRT`. Đã fix bằng `readAll`
@@ -51,6 +56,11 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
   `tap {"label":"Network & internet"}` mở đúng màn Network & internet (screenshot),
   nhãn không tồn tại với `timeout_ms:1200` trả `No element matches …` sau ~2 s;
   `tap {x,y}` vẫn chạy; iOS simulator trả lỗi "supports Android devices only".
+- Release 1.0.0 (2026-11-09): build Release từ `5dcca85`, DMG có app + link
+  Applications + `LICENSE` + `third_party/`, `hdiutil verify` VALID, mount thử OK;
+  tag `simdeck-v1.0.0` push lên `cuongdq88/simdeck` và GitHub Release kèm asset
+  `SimDeck-1.0.0-macos-arm64.dmg` (4,534,797 bytes, SHA-256
+  `11021a3d…76885`). Branch `main` đổi tên thành `master`, thành default branch.
 - SD-012 grid recording (2026-11-09): Release **BUILD SUCCEEDED**; `record_grid` qua MCP
   ghi MP4 H.264: low → 720×440, 15 fps, 7.7 s; high → 2844×1742 (2× cửa sổ), ~30 fps.
   Frame trích ra cho thấy đúng cả cửa sổ (sidebar, top bar, panel thông báo, đồng hồ
@@ -62,9 +72,10 @@ Cập nhật: 2026-11-07 (Asia/Ho_Chi_Minh)
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
-- **SD-014** MCP parity: 23/27 tool — xong nhóm thiết bị/ứng dụng (`get_spotlight`,
-  `connect_device`, `pair_device`, `disconnect_device`, `record_device`, `install_app`,
-  `launch_app`, `find_elements`, `tap {label}`, `record_grid`); còn `run_scenario`/
+- **SD-014** MCP parity: bản cũ 27 tool → bản Swift 23 tool (thêm `stop_device` mà
+  bản cũ không có). Đã xong nhóm thiết bị/ứng dụng (`get_spotlight`, `connect_device`,
+  `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
+  `find_elements`, `tap {label}`, `record_grid`); còn 5 tool: `run_scenario`/
   `stop_scenario` (chờ SD-010), `set_slim`/`set_slim_mode`, `repair_input`
   (iOS simulator) — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
