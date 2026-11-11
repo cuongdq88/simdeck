@@ -2,7 +2,10 @@ import Foundation
 
 /// One AVD on disk, read straight from `$ANDROID_AVD_HOME`.
 struct AvdInfo: Identifiable, Hashable {
+  /// The on-disk AVD id: the `.ini` name and `.avd` directory.
   let name: String
+  /// `avd.ini.displayname`, which is what the user typed (spaces included).
+  let displayName: String
   let directory: URL
   let target: String?
   let imageSysdir: String?
@@ -140,8 +143,10 @@ enum AvdStore {
     guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
       isDirectory.boolValue
     else { return nil }
+    let display = config["avd.ini.displayname"].flatMap { $0.isEmpty ? nil : $0 }
     return AvdInfo(
       name: name,
+      displayName: display ?? name,
       directory: directory,
       target: values["target"] ?? config["target"],
       imageSysdir: config["image.sysdir.1"],

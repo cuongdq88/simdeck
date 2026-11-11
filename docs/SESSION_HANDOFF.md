@@ -56,6 +56,13 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   `tap {"label":"Network & internet"}` mở đúng màn Network & internet (screenshot),
   nhãn không tồn tại với `timeout_ms:1200` trả `No element matches …` sau ~2 s;
   `tap {x,y}` vẫn chạy; iOS simulator trả lỗi "supports Android devices only".
+- Tên thiết bị có dấu cách (2026-11-11): `create_avd {"name":"Space Test"}` tạo
+  `Space_Test.avd` với `avd.ini.displayname=Space Test`; `list_devices` trả
+  `name: "Space Test"`, `id: android:Space_Test`; boot headless OK, screenshot
+  `Space_Test-…png`; tạo qua sheet (⌘N) "My Phone 02" → `My_Phone_02`; iOS
+  `create_simulator {"name":"iPhone Test 11"}` OK. Đã xoá AVD/simulator/file test.
+  AVD có dấu cách trên đĩa (tạo tay) làm `emulator` exit 139 — đó là lý do tách
+  display name khỏi tên file.
 - Release 1.0.0 (2026-11-09): build Release từ `5dcca85`, DMG có app + link
   Applications + `LICENSE` + `third_party/`, `hdiutil verify` VALID, mount thử OK;
   tag `simdeck-v1.0.0` push lên `cuongdq88/simdeck` và GitHub Release kèm asset

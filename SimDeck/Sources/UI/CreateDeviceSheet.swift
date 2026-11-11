@@ -81,7 +81,7 @@ struct CreateDeviceSheet: View {
     Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 10) {
       GridRow {
         label("Name")
-        SimuTextField(text: $name, hint: "Pixel_9_API_36", monospace: true)
+        SimuTextField(text: $name, hint: "Pixel 9 API 36", monospace: true)
       }
       GridRow {
         label("Profile")
@@ -206,7 +206,11 @@ struct CreateDeviceSheet: View {
   }
 
   private var nameValid: Bool {
-    name.range(of: #"^[A-Za-z0-9._-]{1,64}$"#, options: .regularExpression) != nil
+    if platform == 1 {
+      let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+      return !trimmed.isEmpty && trimmed.count <= 64
+    }
+    return AvdCreator.isValidName(name)
   }
 
   private var canCreate: Bool {
@@ -233,10 +237,11 @@ struct CreateDeviceSheet: View {
 
   private func suggestNameIfNeeded() {
     guard platform == 0, let profile = selectedProfile, let image = selectedImage else { return }
-    if name.isEmpty || name.hasPrefix("pixel") || name.hasPrefix("medium")
-      || name.hasPrefix("small") || name.hasPrefix("wear") || name.hasPrefix("tv")
+    let lower = name.lowercased()
+    if name.isEmpty
+      || ["pixel", "medium", "small", "wear", "tv"].contains(where: lower.hasPrefix)
     {
-      name = "\(profile.id)_API_\(image.api)"
+      name = "\(profile.name) API \(image.api)"
     }
   }
 

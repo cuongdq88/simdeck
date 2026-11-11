@@ -22,7 +22,7 @@ enum AvdCreateError: LocalizedError {
   var errorDescription: String? {
     switch self {
     case .invalidName:
-      return "Use letters, digits, dot, dash or underscore (max 64)."
+      return "Use letters, digits, spaces, dot, dash or underscore (max 64)."
     case .nameExists(let name):
       return "An AVD named \(name) already exists."
     case .imageMissing(let packageId):
@@ -39,19 +39,36 @@ enum AvdCreateError: LocalizedError {
 
 /// Writes the two AVD files the emulator reads. No `avdmanager`, no Java.
 enum AvdCreator {
-  static func validate(name: String, existing: Set<String>) -> String? {
+  /// The emulator crashes on an AVD whose `.ini` or directory name contains a
+  /// space, so the typed name only lives in `avd.ini.displayname` and the files
+  /// use underscores.
+  static func avdID(for name: String) -> String {
+    name.split(whereSeparator: \.isWhitespace).joined(separator: "_")
+  }
+
+  static func isValidName(_ name: String) -> Bool {
     let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard trimmed.range(of: #"^[A-Za-z0-9._-]{1,64}$"#, options: .regularExpression) != nil else {
-      return "Use letters, digits, dot, dash or underscore (max 64)."
+    guard !trimmed.isEmpty, trimmed.count <= 64 else { return false }
+    let id = avdID(for: trimmed)
+    return id.range(of: #"^[A-Za-z0-9._-]{1,64}$"#, options: .regularExpression) != nil
+  }
+
+  static func validate(name: String, existing: Set<String>) -> String? {
+    guard isValidName(name) else {
+      return "Use letters, digits, spaces, dot, dash or underscore (max 64)."
     }
-    if existing.contains(trimmed) { return "An AVD named \(trimmed) already exists." }
+    let display = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if existing.contains(avdID(for: display)) {
+      return "An AVD named \(display) already exists."
+    }
     return nil
   }
 
   static func create(_ form: AvdCreateForm, existing: Set<String>) throws -> AvdInfo {
-    let name = form.name.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard validate(name: name, existing: existing) == nil else {
-      if existing.contains(name) { throw AvdCreateError.nameExists(name) }
+    let display = form.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    let avdID = avdID(for: display)
+    guard validate(name: display, existing: existing) == nil else {
+      if existing.contains(avdID) { throw AvdCreateError.nameExists(display) }
       throw AvdCreateError.invalidName
     }
     guard FileManager.default.fileExists(atPath: form.image.path.path) else {
@@ -65,39 +82,38 @@ enum AvdCreator {
       throw AvdCreateError.diskFull(required: required, available: available)
     }
 
-    let avdDir = home.appendingPathComponent("\(name).avd", isDirectory: true)
+    let avdDir = home.appendingPathComponent("\(avdID).avd", isDirectory: true)
     do {
       try FileManager.default.createDirectory(at: avdDir, withIntermediateDirectories: true)
       let ini = """
         avd.ini.encoding=UTF-8
         path=\(avdDir.path)
-        path.rel=avd/\(name).avd
+        path.rel=avd/\(avdID).avd
         target=android-\(form.image.api)
 
         """
-      try Data(ini.utf8).write(to: home.appendingPathComponent("\(name).ini"), options: .atomic)
-      try Data(configINI(form: form, name: name).utf8)
+      try Data(ini.utf8).write(to: home.appendingPathComponent("\(avdID).ini"), options: .atomic)
+      try Data(configINI(form: form, avdID: avdID, display: display).utf8)
         .write(to: avdDir.appendingPathComponent("config.ini"), options: .atomic)
     } catch {
       throw AvdCreateError.writeFailed(error.localizedDescription)
     }
 
-    guard let info = AvdStore.load(name: name) else {
+    guard let info = AvdStore.load(name: avdID) else {
       throw AvdCreateError.writeFailed("The AVD was written but could not be read back.")
     }
     return info
   }
 
-  private static func configINI(form: AvdCreateForm, name: String) -> String {
+  private static func configINI(form: AvdCreateForm, avdID: String, display: String) -> String {
     let profile = form.profile
     let arch = form.image.abi.hasPrefix("arm64") ? "arm64" : "x86_64"
     let heap = max(128, min(1024, form.ramMb / 8))
     let cameraBack = form.cameraBack
     let cameraFront = form.cameraFront
     let orientation = form.orientation == "landscape" ? "Landscape" : "Portrait"
-    let display = name.replacingOccurrences(of: "_", with: " ")
     return """
-      AvdId=\(name)
+      AvdId=\(avdID)
       avd.ini.displayname=\(display)
       avd.ini.encoding=UTF-8
       abi.type=\(form.image.abi)

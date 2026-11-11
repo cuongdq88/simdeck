@@ -185,7 +185,7 @@ final class AppModel: ObservableObject {
       return Device(
         key: "android:\(avd.name)",
         rawID: avd.name,
-        name: avd.name,
+        name: avd.displayName,
         os: .android,
         kind: .simulator,
         platform: avd.platform,
@@ -320,7 +320,7 @@ final class AppModel: ObservableObject {
         $0.cameraBack = nil
         $0.cameraFront = nil
       }
-      showNotice("Saved \(avd.name)")
+      showNotice("Saved \(avd.displayName)")
       await refresh()
     } catch {
       errorMessage = error.localizedDescription

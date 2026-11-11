@@ -40,7 +40,7 @@ struct EditDeviceSheet: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 16) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Edit \(avd.name)")
+        Text("Edit \(avd.displayName)")
           .font(.system(size: 17, weight: .semibold))
           .foregroundStyle(t.text)
         Text("Changes apply the next time this device boots.")

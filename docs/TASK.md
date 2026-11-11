@@ -46,6 +46,10 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Đã xong
 
+- [x] Tên thiết bị có dấu cách: `emulator` crash (SIGSEGV) khi `.ini`/thư mục AVD có
+      dấu cách, nên tên người dùng nhập chỉ nằm trong `avd.ini.displayname`, còn file
+      dùng `_` (`Space Test` → `Space_Test`); sidebar/MCP hiện tên có dấu cách và tra
+      được theo cả tên lẫn id; iOS simulator nhận tên có dấu cách trực tiếp
 - [x] Thiết bị: list/create/start/stop/wipe/delete, search, guards
 - [x] Tạo AVD không cần Java (`config.ini`), tạo simulator bằng `simctl`
 - [x] Sửa AVD (RAM/storage/camera/orientation/keyboard/SD), giữ nguyên key lạ

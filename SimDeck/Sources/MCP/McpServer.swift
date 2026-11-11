@@ -582,7 +582,7 @@ final class McpServer {
       tool(
         "create_avd", "Create an Android emulator managed by SimDeck. Prefer this over running avdmanager or the emulator binary.",
         properties: [
-          "name": string,
+          "name": ["type": "string", "description": "Display name; spaces are allowed and kept in avd.ini.displayname."],
           "image": ["type": "string", "description": "system-images;android-…;tag;abi"],
           "profile": ["type": "string"],
           "api": ["type": "integer"],
