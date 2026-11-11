@@ -46,6 +46,10 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Đã xong
 
+- [x] Boot chờ đúng cách khi mở stream: `adb shell` trả "adb: device offline" (hoặc
+      treo) nếu emulator chưa lên hẳn, trước đây làm tile báo "The device did not
+      finish booting". Giờ poll `getprop sys.boot_completed` 2 s/lần, thử lại tới
+      300 s, chỉ báo lỗi kèm lý do cuối cùng
 - [x] Tên thiết bị có dấu cách: `emulator` crash (SIGSEGV) khi `.ini`/thư mục AVD có
       dấu cách, nên tên người dùng nhập chỉ nằm trong `avd.ini.displayname`, còn file
       dùng `_` (`Space Test` → `Space_Test`); sidebar/MCP hiện tên có dấu cách và tra

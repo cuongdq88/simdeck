@@ -137,13 +137,31 @@ final class ScrcpySession: DeviceSession {
     }
   }
 
+  /// One long `adb shell` fails as soon as adb reports the emulator offline in
+  /// the middle of boot ("adb: device offline"), so poll a quick getprop and
+  /// retry until the device reports booted.
+  private func waitUntilBooted(timeout: TimeInterval = 300) async -> String? {
+    let adb = ShellEnv.adbPath
+    let deadline = Date().addingTimeInterval(timeout)
+    var last = ""
+    while Date() < deadline {
+      let result = await ProcessRunner.run(
+        adb, ["-s", serial, "shell", "getprop", "sys.boot_completed"], timeout: 20)
+      let value = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+      if result.ok, value == "1" { return nil }
+      last =
+        result.ok
+        ? "sys.boot_completed=\(value.isEmpty ? "empty" : value)"
+        : result.combined.trimmingCharacters(in: .whitespacesAndNewlines)
+      try? await Task.sleep(nanoseconds: 2_000_000_000)
+    }
+    return last.isEmpty ? "timed out after \(Int(timeout)) s" : last
+  }
+
   private func prepareServer(jar: ServerJar) async throws {
     let adb = ShellEnv.adbPath
-    let bootScript = #"while [ "$(getprop sys.boot_completed)" != 1 ]; do sleep 1; done"#
-    let boot = await ProcessRunner.run(
-      adb, ["-s", serial, "shell", bootScript], timeout: 200)
-    guard boot.ok else {
-      throw ScrcpyError.server("The device did not finish booting. \(boot.combined)")
+    if let reason = await waitUntilBooted() {
+      throw ScrcpyError.server("The device did not finish booting. \(reason)")
     }
 
     let push = await ProcessRunner.run(

@@ -56,6 +56,11 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   `tap {"label":"Network & internet"}` mở đúng màn Network & internet (screenshot),
   nhãn không tồn tại với `timeout_ms:1200` trả `No element matches …` sau ~2 s;
   `tap {x,y}` vẫn chạy; iOS simulator trả lỗi "supports Android devices only".
+- Boot/stream (2026-11-11): mở stream ngay sau khi boot từng báo "The device did not
+  finish booting. adb: device offline" vì `adb shell` một phát dài fail khi adb còn
+  offline. Thay bằng poll `getprop sys.boot_completed` mỗi 2 s (timeout 300 s):
+  tạo AVD mới + `start_device {stream:true}` → streaming trong 31 s; chạy 4 emulator
+  cùng lúc → 75 s, không lỗi.
 - Tên thiết bị có dấu cách (2026-11-11): `create_avd {"name":"Space Test"}` tạo
   `Space_Test.avd` với `avd.ini.displayname=Space Test`; `list_devices` trả
   `name: "Space Test"`, `id: android:Space_Test`; boot headless OK, screenshot
