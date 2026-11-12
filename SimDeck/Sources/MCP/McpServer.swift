@@ -255,12 +255,24 @@ final class McpServer {
       let name = try required("name", arguments)
       let types = await SimctlService.deviceTypes()
       let runtimes = await SimctlService.runtimes()
-      let type = types.first { $0.id == (arguments["device_type"] as? String ?? "") }
-        ?? types.first
-      let runtime = runtimes.first { $0.id == (arguments["runtime"] as? String ?? "") }
-        ?? runtimes.first
-      guard let type, let runtime else {
-        throw McpToolError.message("No simulator device type or runtime is installed.")
+      let requestedType = (arguments["device_type"] as? String ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      let type = requestedType.isEmpty
+        ? types.first
+        : types.first { $0.id == requestedType }
+      guard let type else {
+        throw McpToolError.message("No installed simulator device type matches \(requestedType).")
+      }
+      let requestedRuntime = (arguments["runtime"] as? String ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      let runtime = requestedRuntime.isEmpty
+        ? SimctlService.runtime(for: type.id, in: runtimes)
+        : runtimes.first { $0.id == requestedRuntime && $0.supports(type.id) }
+      guard let runtime else {
+        throw McpToolError.message(
+          requestedRuntime.isEmpty
+            ? "No installed runtime can boot \(type.name)."
+            : "Runtime \(requestedRuntime) cannot boot \(type.name).")
       }
       try await model.createSimulator(
         name: name, deviceTypeID: type.id, runtimeID: runtime.id)

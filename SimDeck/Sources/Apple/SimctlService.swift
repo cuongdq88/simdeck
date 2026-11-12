@@ -10,6 +10,14 @@ struct SimulatorRuntime: Identifiable, Hashable {
   let name: String
   let version: String
   let isAvailable: Bool
+  /// Device type identifiers this runtime can boot. Xcode can install a
+  /// runtime for a single device (for example "iOS 27.2 (iPhone Duo)"), and
+  /// `simctl create` rejects every other device type for it.
+  let supportedDeviceTypes: [String]
+
+  func supports(_ deviceTypeID: String) -> Bool {
+    supportedDeviceTypes.contains(deviceTypeID)
+  }
 }
 
 enum SimctlService {
@@ -80,13 +88,21 @@ enum SimctlService {
         let name = entry["name"] as? String
       else { return nil }
       let available = (entry["isAvailable"] as? Bool) ?? false
+      let supported = (entry["supportedDeviceTypes"] as? [[String: Any]] ?? [])
+        .compactMap { $0["identifier"] as? String }
       return SimulatorRuntime(
         id: identifier,
         name: name,
         version: (entry["version"] as? String) ?? name,
-        isAvailable: available)
+        isAvailable: available,
+        supportedDeviceTypes: supported)
     }
     .filter(\.isAvailable)
+  }
+
+  /// The first installed runtime that can boot [deviceTypeID].
+  static func runtime(for deviceTypeID: String, in runtimes: [SimulatorRuntime]) -> SimulatorRuntime? {
+    runtimes.first { $0.supports(deviceTypeID) }
   }
 
   static func create(name: String, deviceTypeID: String, runtimeID: String) async -> Result<String, Error> {

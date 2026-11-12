@@ -81,6 +81,22 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   recordings before recording the grid." Cửa sổ Recordings (film icon) liệt kê file với
   ngày + dung lượng và nút mở/Reveal/xoá. Đã trả quality về `standard`, xoá file test.
 
+- Tạo iOS simulator (2026-11-12): máy có 2 runtime cùng tên "iOS 27.2" nhưng
+  `com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4` chỉ hỗ trợ "iPhone Duo"
+  (`supportedDeviceTypes`), nên chọn runtime đầu tiên làm mọi loại máy khác fail
+  `Incompatible device` (code 403) — đây là lý do không tạo được iPhone 17 Pro /
+  Pro Max. Fix: `SimulatorRuntime.supportedDeviceTypes` + `SimctlService.runtime(for:in:)`;
+  sheet chỉ liệt kê runtime tương thích và tự chọn lại khi đổi Device; MCP
+  `create_simulator` lọc/validate và báo `Runtime … cannot boot …`. Verify: MCP tạo
+  `Check Pro`/`Check Pro Max`/`Check Default` trên `iOS-27-2`; runtime không tương
+  thích trả lỗi rõ; sheet (⌘N) chọn iPhone 17 Pro → Runtime còn 1 mục, Create bật,
+  tạo `UI Check Pro` đúng runtime `iOS-27-2`; đã xoá hết simulator test.
+- iPhone thật không stream/record (2026-11-12): `🅲🅳 iPro` (iPhone 13 Pro, iOS 27.2)
+  đang kết nối Wi-Fi — `devicectl` báo `transportType: localNetwork`,
+  `tunnelState: disconnected`, `xctrace` xếp offline; `AVCaptureDevice` discovery
+  `.muxed` trả 0 thiết bị. Đường capture hiện tại là CoreMediaIO USB-only nên cần
+  cáp USB + mở khoá máy; chưa thể xác minh end-to-end.
+
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
@@ -101,6 +117,8 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 - Ad-hoc signing → Gatekeeper; cần `xattr -dr com.apple.quarantine` hoặc notarize.
 - Build arm64-only; iOS cần Xcode, Android cần SDK/emulator trên máy người dùng.
 - Chưa test iPhone thật; Dock icon có thể cần xoá cache iconservices.
+- iPhone thật chỉ stream/record được qua USB (CoreMediaIO `.muxed`); máy kết nối
+  Wi-Fi vẫn hiện trong sidebar nhưng mở tile sẽ lỗi "No capture device".
 - Lịch sử git còn commit bản Flutter cũ.
 
 ## Lệnh an toàn để chạy lại

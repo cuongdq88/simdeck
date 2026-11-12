@@ -46,6 +46,12 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Đã xong
 
+- [x] Tạo iOS simulator đúng runtime: runtime cài cho một loại máy (ví dụ
+      `iOS-27-2-iPhone19-4` chỉ hỗ trợ "iPhone Duo") làm mọi máy khác fail
+      `Incompatible device` (403). Giờ chọn runtime theo `supportedDeviceTypes`:
+      sheet chỉ hiện runtime tương thích và tự đổi theo Device, MCP validate và báo rõ.
+      Đã tạo được iPhone 17 Pro / Pro Max cả qua sheet lẫn MCP.
+
 - [x] Boot chờ đúng cách khi mở stream: `adb shell` trả "adb: device offline" (hoặc
       treo) nếu emulator chưa lên hẳn, trước đây làm tile báo "The device did not
       finish booting". Giờ poll `getprop sys.boot_completed` 2 s/lần, thử lại tới

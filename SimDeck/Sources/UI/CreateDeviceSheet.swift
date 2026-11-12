@@ -168,17 +168,22 @@ struct CreateDeviceSheet: View {
             }
           }
           .labelsHidden()
+          .onChange(of: deviceTypeID) { _, _ in
+            if !compatibleRuntimes.contains(where: { $0.id == runtimeID }) {
+              runtimeID = compatibleRuntimes.first?.id ?? ""
+            }
+          }
         }
       }
       GridRow {
         label("Runtime")
-        if runtimes.isEmpty {
-          Text("No installed iOS runtimes")
+        if compatibleRuntimes.isEmpty {
+          Text("No installed runtime supports this device")
             .font(t.caption)
             .foregroundStyle(t.warning)
         } else {
           Picker("", selection: $runtimeID) {
-            ForEach(runtimes) { runtime in
+            ForEach(compatibleRuntimes) { runtime in
               Text(runtime.name).tag(runtime.id)
             }
           }
@@ -213,12 +218,17 @@ struct CreateDeviceSheet: View {
     return AvdCreator.isValidName(name)
   }
 
+  private var compatibleRuntimes: [SimulatorRuntime] {
+    runtimes.filter { $0.supports(deviceTypeID) }
+  }
+
   private var canCreate: Bool {
     guard nameValid else { return false }
     if platform == 0 {
       return selectedImage != nil && selectedProfile != nil
     }
-    return !deviceTypeID.isEmpty && !runtimeID.isEmpty
+    return !deviceTypeID.isEmpty
+      && compatibleRuntimes.contains { $0.id == runtimeID }
   }
 
   private func load() async {
@@ -231,7 +241,10 @@ struct CreateDeviceSheet: View {
     deviceTypes = await types
     runtimes = await versions
     if deviceTypeID.isEmpty { deviceTypeID = deviceTypes.first?.id ?? "" }
-    if runtimeID.isEmpty { runtimeID = runtimes.first?.id ?? "" }
+    let compatible = runtimes.filter { $0.supports(deviceTypeID) }
+    if !compatible.contains(where: { $0.id == runtimeID }) {
+      runtimeID = compatible.first?.id ?? ""
+    }
     if platform == 1, name.isEmpty { name = deviceTypes.first?.name ?? "iPhone" }
   }
 

@@ -34,9 +34,11 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
     manager, logcat, Wi-Fi pairing.
   - Android: boot headless, scrcpy stream vào tile, tap/type/rotate, screenshot/record, stop.
   - iOS simulator: capture CoreSimulator/SimulatorKit, HID, xoay, tile full-width/3 cột,
-    drag-reorder, spotlight.
+    drag-reorder, spotlight. Tạo máy lọc theo `supportedDeviceTypes` của runtime
+    (runtime cài cho một loại máy, ví dụ "iPhone Duo", không dùng cho máy khác được).
   - iOS thật: `devicectl` + CoreMediaIO view-only (parser kiểm bằng JSON mẫu; chưa có
-    máy thật để test).
+    máy thật để test). Capture là USB-only: máy chỉ kết nối Wi-Fi vẫn hiện trong danh
+    sách nhưng không có capture device để stream/record.
   - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 23 tool, CLI, bridge
     OpenCode.
   - SD-012 Grid recording: ScreenCaptureKit quay cả cửa sổ ra H.264 MP4 (4 mức chất
