@@ -46,7 +46,7 @@ It still needs Xcode (for `simctl` and the simulator runtimes it links against) 
 - **Realistic Device Frames**: Native Xcode DeviceKit bezels, dynamic island/notch cutouts, and clickable hardware buttons.
 - **No Heavy IDE Dependencies**: Create and edit Android Virtual Devices (AVDs) directly through `config.ini` templates — no Java runtime or `avdmanager` required.
 - **Built-in Android SDK Manager**: Discover, inspect, and install Android SDK system images directly within the app.
-- **AI Agent & MCP Ready**: Serves a loopback Model Context Protocol (MCP) HTTP endpoint (`http://127.0.0.1:8765/mcp`) with 23 tools for automated headless device control, plus the `SimDeck/bin/simdeck` CLI and a stdio bridge (`SimDeck/bin/simdeck-mcp`) for agents that cannot speak HTTP.
+- **AI Agent & MCP Ready**: Serves a loopback Model Context Protocol (MCP) HTTP endpoint (`http://127.0.0.1:8765/mcp`) with 25 tools for automated headless device control — including `run_scenario`, which plays the same steps on several devices at once — plus the `SimDeck/bin/simdeck` CLI and a stdio bridge (`SimDeck/bin/simdeck-mcp`) for agents that cannot speak HTTP.
 - **Whole-Grid Recording**: Records the whole SimDeck window with ScreenCaptureKit to an H.264 MP4 at four quality levels (15/24/30/60 fps, 720p, 1280 px or full size), with a recordings browser that opens, reveals or trashes the files.
 - **Notifications & Settings**: In-app notification panel with a 50-item history, and a Settings sheet (⌘,) for the default headless mode, recording folder, layout, device frame and grid-recording quality.
 - **Developer Tools**: Live Logcat viewer with severity filters, ADB Wi-Fi pairing (mDNS / manual code), and one-click screenshots/screen recordings saved to disk.
@@ -117,7 +117,7 @@ Add SimDeck to your agent configuration:
 }
 ```
 
-### Supported MCP Tools (23)
+### Supported MCP Tools (25)
 
 - `list_devices`, `get_device_catalogs` — devices, images and hardware profiles.
 - `create_avd`, `create_simulator`, `delete_device` — provision and remove devices.
@@ -127,6 +127,7 @@ Add SimDeck to your agent configuration:
 - `install_app`, `launch_app` — install an APK or simulator `.app`, then launch it.
 - `screenshot`, `record_device`, `record_grid` — capture a frame, one device or the whole grid.
 - `get_spotlight` — current layout, focus and open streams.
+- `run_scenario`, `stop_scenario` — run the same steps on several devices (Android and iOS) at once — each device reports `ok`, the step it failed at and per-step ms — and stop a run. Steps: `tap` (point or label), `swipe` (with `until`), `press`, `wait`, `launch` (per-platform ids), `type`, `assert_visible`, `assert_not_visible`, plus `repeat` and `if_visible` / `if_not_visible`.
 
 For shell-only workflows, use the bundled CLI bridge:
 
@@ -135,7 +136,11 @@ SimDeck/bin/simdeck list
 SimDeck/bin/simdeck start android:E1
 SimDeck/bin/simdeck swipe ios:EF4916C0-D051-406B-BA3A-B2AA50CA96D1 0.2 0.5 0.8 0.5
 SimDeck/bin/simdeck screenshot android:E1
+SimDeck/bin/simdeck call run_scenario '{"devices":["android:E1"],"steps":[{"action":"wait","ms":500}]}'
+SimDeck/bin/simdeck call stop_scenario '{}'
 ```
+
+`call <tool> [json]` reaches any MCP tool. Clients that can only launch local stdio servers use `SimDeck/bin/simdeck-mcp`, which starts SimDeck on demand and forwards JSON-RPC to the same endpoint.
 
 ---
 
