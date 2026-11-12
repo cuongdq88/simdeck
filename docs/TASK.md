@@ -46,6 +46,13 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Đã xong
 
+- [x] Tiếng trong tile Android: scrcpy gửi PCM raw 48 kHz stereo, app phát bằng
+      AVAudioEngine; emulator do SimDeck bật có `-no-audio` nên chỉ có một nguồn
+      tiếng. Codec id đọc ở luồng riêng (server ghi header sau khi capture khởi
+      động, có lúc >5 s). Audio lỗi thì tile vẫn chạy hình.
+- [x] iPhone thật chỉ kết nối Wi-Fi: sidebar hiện "USB required", nút Stream bị
+      vô hiệu, tooltip "Connect via USB to stream"; MCP trả lỗi nêu rõ cần cáp USB
+      và mở khoá máy.
 - [x] Tạo iOS simulator đúng runtime: runtime cài cho một loại máy (ví dụ
       `iOS-27-2-iPhone19-4` chỉ hỗ trợ "iPhone Duo") làm mọi máy khác fail
       `Incompatible device` (403). Giờ chọn runtime theo `supportedDeviceTypes`:

@@ -28,11 +28,13 @@ final class ScrcpySession: DeviceSession {
   private let bitRate: Int
   private let maxFps: Int
   private let decoder = H264Decoder()
+  private let audio = AudioSink()
 
   private let lock = NSLock()
   private var _status: SessionStatus = .connecting
   private var _size: CGSize = .zero
   private var videoFD: Int32 = -1
+  private var audioFD: Int32 = -1
   private var controlFD: Int32 = -1
   private var forwardPort: UInt16 = 0
   private var socketName = ""
@@ -98,6 +100,7 @@ final class ScrcpySession: DeviceSession {
       let jar = try Self.locateServer()
       try await prepareServer(jar: jar)
       try connectVideo()
+      try connectAudio()
       try connectControl()
       emitLive()
     } catch {
@@ -115,6 +118,8 @@ final class ScrcpySession: DeviceSession {
     // here, under the lock, wakes the reader before the number is reused.
     if videoFD >= 0 { shutdown(videoFD, SHUT_RDWR) }
     videoFD = -1
+    if audioFD >= 0 { shutdown(audioFD, SHUT_RDWR) }
+    audioFD = -1
     let control = controlFD
     controlFD = -1
     let port = forwardPort
@@ -128,6 +133,7 @@ final class ScrcpySession: DeviceSession {
     if control >= 0 { shutdown(control, SHUT_RDWR); close(control) }
     process?.terminate()
     decoder.stop()
+    audio.stop()
     if port != 0 {
       let serial = self.serial
       Task {
@@ -191,7 +197,8 @@ final class ScrcpySession: DeviceSession {
       "scid=\(hex)",
       "log_level=warn",
       "tunnel_forward=true",
-      "audio=false",
+      "audio=true",
+      "audio_codec=raw",
       "control=true",
       "send_device_meta=false",
       "max_size=\(maxSize)",
@@ -261,6 +268,17 @@ final class ScrcpySession: DeviceSession {
     return fd
   }
 
+  /// The server accepts video, then audio, then control, so this must sit
+  /// between the other two. The codec id arrives only once the device started
+  /// capturing, which lags behind the socket, so it is read off the main path.
+  private func connectAudio() throws {
+    let fd = try connectSocket(deadline: 10)
+    lock.lock()
+    audioFD = fd
+    lock.unlock()
+    readAudio(fd: fd)
+  }
+
   private func connectControl() throws {
     let fd = try connectSocket(deadline: 10)
     lock.lock()
@@ -295,6 +313,62 @@ final class ScrcpySession: DeviceSession {
     lock.unlock()
     throw ScrcpyError.server(
       "Could not reach the scrcpy server. \(log.isEmpty ? "" : String(log.suffix(400)))")
+  }
+
+  // MARK: - Audio
+
+  /// Raw PCM packets for the tile. A failure here only silences the device.
+  private func readAudio(fd: Int32) {
+    let queue = DispatchQueue(label: "dev.simdeck.scrcpy.audio", qos: .userInitiated)
+    queue.async { [weak self] in
+      guard let self else { return }
+      guard self.audioCodec(fd: fd) else {
+        self.lock.lock()
+        if self.audioFD == fd { self.audioFD = -1 }
+        self.lock.unlock()
+        close(fd)
+        return
+      }
+      NSLog("SimDeck audio start serial=%@", self.serial)
+      var parser = ScrcpyAudioParser()
+      var buffer = [UInt8](repeating: 0, count: 1 << 16)
+      while self.isRunning {
+        let count = recv(fd, &buffer, buffer.count, 0)
+        if count <= 0 { break }
+        for packet in parser.add(Data(bytes: buffer, count: count)) {
+          self.audio.append(packet)
+        }
+      }
+      self.lock.lock()
+      if self.audioFD == fd { self.audioFD = -1 }
+      self.lock.unlock()
+      close(fd)
+      self.audio.stop()
+    }
+  }
+
+  /// The stream's first word: the codec id, or 0 (the device cannot capture)
+  /// / 1 (fatal) when the server turned audio off. Capture startup can take
+  /// seconds on a busy emulator, so this waits generously.
+  private func audioCodec(fd: Int32) -> Bool {
+    var timeout = timeval(tv_sec: 30, tv_usec: 0)
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
+    var codec = [UInt8](repeating: 0, count: 4)
+    var received = 0
+    while received < codec.count {
+      let count = recv(fd, &codec[received], codec.count - received, 0)
+      if count <= 0 { break }
+      received += count
+    }
+    var noTimeout = timeval(tv_sec: 0, tv_usec: 0)
+    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &noTimeout, socklen_t(MemoryLayout<timeval>.size))
+    guard received == codec.count, codec == [0x00, 0x72, 0x61, 0x77] else {
+      NSLog(
+        "SimDeck audio off serial=%@ got=%ld code=%02x%02x%02x%02x",
+        serial, received, codec[0], codec[1], codec[2], codec[3])
+      return false
+    }
+    return true
   }
 
   // MARK: - Video

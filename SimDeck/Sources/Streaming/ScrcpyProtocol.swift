@@ -85,6 +85,30 @@ struct ScrcpyVideoParser {
   }
 }
 
+/// Incremental parser for the audio socket after its 4-byte codec id: the
+/// same 12-byte packet header as video, then raw PCM samples.
+struct ScrcpyAudioParser {
+  private var buffer = Data()
+
+  mutating func add(_ chunk: Data) -> [Data] {
+    buffer.append(chunk)
+    var packets: [Data] = []
+    var offset = 0
+    while buffer.count - offset >= 12 {
+      let size = Int(buffer.u32(at: offset + 8))
+      guard size <= 1 << 20 else {
+        buffer.removeAll()
+        return packets
+      }
+      guard buffer.count - offset - 12 >= size else { break }
+      packets.append(buffer.subdata(in: (offset + 12)..<(offset + 12 + size)))
+      offset += 12 + size
+    }
+    if offset > 0 { buffer.removeSubrange(0..<offset) }
+    return packets
+  }
+}
+
 enum ScrcpyControl {
   /// `INJECT_KEYCODE` (14 bytes); [action] 0 down, 1 up.
   static func keycode(action: UInt8, code: Int32, metaState: Int32 = 0) -> Data {

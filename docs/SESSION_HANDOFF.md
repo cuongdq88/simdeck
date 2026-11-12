@@ -97,6 +97,19 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   `.muxed` trả 0 thiết bị. Đường capture hiện tại là CoreMediaIO USB-only nên cần
   cáp USB + mở khoá máy; chưa thể xác minh end-to-end.
 
+- Tiếng trong tile Android (2026-11-12): Release **BUILD SUCCEEDED**. scrcpy chạy
+  `audio=true audio_codec=raw`; header audio chỉ tới sau khi capture khởi động (đo
+  được lần đầu >5 s rồi mới có), nên đọc codec id ở luồng riêng, chờ tới 30 s.
+  Verify trên E1/E3: log `SimDeck audio start serial=emulator-5554/5556`, qemu có
+  `-no-audio`, CoreAudio `setPlayState Started Output {BuiltInSpeakerDevice}` +
+  `output_running: true`; đóng E3 rồi E1 → `setPlayState Stopped`,
+  `output_running: false`, app sống, `frames=146/55`. Probe server độc lập xác nhận
+  gói raw 4096 byte, codec id `00 72 61 77`.
+- iPhone thật Wi-Fi (2026-11-12): sidebar hiện "USB required" và nút Stream xám
+  (tooltip "Connect via USB to stream"), menu chuột phải Stream bị disable;
+  `start_device {"device":"ios-device:00008110-…"}` trả "… is not connected by USB
+  cable (or is locked). Streaming over Wi-Fi is not supported: …".
+
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, runner) — Pending.
@@ -117,6 +130,9 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 - Ad-hoc signing → Gatekeeper; cần `xattr -dr com.apple.quarantine` hoặc notarize.
 - Build arm64-only; iOS cần Xcode, Android cần SDK/emulator trên máy người dùng.
 - Chưa test iPhone thật; Dock icon có thể cần xoá cache iconservices.
+- Tiếng trong tile: emulator do SimDeck bật im khi không mở tile (kể cả
+  `stream:false`); emulator đang chạy sẵn do tool khác bật sẽ nghe đôi; điện thoại
+  Android thật vẫn phát loa ngoài.
 - iPhone thật chỉ stream/record được qua USB (CoreMediaIO `.muxed`); máy kết nối
   Wi-Fi vẫn hiện trong sidebar nhưng mở tile sẽ lỗi "No capture device".
 - Lịch sử git còn commit bản Flutter cũ.

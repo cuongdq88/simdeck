@@ -37,7 +37,8 @@ final class EmulatorController {
     guard emulatorAvailable else { throw EmulatorError.binaryMissing(ShellEnv.emulatorPath) }
     if processes[name]?.isRunning == true { throw EmulatorError.alreadyRunning }
 
-    var arguments = ["@\(name)"]
+    // The tile plays the device's audio, so the emulator itself stays silent.
+    var arguments = ["@\(name)", "-no-audio"]
     if headless {
       arguments += ["-no-window", "-no-boot-anim", "-gpu", "host"]
     }

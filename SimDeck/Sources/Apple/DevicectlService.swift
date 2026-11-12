@@ -50,8 +50,9 @@ enum DevicectlService {
 
       // A device on USB or Wi-Fi has a transport; its tunnel stays
       // disconnected until Xcode or devicectl uses it.
+      let transport = connection?["transportType"] as? String
       let tunnel = connection?["tunnelState"] as? String
-      let connected = connection?["transportType"] != nil
+      let connected = transport != nil
         || !["unavailable", "disconnected"].contains(tunnel)
       if !connected { continue }
 
@@ -65,7 +66,8 @@ enum DevicectlService {
           platform: version.isEmpty ? "iOS" : "iOS \(version)",
           state: .booted,
           serial: nil,
-          avdName: nil))
+          avdName: nil,
+          requiresUSB: transport == "localNetwork"))
     }
     return devices
   }

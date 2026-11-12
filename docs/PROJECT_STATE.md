@@ -33,6 +33,8 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   - Tạo/sửa/xoá AVD bằng `config.ini` trực tiếp (không cần Java/avdmanager); SDK
     manager, logcat, Wi-Fi pairing.
   - Android: boot headless, scrcpy stream vào tile, tap/type/rotate, screenshot/record, stop.
+    Tiếng của thiết bị phát trong tile (PCM raw + AVAudioEngine); emulator do
+    SimDeck bật chạy `-no-audio` nên không nghe đôi.
   - iOS simulator: capture CoreSimulator/SimulatorKit, HID, xoay, tile full-width/3 cột,
     drag-reorder, spotlight. Tạo máy lọc theo `supportedDeviceTypes` của runtime
     (runtime cài cho một loại máy, ví dụ "iPhone Duo", không dùng cho máy khác được).

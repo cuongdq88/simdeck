@@ -41,6 +41,9 @@ struct Device: Identifiable, Hashable {
   var serial: String?
   /// AVD name for Android emulators, even while running.
   var avdName: String?
+  /// Found over Wi-Fi only. iOS capture goes through CoreMediaIO, which
+  /// exposes USB devices; the tile cannot open until the cable is connected.
+  var requiresUSB = false
 
   var id: String { key }
   var isRunning: Bool { state == .booted }

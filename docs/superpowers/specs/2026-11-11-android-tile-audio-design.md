@@ -82,3 +82,18 @@ nghe đôi.
 - Hai emulator stream cùng lúc: cả hai có audio, không crash.
 - Đóng tile / stop: engine dừng, không còn socket audio.
 - Không có test tự động cho đường audio; kiểm chứng bằng chạy thật.
+
+## Đã làm (2026-11-12)
+
+- `AudioSink` (`Sources/Streaming/AudioSink.swift`): AVAudioEngine +
+  AVAudioPlayerNode, PCM int16 48 kHz stereo; tối đa 8 gói chờ, gói mới bị bỏ
+  khi trễ; engine lỗi thì im, video vẫn chạy.
+- `ScrcpySession`: `audio=true`, `audio_codec=raw`; socket audio nối giữa
+  video và control. Đọc codec id ở luồng riêng vì server chỉ ghi header sau
+  khi capture khởi động (đo được >5 s trên emulator bận) — chờ tới 30 s;
+  codec 0/1 thì bỏ audio, video tiếp tục.
+- `EmulatorController`: mọi emulator do SimDeck bật đều có `-no-audio`.
+- Kiểm chứng: log `SimDeck audio start serial=…` cho 2 emulator cùng lúc;
+  qemu có `-no-audio`; CoreAudio báo `setPlayState Started
+  Output {BuiltInSpeakerDevice}` / `output_running: true`; đóng tile →
+  `setPlayState Stopped`, `output_running: false`, không crash.

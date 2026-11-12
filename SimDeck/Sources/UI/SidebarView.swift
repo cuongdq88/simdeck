@@ -242,11 +242,13 @@ struct SidebarDeviceRow: View {
           if device.isRunning && (device.os == .ios || device.serial != nil) {
             SimuIconButton(
               icon: "play.rectangle",
-              help: streaming ? "Streaming" : "Stream",
-              size: 15, active: streaming
-            ) {
-              Task { await model.openStream(device) }
-            }
+              help: device.requiresUSB
+                ? "Connect via USB to stream"
+                : (streaming ? "Streaming" : "Stream"),
+              size: 15, active: streaming,
+              action: device.requiresUSB
+                ? nil
+                : { Task { await model.openStream(device) } })
           }
           if !device.isPhysical && device.isRunning {
             SimuIconButton(icon: "power", help: "Shut down", size: 15) {
@@ -287,6 +289,7 @@ struct SidebarDeviceRow: View {
         }
       } else {
         Button("Stream") { Task { await model.openStream(device) } }
+          .disabled(device.requiresUSB)
         if device.os == .android {
           Button("Logcat…") { model.openLogcat(device) }
         }
@@ -341,6 +344,7 @@ struct SidebarDeviceRow: View {
   private var subtitle: String {
     [
       device.platform.contains(where: \.isNumber) ? device.platform : nil,
+      device.requiresUSB ? "USB required" : nil,
       streaming ? "streaming" : nil,
     ]
     .compactMap { $0 }
