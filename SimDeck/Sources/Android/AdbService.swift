@@ -81,13 +81,29 @@ enum AdbService {
       ShellEnv.adbPath, ["-s", serial, "install", "-r", path], timeout: 300)
   }
 
-  /// `monkey` starts the launcher activity without naming it first. Its exit
-  /// status stays 0 when nothing matches, so look for the error text too.
+  /// `monkey` starts the launcher activity without naming it first, but it
+  /// exits non-zero on a device with no physical keys even after launching
+  /// ("SYS_KEYS has no physical keys"), so resolve the activity and start it.
   static func launch(
     serial: String, app: String, clearState: Bool
   ) async -> ProcessResult {
     if clearState {
       _ = await shell(serial: serial, ["pm", "clear", app], timeout: 60)
+    }
+    let resolved = await shell(
+      serial: serial,
+      [
+        "cmd", "package", "resolve-activity", "--brief",
+        "-a", "android.intent.action.MAIN", "-c", "android.intent.category.LAUNCHER",
+        app,
+      ], timeout: 30)
+    let component = resolved.stdout
+      .components(separatedBy: .newlines)
+      .map { $0.trimmingCharacters(in: .whitespaces) }
+      .last { $0.contains("/") }
+    if resolved.ok, let component {
+      return await shell(
+        serial: serial, ["am", "start", "-W", "-n", component], timeout: 60)
     }
     return await shell(
       serial: serial,

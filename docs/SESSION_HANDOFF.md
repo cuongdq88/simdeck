@@ -22,6 +22,12 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   phải việc của dự án, không stage.
 
 ## Việc đã xác minh
+- `launch_app` / bước `launch` trên emulator không có phím cứng (E2): `monkey` trả
+  status 251 ("SYS_KEYS has no physical keys") dù app đã mở, nên launch bị báo lỗi
+  sai. Giờ resolve launcher activity bằng `cmd package resolve-activity` rồi
+  `am start -W -n`, chỉ fallback `monkey` khi không resolve được (giữ nguyên thông
+  báo "No activities found" cho app không tồn tại). Verify: E1+E2 chạy cùng scenario
+  label (`launch` → tap `Network & internet` → `assert_visible Internet`) đều `ok`.
 - Scenario runner (2026-11-12): Release **BUILD SUCCEEDED**; MCP có 25 tool. Chạy
   `run_scenario` trên E1 + iPhone 17 song song: cả hai `start_ms: 0`, cùng `end_ms`;
   tap theo label (`Network & internet`), `assert_visible`/`assert_not_visible` (cả

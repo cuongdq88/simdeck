@@ -47,6 +47,9 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Đã xong
 
+- [x] Mở app Android: `monkey` trả exit code khác 0 trên emulator không có phím cứng
+      dù app đã mở, làm `launch_app` và bước `launch` báo lỗi sai. Giờ resolve launcher
+      activity rồi `am start -W -n`; `monkey` chỉ còn là fallback.
 - [x] **SD-010 (runner) + `run_scenario` / `stop_scenario`**: chạy cùng một danh sách
       bước trên nhiều máy Android + iOS cùng lúc, mỗi máy độc lập và báo
       `ok`/`failed_step`/`steps_ms`. Đủ 8 action của bản cũ (tap, swipe, press, wait,
