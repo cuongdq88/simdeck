@@ -3,9 +3,9 @@
 Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 
 ## Điểm vào để tiếp tục
-- Hành động chính xác tiếp theo: **SD-010 Scenarios** — YAML đúng format bản cũ,
-  editor, runner song song nhiều máy, panel bên phải; sau đó thêm
-  `run_scenario` / `stop_scenario` cho SD-019.
+- Hành động chính xác tiếp theo: **SD-010 Scenarios, phần UI** — runner và
+  `run_scenario` / `stop_scenario` đã xong (nhận JSON steps). Còn parser YAML đúng
+  format bản cũ, editor có syntax highlight, panel tiến trình, gợi ý YAML.
 - Release 1.0.0 đã publish (tag `simdeck-v1.0.0` + DMG). Đừng nói bản này đã
   notarize: chỉ ad-hoc signed, chưa có Developer ID.
 
@@ -22,6 +22,14 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   phải việc của dự án, không stage.
 
 ## Việc đã xác minh
+- Scenario runner (2026-11-12): Release **BUILD SUCCEEDED**; MCP có 25 tool. Chạy
+  `run_scenario` trên E1 + iPhone 17 song song: cả hai `start_ms: 0`, cùng `end_ms`;
+  tap theo label (`Network & internet`), `assert_visible`/`assert_not_visible` (cả
+  pass lẫn fail), swipe `until: About` (6 lần), `type` vào ô Search Settings,
+  `if_visible` bỏ bước, `repeat: 3`, `launch` với `android`/`ios` riêng, `clear_state`,
+  device chưa stream (E2) tự mở stream với `prep_ms: 4141`, và `stop_scenario` dừng
+  giữa `wait` 15 s (kết quả `error: "Stopped"`). Bước label trên iOS báo lỗi rõ ràng;
+  bước sai (`x: 2`) bị chặn trước khi máy nào chạy.
 - Build Release **BUILD SUCCEEDED** 2026-11-05 16:05, arm64; app đã restart và chạy
   từ `SimDeck/build-release/Build/Products/Release/SimDeck.app`; 3 tile E1/E2/E3
   (Android 16) đều `streaming: true`.
@@ -112,12 +120,12 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 
 ## Task đang mở
 - Không có task in-progress.
-- **SD-010** Scenarios (YAML, editor, runner) — Pending.
-- **SD-014** MCP parity: bản cũ 27 tool → bản Swift 23 tool (thêm `stop_device` mà
+- **SD-010** Scenarios (YAML, editor, panel) — runner + MCP tools xong, UI Pending.
+- **SD-014** MCP parity: bản cũ 27 tool → bản Swift 25 tool (thêm `stop_device` mà
   bản cũ không có). Đã xong nhóm thiết bị/ứng dụng (`get_spotlight`, `connect_device`,
   `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
-  `find_elements`, `tap {label}`, `record_grid`); còn 5 tool: `run_scenario`/
-  `stop_scenario` (chờ SD-010), `set_slim`/`set_slim_mode`, `repair_input`
+  `find_elements`, `tap {label}`, `record_grid`, `run_scenario`/`stop_scenario`);
+  còn 3 tool: `set_slim`/`set_slim_mode`, `repair_input`
   (iOS simulator) — Pending.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).

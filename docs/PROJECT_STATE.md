@@ -41,7 +41,7 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   - iOS thật: `devicectl` + CoreMediaIO view-only (parser kiểm bằng JSON mẫu; chưa có
     máy thật để test). Capture là USB-only: máy chỉ kết nối Wi-Fi vẫn hiện trong danh
     sách nhưng không có capture device để stream/record.
-  - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 23 tool, CLI, bridge
+  - Toast in-app, icon app (asset catalog + `AppIcon.icns`), MCP 25 tool, CLI, bridge
     OpenCode.
   - SD-012 Grid recording: ScreenCaptureKit quay cả cửa sổ ra H.264 MP4 (4 mức chất
     lượng 15/24/30/60 fps, 720p/1280 px/full), REC + đồng hồ trên top bar, cửa sổ
@@ -93,7 +93,7 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 - GitHub Release `simdeck-v1.0.0` (2026-11-09): asset
   `SimDeck-1.0.0-macos-arm64.dmg` state `uploaded`; sau đó branch `main` đổi tên
   thành `master` và thành default branch.
-- MCP `tools/list` (2026-11-09): 23 tool.
+- MCP `tools/list` (2026-11-12): 25 tool (`run_scenario`, `stop_scenario` thêm sau).
 - Build Debug: 2026-11-05 15:48 → **BUILD SUCCEEDED**.
 - Build Release 2026-11-08 (SD-009/SD-015) → **BUILD SUCCEEDED**, arm64, không warning.
 - MCP `initialize`: 2026-11-02, HTTP 200.
@@ -122,8 +122,10 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   `ln -sfn ~/Library/Android/sdk/platform-tools/adb /opt/homebrew/bin/adb`.
 
 ## Mốc tiếp theo
-- **SD-010 Scenarios**: YAML đúng format bản cũ, editor, runner song song nhiều máy,
-  panel bên phải; sau đó mở khoá `run_scenario` / `stop_scenario` (SD-019).
+- **SD-010 Scenarios, phần còn lại**: runner + `run_scenario`/`stop_scenario` đã có
+  (JSON steps; tap/swipe/press/wait/launch/type/assert + repeat/if_visible/until,
+  label chỉ trên Android). Còn: YAML parser, editor, panel tiến trình, gợi ý YAML.
+- SD-019 còn 3 tool (`set_slim`, `set_slim_mode`, `repair_input`) — chưa chốt bỏ hay làm.
 - Notarize: chưa có Developer ID, nên bản phát hành vẫn ad-hoc và cần
   `xattr -dr com.apple.quarantine`.
 - Việc nên làm khi có thời gian: chặn `adb kill-server` trong quy trình build của

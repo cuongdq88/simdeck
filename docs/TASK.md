@@ -14,7 +14,7 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
   https://github.com/cuongdq88/simdeck/releases/tag/simdeck-v1.0.0
 - **App**: SwiftUI native trong `SimDeck/`, build Release OK, icon riêng
   (`Assets.xcassets` + `AppIcon.icns`), logo sidebar mới.
-- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (23 tool), CLI
+- **Agent**: MCP loopback `http://127.0.0.1:8765/mcp` (25 tool), CLI
   `SimDeck/bin/simdeck`, bridge stdio `SimDeck/bin/simdeck-mcp` (OpenCode dùng bridge,
   tự bật app). `start_device` luôn boot headless — không có cửa sổ emulator riêng.
 - **License**: MIT © 2026 cuongdq88 (`LICENSE`), notices third-party trong
@@ -34,18 +34,29 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Tiếp theo
 
-- [ ] **SD-019 — MCP parity, phần còn lại (5 tool của bản cũ 27 tool)** sau SD-014:
-      - `run_scenario` / `stop_scenario` — **chờ SD-010**
+- [ ] **SD-019 — MCP parity, phần còn lại (3 tool của bản cũ 27 tool)** sau SD-014:
       - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; bản Swift
         không có slim mode nên nhiều khả năng bỏ, chưa chốt
-- [ ] **SD-010 — Scenarios**: YAML (đúng format cũ), editor, runner chạy song song
-      nhiều máy + panel bên phải hiện tiến trình; mở khoá `run_scenario`/`stop_scenario`
+- [ ] **SD-010 — Scenarios, phần còn lại**: parser YAML (đúng format cũ), editor có
+      syntax highlight, panel bên phải hiện tiến trình từng máy/bước, gợi ý YAML khi
+      thao tác tay. Runner + 2 tool MCP đã xong (xem dưới); runner nhận JSON steps,
+      chưa nhận YAML.
 - [ ] **SD-016 — Agent mode không cửa sổ**: `SIMDECK_AGENT=1` (accessory, không WindowGroup) hoặc target CLI `simdeck-mcp` cho CI — hiện blocked vì SwiftUI `WindowGroup` luôn mở cửa sổ
 - [ ] **SD-018 — iOS thật, tương tác**: hiện view-only; thêm input khi có thiết bị thật
       (blocked: chưa có máy)
 
 ## Đã xong
 
+- [x] **SD-010 (runner) + `run_scenario` / `stop_scenario`**: chạy cùng một danh sách
+      bước trên nhiều máy Android + iOS cùng lúc, mỗi máy độc lập và báo
+      `ok`/`failed_step`/`steps_ms`. Đủ 8 action của bản cũ (tap, swipe, press, wait,
+      launch, type, assert_visible, assert_not_visible) + `repeat`, `if_visible`,
+      `if_not_visible`, `until`/`max`, `android`/`ios` app id. Bước theo label chỉ
+      chạy trên Android (iOS simulator không có accessibility tree); iOS dùng toạ độ.
+      Không có `slim`. Đã verify: 2 máy chạy song song cùng `start_ms`, tap label,
+      assert, swipe `until`, type qua bàn phím, `if_visible` bỏ bước, lỗi đúng
+      `failed_step`, `stop_scenario` dừng giữa `wait`, `repeat`, và device chưa
+      stream được tự mở stream trước khi chạy (`prep_ms`).
 - [x] Tiếng trong tile Android: scrcpy gửi PCM raw 48 kHz stereo, app phát bằng
       AVAudioEngine; emulator do SimDeck bật có `-no-audio` nên chỉ có một nguồn
       tiếng. Codec id đọc ở luồng riêng (server ghi header sau khi capture khởi
@@ -75,8 +86,8 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Chrome thật DeviceKit cho iOS (bezel, mask, nút cạnh)
 - [x] Screenshot, quay màn hình (REC clock), xoá/wipe an toàn
 - [x] SDK Manager: image đã cài, tải về, licence, chặn xoá image đang dùng
-- [x] MCP server loopback (23 tool)
-- [x] **SD-014** MCP tool parity: bản cũ 27 tool, bản Swift 23 tool — thêm
+- [x] MCP server loopback (23 tool, nay 25)
+- [x] **SD-014** MCP tool parity: bản cũ 27 tool, bản Swift 23 tool (nay 25) — thêm
       `get_spotlight`, `connect_device`, `pair_device`, `disconnect_device`,
       `record_device`, `install_app`, `launch_app`, `find_elements`, `tap {label}`
       (đọc cây `uiautomator dump`, tap theo nhãn/id/value) và `record_grid`, cộng thêm

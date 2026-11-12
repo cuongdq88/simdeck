@@ -378,6 +378,24 @@ final class McpServer {
         device, app: app, clearState: arguments["clear_state"] as? Bool ?? false)
       return json(["launched": app, "device": device.name])
 
+    case "run_scenario":
+      let raw = arguments["steps"] as? [[String: Any]] ?? []
+      try ScenarioRunner.validate(raw)
+      let devices = try scenarioTargets(arguments, model: model)
+      return json(await model.scenarios.run(steps: raw, devices: devices, model: model))
+
+    case "stop_scenario":
+      if let id = arguments["run_id"], !(id is Int) {
+        throw McpToolError.message("run_id must be an integer.")
+      }
+      let stopped = model.scenarios.stop(arguments["run_id"] as? Int)
+      return json([
+        "stopped": stopped,
+        "message": stopped.isEmpty
+          ? "Nothing running"
+          : "Stopping run \(stopped.map(String.init).joined(separator: ", "))",
+      ])
+
     case "record_device":
       let device = try findDevice(arguments, model: model)
       let url = await model.toggleRecording(device)
@@ -496,14 +514,41 @@ final class McpServer {
 
   private func findDevice(_ arguments: [String: Any], model: AppModel) throws -> Device {
     let value = try required("device", arguments)
-    guard
-      let device = model.devices.first(where: {
-        $0.key == value || $0.rawID == value || $0.name == value || $0.serial == value
-      })
-    else {
+    guard let device = matchingDevice(value, model: model) else {
       throw McpToolError.message("No device matches \(value).")
     }
     return device
+  }
+
+  private func matchingDevice(_ value: String, model: AppModel) -> Device? {
+    model.devices.first {
+      $0.key == value || $0.rawID == value || $0.name == value || $0.serial == value
+    }
+  }
+
+  /// A scenario's target devices: the named ones, or every streamed device.
+  private func scenarioTargets(
+    _ arguments: [String: Any], model: AppModel
+  ) throws -> [Device] {
+    guard let list = arguments["devices"] as? [Any], !list.isEmpty else {
+      let streamed = model.devices.filter { model.session(for: $0) != nil }
+      guard !streamed.isEmpty else {
+        throw McpToolError.message(
+          "No device is streaming; pass devices, or start a device stream first.")
+      }
+      return streamed
+    }
+    var targets: [Device] = []
+    for entry in list {
+      guard let value = entry as? String else {
+        throw McpToolError.message("devices must be an array of ids or names.")
+      }
+      guard let device = matchingDevice(value, model: model) else {
+        throw McpToolError.message("No device matches \(value).")
+      }
+      if !targets.contains(where: { $0.key == device.key }) { targets.append(device) }
+    }
+    return targets
   }
 
   private func liveSession(
@@ -588,6 +633,7 @@ final class McpServer {
     }
     let string = ["type": "string"]
     let number = ["type": "number"]
+    let point: [String: Any] = ["type": "number", "minimum": 0, "maximum": 1]
     return [
       tool("list_devices", "List Android and iOS devices with their state."),
       tool("get_device_catalogs", "List installed system images and hardware profiles."),
@@ -699,6 +745,53 @@ final class McpServer {
           "app": string,
           "clear_state": ["type": "boolean", "default": false],
         ], required: ["device", "app"]),
+      tool(
+        "run_scenario",
+        "Run the same steps on several devices (Android and iOS) at once. All devices are readied first, then start together; each runs the steps in order and reports its own outcome. Steps: {action: tap, x, y} or {action: tap, label, timeout_ms?} | {action: swipe, x1, y1, x2, y2 (or label, dx, dy), until?, max?, duration_ms?} | {action: press, button} | {action: wait, ms} | {action: launch, app, clear_state?} (or android / ios ids per platform) | {action: type, text} | {action: assert_visible, label, timeout_ms?} | {action: assert_not_visible, label, timeout_ms?}. Any step takes repeat (default 1) and if_visible / if_not_visible (a label checked once before the step; the step is skipped when it does not hold). Coordinates are normalized 0..1; prefer label taps (labels from find_elements) since layouts differ between devices, but labels work on Android only. Returns each device's outcome with start/end ms from the common start and per-step ms.",
+        properties: [
+          "devices": [
+            "type": "array", "items": string,
+            "description": "Device ids or names; omit to use every streamed device",
+          ],
+          "steps": [
+            "type": "array",
+            "items": [
+              "type": "object",
+              "properties": [
+                "action": [
+                  "type": "string",
+                  "enum": [
+                    "tap", "swipe", "press", "wait", "launch", "type",
+                    "assert_visible", "assert_not_visible",
+                  ],
+                ],
+                "x": point, "y": point,
+                "x1": point, "y1": point, "x2": point, "y2": point,
+                "dx": number, "dy": number,
+                "button": [
+                  "type": "string", "enum": DeviceButton.allCases.map(\.rawValue),
+                ],
+                "ms": ["type": "integer"],
+                "label": string, "text": string, "app": string,
+                "android": string, "ios": string,
+                "clear_state": ["type": "boolean"],
+                "repeat": ["type": "integer", "minimum": 1],
+                "if_visible": string, "if_not_visible": string,
+                "timeout_ms": ["type": "integer"],
+                "index": ["type": "integer"],
+                "until": string,
+                "max": ["type": "integer", "minimum": 1],
+                "duration_ms": ["type": "integer"],
+              ],
+              "required": ["action"],
+            ],
+          ],
+        ],
+        required: ["steps"]),
+      tool(
+        "stop_scenario",
+        "Stop a running scenario by run_id (from run_scenario), or every running one. Devices stop at their next step or wait; their steps so far stay done.",
+        properties: ["run_id": ["type": "integer"]]),
     ]
   }
 }

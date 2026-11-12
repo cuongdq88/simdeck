@@ -49,6 +49,7 @@ final class AppModel: ObservableObject {
 
   private let emulator = EmulatorController()
   private let gridRecorder = GridRecorder()
+  let scenarios = ScenarioRunner()
   let settingsStore = DeviceSettingsStore()
   private var loop: Task<Void, Never>?
   private var fpsSamples: [String: (count: Int, time: Date)] = [:]
