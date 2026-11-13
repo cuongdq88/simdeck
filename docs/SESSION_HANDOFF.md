@@ -22,6 +22,17 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   phải việc của dự án, không stage.
 
 ## Việc đã xác minh
+- Emulator "mở cửa sổ riêng" khi OpenCode chạy: session ngoài repo `simdeck` không có
+  MCP `simdeck` và không có luật cấm, nên agent tự chạy binary SDK. Bằng chứng: E2 là
+  `qemu-system-aarch64 -avd E2 -no-snapshot-save` (windowed, parent PID 1) do session
+  khác bật, trong khi E1 do SimDeck bật là `-headless @E1 -no-window -no-audio`; log
+  shell OpenCode có đúng chuỗi `emulator -avd Pixel_9_Pro_XL -no-boot-anim
+  -no-snapshot-save`. Đã sửa: config global OpenCode có MCP `simdeck` (scope user,
+  verify `opencode mcp list` → `✓ simdeck connected` trong git repo không có config
+  riêng; v2 đọc dạng `mcp.servers.<name>`, dạng `mcp.<name>` chỉ ăn ở config project),
+  thêm luật "không tự boot emulator/avdmanager/simctl" vào `~/.config/opencode/AGENTS.md`,
+  và E2 được tắt rồi bật lại bằng `simdeck start E2` → cả E1 và E2 là tile headless
+  trong app (screenshot đối chứng).
 - CLI cài qua symlink `~/.local/bin/simdeck`: `ensure_server` resolve path theo
   `$BASH_SOURCE` nên tìm sai app và mở bản Debug cũ trong DerivedData (server cũ
   chiếm cổng 8765, `run_scenario` báo "Unknown tool"). Đã follow symlink bằng
