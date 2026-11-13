@@ -5,6 +5,10 @@ import Foundation
 /// the `run_scenario` tool); steps that name a label are Android only.
 @MainActor
 final class ScenarioRunner {
+  /// Label lookups wait this long by default: one `uiautomator dump` costs a
+  /// couple of seconds, so 5 s often allowed just one look at a loading screen.
+  private static let defaultTimeoutMs = 10_000
+
   /// Runs still going, and whether each was asked to stop.
   private var running: [Int: Bool] = [:]
   private var nextRunID = 1
@@ -123,11 +127,11 @@ final class ScenarioRunner {
     case "assert_visible":
       _ = try await locate(
         try Self.label(step), device: device, index: 0,
-        timeoutMs: step["timeout_ms"] as? Int ?? 5000, runID: runID)
+        timeoutMs: step["timeout_ms"] as? Int ?? Self.defaultTimeoutMs, runID: runID)
     case "assert_not_visible":
       try await waitGone(
         try Self.label(step), device: device,
-        timeoutMs: step["timeout_ms"] as? Int ?? 5000, runID: runID)
+        timeoutMs: step["timeout_ms"] as? Int ?? Self.defaultTimeoutMs, runID: runID)
     case "wait":
       try await pause(Double(step["ms"] as? Int ?? 0) / 1000, runID: runID)
     default:
@@ -144,7 +148,7 @@ final class ScenarioRunner {
     if let label = step["label"] as? String, !label.isEmpty {
       let element = try await locate(
         label, device: device, index: step["index"] as? Int ?? 0,
-        timeoutMs: step["timeout_ms"] as? Int ?? 5000, runID: runID)
+        timeoutMs: step["timeout_ms"] as? Int ?? Self.defaultTimeoutMs, runID: runID)
       point = element.center
     } else {
       point = (
@@ -165,7 +169,7 @@ final class ScenarioRunner {
     if let label = step["label"] as? String, !label.isEmpty {
       let from = try await locate(
         label, device: device, index: step["index"] as? Int ?? 0,
-        timeoutMs: step["timeout_ms"] as? Int ?? 5000, runID: runID)
+        timeoutMs: step["timeout_ms"] as? Int ?? Self.defaultTimeoutMs, runID: runID)
       x1 = from.center.x
       y1 = from.center.y
       x2 = min(max(x1 + (Self.number(step["dx"]) ?? 0), 0), 1)

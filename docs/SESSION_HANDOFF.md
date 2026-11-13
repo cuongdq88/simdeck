@@ -22,6 +22,13 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
   phải việc của dự án, không stage.
 
 ## Việc đã xác minh
+- CLI cài qua symlink `~/.local/bin/simdeck`: `ensure_server` resolve path theo
+  `$BASH_SOURCE` nên tìm sai app và mở bản Debug cũ trong DerivedData (server cũ
+  chiếm cổng 8765, `run_scenario` báo "Unknown tool"). Đã follow symlink bằng
+  `readlink`; chạy `simdeck` từ `/tmp` giờ mở đúng bản Release trong repo.
+- Timeout mặc định của bước label nay 10 s; verify: `assert_visible` label không tồn
+  tại trả "after 10000 ms" (~13 s gồm prep + 2 lần dump), và scenario 2 máy
+  (launch clear_state → tap → assert, không đặt timeout_ms) pass cả E1 lẫn E2.
 - `launch_app` / bước `launch` trên emulator không có phím cứng (E2): `monkey` trả
   status 251 ("SYS_KEYS has no physical keys") dù app đã mở, nên launch bị báo lỗi
   sai. Giờ resolve launcher activity bằng `cmd package resolve-activity` rồi
@@ -127,12 +134,9 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 ## Task đang mở
 - Không có task in-progress.
 - **SD-010** Scenarios (YAML, editor, panel) — runner + MCP tools xong, UI Pending.
-- **SD-014** MCP parity: bản cũ 27 tool → bản Swift 25 tool (thêm `stop_device` mà
-  bản cũ không có). Đã xong nhóm thiết bị/ứng dụng (`get_spotlight`, `connect_device`,
-  `pair_device`, `disconnect_device`, `record_device`, `install_app`, `launch_app`,
-  `find_elements`, `tap {label}`, `record_grid`, `run_scenario`/`stop_scenario`);
-  còn 3 tool: `set_slim`/`set_slim_mode`, `repair_input`
-  (iOS simulator) — Pending.
+- **SD-014 / SD-019** MCP parity: xong, chốt 25 tool. Bản cũ 27; bản Swift thêm
+  `stop_device` và bỏ có chủ đích `set_slim`/`set_slim_mode` (không có slim mode) và
+  `repair_input` (chưa gặp Xcode Device Hub giành input) — xem `TASK.md` SD-019.
 - **SD-016** Agent mode không cửa sổ — Blocked (SwiftUI SceneBuilder không bỏ được
   `WindowGroup`; hiện auto-launch cửa sổ SimDeck bình thường).
 - **SD-018** Tương tác iPhone thật (hiện view-only) — Blocked (chưa có thiết bị).

@@ -2,9 +2,8 @@
 """stdio MCP bridge for SimDeck.
 
 MCP clients that only launch local servers (OpenCode, Claude Code, Codex…)
-run this script. It starts SimDeck in agent mode when needed (menu bar icon,
-no window) and forwards newline-delimited JSON-RPC to the app's HTTP MCP
-server on loopback.
+run this script. It starts SimDeck when needed (its window opens) and forwards
+newline-delimited JSON-RPC to the app's HTTP MCP server on loopback.
 """
 import json
 import os

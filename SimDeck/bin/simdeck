@@ -85,8 +85,10 @@ server_up() {
 # app window is where the headless emulator's screen appears.
 ensure_server() {
   server_up && return 0
-  local here app=""
-  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local here app="" target="${BASH_SOURCE[0]}"
+  # Follow the symlink so a CLI installed in PATH still finds the repo's app.
+  while [[ -L "$target" ]]; do target="$(readlink "$target")"; done
+  here="$(cd "$(dirname "$target")" && pwd)"
   app="${SIMDECK_APP:-}"
   if [[ -z "$app" ]]; then
     for candidate in \

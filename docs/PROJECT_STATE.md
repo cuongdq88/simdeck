@@ -125,7 +125,8 @@ Cập nhật: 2026-11-10 (Asia/Ho_Chi_Minh)
 - **SD-010 Scenarios, phần còn lại**: runner + `run_scenario`/`stop_scenario` đã có
   (JSON steps; tap/swipe/press/wait/launch/type/assert + repeat/if_visible/until,
   label chỉ trên Android). Còn: YAML parser, editor, panel tiến trình, gợi ý YAML.
-- SD-019 còn 3 tool (`set_slim`, `set_slim_mode`, `repair_input`) — chưa chốt bỏ hay làm.
+- SD-019 đã đóng: parity dừng ở 25 tool, bỏ có chủ đích `set_slim`, `set_slim_mode`,
+  `repair_input` (không có slim mode; `repair_input` chưa gặp nhu cầu).
 - Notarize: chưa có Developer ID, nên bản phát hành vẫn ad-hoc và cần
   `xattr -dr com.apple.quarantine`.
 - Việc nên làm khi có thời gian: chặn `adb kill-server` trong quy trình build của

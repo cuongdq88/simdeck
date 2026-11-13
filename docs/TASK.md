@@ -34,9 +34,11 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 
 ## Tiếp theo
 
-- [ ] **SD-019 — MCP parity, phần còn lại (3 tool của bản cũ 27 tool)** sau SD-014:
-      - `set_slim` / `set_slim_mode`, `repair_input` — đặc thù iOS simulator; bản Swift
-        không có slim mode nên nhiều khả năng bỏ, chưa chốt
+- [x] **SD-019 — MCP parity: đóng (2026-11-13)**. Bản cũ 27 tool, bản Swift 25:
+      thêm `stop_device` (bản cũ không có), còn thiếu `set_slim`, `set_slim_mode`,
+      `repair_input` — **chốt bỏ** vì bản Swift không có slim mode; `repair_input`
+      chỉ cần khi Xcode Device Hub giành input, bản Swift chưa gặp. Mở lại nếu có
+      nhu cầu thật.
 - [ ] **SD-010 — Scenarios, phần còn lại**: parser YAML (đúng format cũ), editor có
       syntax highlight, panel bên phải hiện tiến trình từng máy/bước, gợi ý YAML khi
       thao tác tay. Runner + 2 tool MCP đã xong (xem dưới); runner nhận JSON steps,
@@ -50,6 +52,10 @@ workflow/script/packaging/docs cũ của nó đã bị xoá khỏi repo.
 - [x] Mở app Android: `monkey` trả exit code khác 0 trên emulator không có phím cứng
       dù app đã mở, làm `launch_app` và bước `launch` báo lỗi sai. Giờ resolve launcher
       activity rồi `am start -W -n`; `monkey` chỉ còn là fallback.
+- [x] Bước theo label trong scenario: mặc định chờ 10 s thay vì 5 s (mỗi
+      `uiautomator dump` mất ~2–3 s nên 5 s chỉ được ~1 lần nhìn, dễ fail oan trên
+      màn hình đang load). Sửa luôn docstring `bin/simdeck-mcp` nói sai là chạy
+      "no window" (agent mode chưa có).
 - [x] **SD-010 (runner) + `run_scenario` / `stop_scenario`**: chạy cùng một danh sách
       bước trên nhiều máy Android + iOS cùng lúc, mỗi máy độc lập và báo
       `ok`/`failed_step`/`steps_ms`. Đủ 8 action của bản cũ (tap, swipe, press, wait,
